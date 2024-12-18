@@ -14,6 +14,7 @@
         a {
             color: blue;
             text-decoration: none;
+            margin-right: 20px; /* Add spacing between links */
         }
 
         a:visited {
@@ -27,31 +28,57 @@
         /* Style for name */
         .name {
             font-size: 3em; /* Large font for your name */
-            font-weight: 150; /* Thinner font */
+            font-weight: 300; /* Thinner font */
             color: blue; /* Blue color */
             text-align: center; /* Center the name */
             margin: 20px 0;
         }
 
-        /* Adjust navigation link font size and align to the right */
+        /* Navigation menu */
         .nav {
-            font-size: 0.85em; /* Smaller font for navigation links */
+            font-size: 1.1em; /* Larger font for navigation links */
             text-align: right; /* Align menu to the right */
             position: absolute; /* Place it at the top */
             top: 10px; /* Offset from the top */
             right: 30px; /* Offset from the right */
         }
 
+        .nav a {
+            margin: 0 15px; /* Add spacing between menu items */
+        }
+
         img {
-            max-width: 400px; /* Bigger image size */
+            max-width: 400px; /* Default image size */
+            display: block; /* Center the image */
+            margin: 0 auto; /* Center the image */
         }
 
         @media (max-width: 768px) {
+            .nav {
+                font-size: 1em; /* Slightly smaller navigation font on narrow screens */
+                text-align: center; /* Center the menu */
+                position: static; /* Place it within the flow */
+                margin-bottom: 20px; /* Add spacing below the menu */
+            }
+
+            .nav a {
+                display: inline-block; /* Stack links for better spacing */
+                margin: 0 10px;
+            }
+
+            .picture-container {
+                float: none; /* Remove floating */
+                margin: 0 auto 20px; /* Center the picture on top */
+                text-align: center;
+            }
+
             img {
                 max-width: 300px; /* Smaller image on narrow screens */
             }
-            .nav {
-                font-size: 0.75em; /* Even smaller navigation font on small screens */
+
+            .intro {
+                text-align: center; /* Center-align text for better readability */
+                margin-top: 10px;
             }
         }
 
@@ -80,9 +107,9 @@
     <div class="container">
         <p class="name">Victor Ortega Le Hénanff</p>
         <p class="nav">
-            <a href="/research">Research</a> / 
-            <a href="/vita">CV</a> / 
-            <a href="/clips">Articles</a> / 
+            <a href="/research">Research</a> 
+            <a href="/vita">CV</a> 
+            <a href="/clips">Articles</a> 
             <a href="/photos/s">Photos</a>
         </p>
         <div class="picture-container">

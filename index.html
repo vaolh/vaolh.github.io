@@ -76,30 +76,42 @@
             overflow: hidden; /* Clear floats */
         }
 
-        @media (max-width: 768px) {
-            .nav {
-                font-size: 0.9em; /* Slightly smaller font on narrow screens */
-                text-align: center; /* Center the menu */
-                position: static; /* Place it within the flow */
-                margin-bottom: 20px; /* Add spacing below the menu */
-            }
+        /* Social media buttons */
+        .social-media {
+            position: fixed; /* Stick to the bottom-left corner */
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column; /* Stack buttons vertically */
+            gap: 10px; /* Add space between buttons */
+        }
 
-            .nav a {
-                display: inline-block; /* Stack links for better spacing */
-                margin: 0 10px;
-            }
+        .social-media a {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background-color: #1b9df0; /* Default blue for Twitter */
+            border-radius: 50%; /* Make buttons circular */
+            overflow: hidden;
+            text-align: center;
+        }
 
-            .picture-container {
-                float: none; /* Remove float on smaller screens */
-                width: 100%; /* Full width on smaller devices */
-                margin-bottom: 20px; /* Add spacing below the picture */
-                text-align: center; /* Center-align the image */
-            }
+        .social-media a img {
+            width: 28px;
+            height: 28px;
+            margin: 2px; /* Center logo inside button */
+        }
 
-            .intro {
-                text-align: center; /* Center-align text for better readability */
-                margin-top: 10px;
-            }
+        .social-media .twitter {
+            background-color: #1b9df0;
+        }
+
+        .social-media .mastodon {
+            background-color: #6364ff;
+        }
+
+        .social-media .instagram {
+            background-color: #fe005c;
         }
     </style>
 </head>
@@ -130,6 +142,18 @@
             <p>My research interests include Labor Economics, Inequality, Transportation, Mechanism Design, and Econometrics.</p>
             <p>I am currently looking for a predoctoral fellowship position.</p>
             <p>I am very interested in pursuing an academic researcher career after graduate school.</p>
+        </div>
+        <!-- Social Media Buttons -->
+        <div class="social-media">
+            <a href="https://twitter.com/realvolh" class="twitter" target="_blank">
+                <img src="https://ssl.gstatic.com/atari/images/sociallinks/twitter_white_28dp.png" alt="Twitter">
+            </a>
+            <a href="https://econtwitter.net/@vincictor33" class="mastodon" target="_blank">
+                <img src="https://lh4.googleusercontent.com/dJxG5Pdpdnbm4-G45rA4Gxs9PxQ5ouaPxfs7dTvuvZug6s8ErajzXTICONxgF0xPaY_dFSB2QKBTi71PCVKqkX09V3vYEEzedpi4I1Yqvns" alt="Mastodon">
+            </a>
+            <a href="https://www.instagram.com/vincictor33/" class="instagram" target="_blank">
+                <img src="https://ssl.gstatic.com/atari/images/sociallinks/instagram_white_28dp.png" alt="Instagram">
+            </a>
         </div>
     </div>
 </body>

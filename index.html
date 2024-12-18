@@ -82,7 +82,7 @@
             bottom: 20px;
             left: 20px;
             display: flex;
-            flex-direction: column; /* Stack buttons vertically */
+            flex-direction: row; /* Arrange buttons in a row */
             gap: 10px; /* Add space between buttons */
         }
 
@@ -112,6 +112,32 @@
 
         .social-media .instagram {
             background-color: #fe005c;
+        }
+
+        @media (max-width: 768px) {
+            .nav {
+                font-size: 0.9em; /* Slightly smaller font on narrow screens */
+                text-align: center; /* Center the menu */
+                position: static; /* Place it within the flow */
+                margin-bottom: 20px; /* Add spacing below the menu */
+            }
+
+            .nav a {
+                display: inline-block; /* Stack links for better spacing */
+                margin: 0 10px;
+            }
+
+            .picture-container {
+                float: none; /* Remove float on smaller screens */
+                width: 100%; /* Full width on smaller devices */
+                margin-bottom: 20px; /* Add spacing below the picture */
+                text-align: center; /* Center-align the image */
+            }
+
+            .intro {
+                text-align: center; /* Center-align text for better readability */
+                margin-top: 10px;
+            }
         }
     </style>
 </head>
@@ -143,18 +169,19 @@
             <p>I am currently looking for a predoctoral fellowship position.</p>
             <p>I am very interested in pursuing an academic researcher career after graduate school.</p>
         </div>
-        <!-- Social Media Buttons -->
-        <div class="social-media">
-            <a href="https://twitter.com/realvolh" class="twitter" target="_blank">
-                <img src="https://ssl.gstatic.com/atari/images/sociallinks/twitter_white_28dp.png" alt="Twitter">
-            </a>
-            <a href="https://econtwitter.net/@vincictor33" class="mastodon" target="_blank">
-                <img src="https://lh4.googleusercontent.com/dJxG5Pdpdnbm4-G45rA4Gxs9PxQ5ouaPxfs7dTvuvZug6s8ErajzXTICONxgF0xPaY_dFSB2QKBTi71PCVKqkX09V3vYEEzedpi4I1Yqvns" alt="Mastodon">
-            </a>
-            <a href="https://www.instagram.com/vincictor33/" class="instagram" target="_blank">
-                <img src="https://ssl.gstatic.com/atari/images/sociallinks/instagram_white_28dp.png" alt="Instagram">
-            </a>
-        </div>
+    </div>
+
+    <!-- Social Media Buttons -->
+    <div class="social-media">
+        <a href="https://twitter.com/realvolh" class="twitter" target="_blank">
+            <img src="https://ssl.gstatic.com/atari/images/sociallinks/twitter_white_28dp.png" alt="Twitter">
+        </a>
+        <a href="https://econtwitter.net/@vincictor33" class="mastodon" target="_blank">
+            <img src="https://lh4.googleusercontent.com/dJxG5Pdpdnbm4-G45rA4Gxs9PxQ5ouaPxfs7dTvuvZug6s8ErajzXTICONxgF0xPaY_dFSB2QKBTi71PCVKqkX09V3vYEEzedpi4I1Yqvns" alt="Mastodon">
+        </a>
+        <a href="https://www.instagram.com/vincictor33/" class="instagram" target="_blank">
+            <img src="https://ssl.gstatic.com/atari/images/sociallinks/instagram_white_28dp.png" alt="Instagram">
+        </a>
     </div>
 </body>
 

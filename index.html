@@ -9,8 +9,35 @@
     <!-- Link to your external CSS file -->
     <link rel="stylesheet" type="text/css" href="style.css">
 
-    <!-- Optional: Inline styles (not recommended) -->
     <style>
+        /* Ensure all links stay blue */
+        a {
+            color: blue;
+            text-decoration: none;
+        }
+
+        a:visited {
+            color: blue;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Style for name */
+        .name {
+            font-size: 3em; /* Large font for your name */
+            font-weight: bold;
+            text-align: center; /* Center the name */
+            margin: 20px 0;
+        }
+
+        /* Adjust navigation link font size */
+        .nav {
+            font-size: 0.9em; /* Smaller font for navigation links */
+            text-align: center; /* Center navigation links */
+        }
+
         img {
             max-width: 250px;
         }
@@ -23,7 +50,11 @@
 
         .picture-container {
             float: left;
-            margin-right: 15px; /* Adjust spacing between image and text */
+            margin-right: 15px; /* Spacing between image and text */
+        }
+
+        .intro {
+            font-size: 0.95em; /* Slightly smaller font for intro text */
         }
 
         .intro p {
@@ -31,15 +62,20 @@
         }
 
         .container {
-            overflow: hidden; /* Ensures proper layout around floated elements */
+            overflow: hidden; /* Fix layout issues with floating */
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <p class="name"><a href="/">Victor Ortega</a></p>
-        <p class="nav"><a href="/research">Research</a> / <a href="/vita">CV</a> / <a href="/clips">Articles</a> / <a href="/photos/s">Photos</a></p>
+        <p class="name">Victor Ortega</p>
+        <p class="nav">
+            <a href="/research">Research</a> / 
+            <a href="/vita">CV</a> / 
+            <a href="/clips">Articles</a> / 
+            <a href="/photos/s">Photos</a>
+        </p>
         <div class="picture-container">
             <picture>
                 <source srcset="home.png 1280w, home.png 640w" type="image/webp">

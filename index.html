@@ -14,13 +14,24 @@
         img {
             max-width: 250px;
         }
+
         @media (max-width: 768px) {
             img {
                 max-width: 200px;
             }
         }
+
+        .picture-container {
+            float: left;
+            margin-right: 15px; /* Adjust spacing between image and text */
+        }
+
         .intro p {
             text-align: justify;
+        }
+
+        .container {
+            overflow: hidden; /* Ensures proper layout around floated elements */
         }
     </style>
 </head>
@@ -33,17 +44,18 @@
             <picture>
                 <source srcset="home.png 1280w, home.png 640w" type="image/webp">
                 <source srcset="home.png 1280w, home.png 640w">
-                <img src="home.png">
+                <img src="home.png" alt="Victor Ortega">
             </picture>
         </div>
         <div class="intro">
-            <p>Hello! I am an undergraduate student in economics at UNAM.<p> 
-	    <p>I am currently doing an exchange quarter at UC Davis.</p>
+            <p>Hello! I am an undergraduate student in economics at UNAM.</p>
+            <p>I am currently doing an exchange quarter at UC Davis.</p>
             <p>I am a research assistant at St Andrews for Dr. David Escamilla Guerrero.</p>
-            <p>My research interests include Labor Economics, Inequality, Transportation, Mechanism Design and Econometrics.</p>
+            <p>My research interests include Labor Economics, Inequality, Transportation, Mechanism Design, and Econometrics.</p>
             <p>I am currently looking for a predoctoral fellowship position.</p>
             <p>I am very interested in pursuing an academic researcher career after graduate school.</p>
         </div>
     </div>
 </body>
+
 </html>

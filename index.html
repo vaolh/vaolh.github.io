@@ -47,16 +47,33 @@
             margin: 0 15px; /* Add spacing between menu items */
         }
 
-        img {
-            max-width: 100%; /* Ensure the image is responsive */
-            height: auto; /* Maintain aspect ratio */
-            display: block; /* Center the image */
-            margin: 0 auto; /* Center the image */
+        /* Photo and text layout */
+        .picture-container {
+            float: left; /* Float photo to the left */
+            width: 50%; /* Take up half the width */
+            margin-right: 20px; /* Add spacing between image and text */
         }
 
-        .picture-container {
-            text-align: center; /* Ensure the image is centered */
-            margin-bottom: 20px; /* Add spacing below the image */
+        .picture-container img {
+            width: 100%; /* Make the image responsive within the container */
+            height: auto; /* Maintain aspect ratio */
+            display: block; /* Ensure proper layout */
+        }
+
+        .intro {
+            font-size: 0.9em; /* Smaller font for intro text */
+            margin-top: 30px; /* Add more space between title and body */
+        }
+
+        .intro p {
+            text-align: justify; /* Justify text for better readability */
+        }
+
+        .container {
+            padding: 30px; /* Larger margins from the edge of the website */
+            max-width: 1200px; /* Restrict container width for readability */
+            margin: 0 auto; /* Center container on the page */
+            overflow: hidden; /* Clear floats */
         }
 
         @media (max-width: 768px) {
@@ -73,28 +90,16 @@
             }
 
             .picture-container {
+                float: none; /* Remove float on smaller screens */
+                width: 100%; /* Full width on smaller devices */
                 margin-bottom: 20px; /* Add spacing below the picture */
+                text-align: center; /* Center-align the image */
             }
 
             .intro {
                 text-align: center; /* Center-align text for better readability */
                 margin-top: 10px;
             }
-        }
-
-        .intro {
-            font-size: 0.9em; /* Smaller font for intro text */
-            margin-top: 30px; /* Add more space between title and body */
-        }
-
-        .intro p {
-            text-align: justify;
-        }
-
-        .container {
-            padding: 30px; /* Larger margins from the edge of the website */
-            max-width: 1200px; /* Restrict container width for readability */
-            margin: 0 auto; /* Center container on the page */
         }
     </style>
 </head>
@@ -107,6 +112,7 @@
             <a href="/teaching">Teaching</a> 
             <a href="/lecture-notes">Lecture Notes</a> 
             <a href="/literature">Literature</a> 
+            <a href="/music">Music</a> 
             <a href="/cv">CV</a> 
             <a href="/photos">Photos</a>
         </p>

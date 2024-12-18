@@ -31,12 +31,12 @@
             font-weight: 200; /* Thinner font */
             color: black; /* Black color */
             text-align: center; /* Center the name */
-            margin: 20px 0;
+            margin: 40px 0; /* Add more space below title */
         }
 
         /* Navigation menu */
         .nav {
-            font-size: 1.1em; /* Larger font for navigation links */
+            font-size: 1em; /* Slightly smaller font for navigation links */
             text-align: right; /* Align menu to the right */
             position: absolute; /* Place it at the top */
             top: 10px; /* Offset from the top */
@@ -48,14 +48,20 @@
         }
 
         img {
-            max-width: 400px; /* Default image size */
+            max-width: 100%; /* Ensure the image is responsive */
+            height: auto; /* Maintain aspect ratio */
             display: block; /* Center the image */
             margin: 0 auto; /* Center the image */
         }
 
+        .picture-container {
+            text-align: center; /* Ensure the image is centered */
+            margin-bottom: 20px; /* Add spacing below the image */
+        }
+
         @media (max-width: 768px) {
             .nav {
-                font-size: 1em; /* Slightly smaller navigation font on narrow screens */
+                font-size: 0.9em; /* Slightly smaller font on narrow screens */
                 text-align: center; /* Center the menu */
                 position: static; /* Place it within the flow */
                 margin-bottom: 20px; /* Add spacing below the menu */
@@ -67,13 +73,7 @@
             }
 
             .picture-container {
-                float: none; /* Remove floating */
-                margin: 0 auto 20px; /* Center the picture on top */
-                text-align: center;
-            }
-
-            img {
-                max-width: 300px; /* Smaller image on narrow screens */
+                margin-bottom: 20px; /* Add spacing below the picture */
             }
 
             .intro {
@@ -82,13 +82,9 @@
             }
         }
 
-        .picture-container {
-            float: left;
-            margin-right: 20px; /* Spacing between image and text */
-        }
-
         .intro {
             font-size: 0.9em; /* Smaller font for intro text */
+            margin-top: 30px; /* Add more space between title and body */
         }
 
         .intro p {

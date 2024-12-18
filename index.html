@@ -27,15 +27,19 @@
         /* Style for name */
         .name {
             font-size: 3em; /* Large font for your name */
-            font-weight: bold;
+            font-weight: 300; /* Thinner font */
+            color: blue; /* Blue color */
             text-align: center; /* Center the name */
             margin: 20px 0;
         }
 
-        /* Adjust navigation link font size */
+        /* Adjust navigation link font size and align to the right */
         .nav {
             font-size: 0.85em; /* Smaller font for navigation links */
-            text-align: center; /* Center navigation links */
+            text-align: right; /* Align menu to the right */
+            position: absolute; /* Place it at the top */
+            top: 10px; /* Offset from the top */
+            right: 30px; /* Offset from the right */
         }
 
         img {
@@ -45,6 +49,9 @@
         @media (max-width: 768px) {
             img {
                 max-width: 300px; /* Smaller image on narrow screens */
+            }
+            .nav {
+                font-size: 0.75em; /* Even smaller navigation font on small screens */
             }
         }
 

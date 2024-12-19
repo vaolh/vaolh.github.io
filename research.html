@@ -6,9 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Victor Ortega</title>
 
-    <!-- Link to your external CSS file -->
-    <link rel="stylesheet" type="text/css" href="style.css">
-
     <style>
         /* Ensure all links stay blue */
         a {
@@ -22,50 +19,36 @@
 
         /* Style for name */
         .name {
-            font-size: 3em; /* Large font for your name */
-            font-weight: 200; /* Thinner font */
-            color: black; /* Black color */
-            text-align: center; /* Center the name */
-            margin: 40px 0; /* Add more space below title */
+            font-size: 3em;
+            font-weight: 200;
+            color: black;
+            text-align: center;
+            margin: 40px 0;
         }
 
-        /* Navigation menu */
-        .nav {
-            font-size: 1em; /* Slightly smaller font for navigation links */
-            text-align: right; /* Align menu to the right */
-            position: absolute; /* Place it at the top */
-            top: 10px; /* Offset from the top */
-            right: 30px; /* Offset from the right */
-        }
-
-        .nav a {
-            margin: 0 15px; /* Add spacing between menu items */
+        .container {
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .intro {
-            font-size: 0.9em; /* Smaller font for intro text */
-            margin-top: 30px; /* Add more space between title and body */
+            font-size: 1em;
+            line-height: 1.6;
+            margin-top: 30px;
         }
 
         .paper {
-            margin-bottom: 15px; /* Add spacing between papers */
+            margin-bottom: 20px;
         }
 
         .paper-title {
             color: blue;
             font-weight: bold;
-            text-decoration: none;
         }
 
-        .paper-details {
-            font-style: italic; /* Italicize working paper info */
-            display: inline; /* Keep on the same line */
-        }
-
-        .container {
-            padding: 30px; /* Larger margins from the edge of the website */
-            max-width: 1200px; /* Restrict container width for readability */
-            margin: 0 auto; /* Center container on the page */
+        .paper-line {
+            margin: 0;
         }
     </style>
 </head>
@@ -73,39 +56,42 @@
 <body>
     <div class="container">
         <p class="name">Victor Ortega Le Hénanff</p>
-        <p class="nav">
-            <a href="/research">Research</a> 
-            <a href="/teaching">Teaching</a> 
-            <a href="/lecture-notes">Lecture Notes</a> 
-            <a href="/literature">Literature</a> 
-            <a href="/music">Music</a> 
-            <a href="/cv">CV</a> 
-            <a href="/photos">Photos</a>
-        </p>
         
         <div class="intro">
             <h2>I have contributed to the following papers:</h2>
-            <ul>
-                <li class="paper">
-                    <a href="https://ora.ox.ac.uk/objects/uuid:94034199-6080-4090-ad42-5b647f3e4baa/files/s2j62s6922" class="paper-title">"All Aboard! Railroad Access and Mexico-US Mass Migration."</a>
-                    by David Escamilla Guerrero. 2024.
-                    <span class="paper-details">Oxford Economic and Social History Working Paper 212.</span>
-                </li>
-                <li class="paper">
-                    <span class="paper-title">"Minimum Wages and Gender Inequality in the Long Run: Evidence from Mexico."</span>
-                    by David Escamilla Guerrero, Enrique de la Rosa Ramos, and Valeria Rueda. 2024.
-                    <span class="paper-details"></span>
-                </li>
-            </ul>
+
+            <div class="paper">
+                <p class="paper-line">
+                    <a href="https://ora.ox.ac.uk/objects/uuid:94034199-6080-4090-ad42-5b647f3e4baa/files/s2j62s6922" class="paper-title">
+                        "All Aboard! Railroad Access and Mexico-US Mass Migration."
+                    </a>
+                </p>
+                <p class="paper-line">by David Escamilla Guerrero. 2024.</p>
+                <p class="paper-line"><i>Oxford Economic and Social History Working Paper 212.</i></p>
+            </div>
+
+            <div class="paper">
+                <p class="paper-line">
+                    <span class="paper-title">
+                        "Minimum Wages and Gender Inequality in the Long Run: Evidence from Mexico."
+                    </span>
+                </p>
+                <p class="paper-line">by David Escamilla Guerrero, Enrique de la Rosa Ramos, and Valeria Rueda. 2024.</p>
+            </div>
 
             <h2>Term Papers:</h2>
-            <ul>
-                <li class="paper">
-                    <a href="#" class="paper-title">"Insurance and Welfare: Causal Effects of the Affordable Care Act."</a>
-                    with Thalia Pivert. 2024.
-                    <span class="paper-details">Term Paper for ECN190. UC Davis. <a href="#">Replication</a>. <a href="#">Slides</a>.</span>
-                </li>
-            </ul>
+
+            <div class="paper">
+                <p class="paper-line">
+                    <a href="#" class="paper-title">
+                        "Insurance and Welfare: Causal Effects of the Affordable Care Act."
+                    </a>
+                </p>
+                <p class="paper-line">with Thalia Pivert. 2024.</p>
+                <p class="paper-line">
+                    <i>Term Paper for ECN190. UC Davis. <a href="#">Replication</a>. <a href="#">Slides</a>.</i>
+                </p>
+            </div>
         </div>
     </div>
 </body>

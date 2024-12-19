@@ -14,6 +14,11 @@
         a {
             color: blue;
             text-decoration: none;
+            margin-right: 20px; /* Add spacing between links */
+        }
+
+        a:visited {
+            color: blue;
         }
 
         a:hover {
@@ -22,19 +27,14 @@
 
         /* Style for name */
         .name {
-            font-size: 3em;
-            font-weight: 200;
-            color: black;
-            text-align: center;
-            margin: 40px 0;
+            font-size: 3em; /* Large font for your name */
+            font-weight: 200; /* Thinner font */
+            color: black; /* Black color */
+            text-align: center; /* Center the name */
+            margin: 40px 0; /* Add more space below title */
         }
 
-        .container {
-            padding: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
+        /* Navigation menu */
         .nav {
             font-size: 1em; /* Slightly smaller font for navigation links */
             text-align: right; /* Align menu to the right */
@@ -47,38 +47,75 @@
             margin: 0 15px; /* Add spacing between menu items */
         }
 
+        /* Photo and text layout */
+        .picture-container {
+            float: left; /* Float photo to the left */
+            width: 50%; /* Take up half the width */
+            margin-right: 20px; /* Add spacing between image and text */
+        }
+
+        .picture-container img {
+            width: 100%; /* Make the image responsive within the container */
+            height: auto; /* Maintain aspect ratio */
+            display: block; /* Ensure proper layout */
+        }
+
         .intro {
-            font-size: 0.7em; /* Smaller font size for intro */
-            line-height: 1.5; /* Slightly reduced line height */
-            margin-top: 30px;
+            font-size: 0.9em; /* Smaller font for intro text */
+            margin-top: 30px; /* Add more space between title and body */
         }
 
-        .paper {
-            margin-bottom: 5px; /* Reduce spacing between papers */
+        .intro p {
+            text-align: justify; /* Justify text for better readability */
         }
 
-        .paper-title {
-            color: blue;
+        .container {
+            padding: 30px; /* Larger margins from the edge of the website */
+            max-width: 1200px; /* Restrict container width for readability */
+            margin: 0 auto; /* Center container on the page */
+            overflow: hidden; /* Clear floats */
         }
 
-        .paper-line {
-            margin: 2px 0; /* Minimal spacing between lines in a paper */
+        @media (max-width: 768px) {
+            .nav {
+                font-size: 0.9em; /* Slightly smaller font on narrow screens */
+                text-align: right; /* Center the menu */
+                position: static; /* Place it within the flow */
+                margin-bottom: 20px; /* Add spacing below the menu */
+            }
+
+            .nav a {
+                display: inline-block;
+                margin: 0 10px;
+            }
+
+            .picture-container {
+                float: none; /* Remove float on smaller screens */
+                width: 100%; /* Full width on smaller devices */
+                margin-bottom: 20px; /* Add spacing below the picture */
+                text-align: center; /* Center-align the image */
+            }
+
+            .intro {
+                text-align: center; /* Center-align text for better readability */
+                margin-top: 10px;
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <p class="name">Victor Ortega Le Hénanff</p>
-        <p class="nav">
-            <a href="/research">Research</a> 
-            <a href="/teaching">Teaching</a> 
-            <a href="/lecture-notes">Lecture Notes</a> 
-            <a href="/literature">Literature</a> 
-            <a href="/music">Music</a> 
-            <a href="/cv">CV</a> 
-            <a href="/photos">Photos</a>
-        </p>
+       	<p class="nav">
+    	<a href="/">Home</a> 
+    	<a href="/research"style="color: black;">Research</a> 
+    	<a href="/teaching">Teaching</a> 
+    	<a href="/lecture-notes">Lecture Notes</a> 
+    	<a href="/literature">Literature</a> 
+    	<a href="/music">Music</a> 
+    	<a href="/cv">CV</a> 
+   	<a href="/photos">Photos</a>
+	</p>
 
         <div class="intro">
             <h2>RA Contributions</h2>

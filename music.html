@@ -112,6 +112,24 @@
             flex: 1; /* Ensures both iframes take equal space */
         }
 
+        .carousel {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .carousel img {
+            width: 150px;
+            height: auto;
+            cursor: pointer;
+        }
+
+        .carousel-text {
+            text-align: center;
+            margin-top: 10px;
+        }
+
         @media (max-width: 768px) {
             .nav {
                 font-size: 0.9em;
@@ -144,6 +162,15 @@
             .iframe-container iframe {
                 width: 100%;
             }
+
+            .carousel {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .carousel img {
+                width: 100px;
+            }
         }
     </style>
 </head>
@@ -151,7 +178,6 @@
 <body>
     <div class="container">
         <p class="nav">
-            <a href="darkstar.png"><img src="darkstar.png" width="150"></a>  
             <a href="/">Home</a> 
             <a href="/research" style="color: white;">Research</a> 
             <a href="/teaching">Teaching</a> 
@@ -170,7 +196,27 @@
         </div>
 
         <div class="intro">
-            <h2>to the stars</h2>
+            <h2>Extended Plays</h2>
+        </div>
+
+        <div class="carousel">
+            <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
+                <img src="36.png" alt="Artwork">
+            </a>
+            <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
+                <img src="36.png" alt="Artwork">
+            </a>
+            <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
+                <img src="36.png" alt="Artwork">
+            </a>
+            <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
+                <img src="36.png" alt="Artwork">
+            </a>
+        </div>
+
+        <div class="carousel-text">
+            <p>to the stars</p>
+            <p>2024</p>
         </div>
 
         <div class="iframe-container">

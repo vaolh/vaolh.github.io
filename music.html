@@ -58,44 +58,6 @@
             position: relative; /* Prevents movement */
         }
 
-        /* Photo and text layout */
-        .picture-container {
-            float: left;
-            width: 50%;
-            margin-right: 20px;
-        }
-
-        .picture-container img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        .intro {
-            font-size: 1em;
-            margin-top: 30px;
-        }
-
-        .intro p {
-            text-align: justify;
-        }
-
-        /* Updated paper styles */
-        .paper {
-            margin-bottom: 20px;  /* Space between papers */
-            font-size: 1em;    /* Smaller font size */
-        }
-
-        .paper-line {
-            margin: 0;            /* Remove spacing between lines within each paper */
-            padding: 0;           /* Remove padding between lines within each paper */
-            line-height: 1.4;     /* Tighter line height for paper lines */
-        }
-
-        .paper-title {
-            font-weight: normal;
-        }
-
         .container {
             padding: 30px;
             max-width: 1200px;
@@ -103,31 +65,30 @@
             overflow: hidden;
         }
 
-        .iframe-container {
-            display: flex;
-            gap: 20px; /* Space between columns */
-        }
-
-        .iframe-container iframe {
-            flex: 1; /* Ensures both iframes take equal space */
-        }
-
         .carousel {
             display: flex;
+            flex-direction: column;
+            align-items: flex-start;
             gap: 20px;
-            justify-content: center;
             margin-top: 30px;
         }
 
-        .carousel img {
+        .carousel-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .carousel-item img {
             width: 150px;
             height: auto;
             cursor: pointer;
         }
 
-        .carousel-text {
+        .carousel-item p {
+            margin-top: 5px;
+            font-size: 1em;
             text-align: center;
-            margin-top: 10px;
         }
 
         @media (max-width: 768px) {
@@ -143,32 +104,11 @@
                 margin: 0 10px;
             }
 
-            .picture-container {
-                float: none;
-                width: 100%;
-                margin-bottom: 20px;
-                text-align: center;
-            }
-
-            .intro {
-                text-align: center;
-                margin-top: 10px;
-            }
-
-            .iframe-container {
-                flex-direction: column; /* Stack iframes on smaller screens */
-            }
-
-            .iframe-container iframe {
-                width: 100%;
-            }
-
             .carousel {
-                flex-direction: column;
                 gap: 10px;
             }
 
-            .carousel img {
+            .carousel-item img {
                 width: 100px;
             }
         }
@@ -191,32 +131,35 @@
 
     <div class="container">
 
-        <div class="paper">
-            <p class="paper-line">D4RKST4R is a hip-hop musical project.</p>
-        </div>
-
         <div class="intro">
             <h2>Extended Plays</h2>
         </div>
 
         <div class="carousel">
-            <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
-                <img src="36.jpg" alt="Artwork">
-            </a>
-            <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
-                <img src="36.jpg" alt="Artwork">
-            </a>
-            <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
-                <img src="36.jpg" alt="Artwork">
-            </a>
-            <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
-                <img src="36.jpg" alt="Artwork">
-            </a>
-        </div>
-
-        <div class="carousel-text">
-            <p>to the stars</p>
-            <p>2024</p>
+            <div class="carousel-item">
+                <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
+                    <img src="36.jpg" alt="Artwork">
+                </a>
+                <p>to the stars</p>
+            </div>
+            <div class="carousel-item">
+                <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
+                    <img src="36.jpg" alt="Artwork">
+                </a>
+                <p>to the stars</p>
+            </div>
+            <div class="carousel-item">
+                <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
+                    <img src="36.jpg" alt="Artwork">
+                </a>
+                <p>to the stars</p>
+            </div>
+            <div class="carousel-item">
+                <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
+                    <img src="36.jpg" alt="Artwork">
+                </a>
+                <p>to the stars</p>
+            </div>
         </div>
 
     </div>

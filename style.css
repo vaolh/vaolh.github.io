@@ -9,21 +9,3 @@ body {
     font-family: 'Palatino', serif;
 }
 
-.nav {
-    display: flex; /* Use flexbox for layout */
-    justify-content: space-between; /* Distribute space between left and right elements */
-    align-items: center; /* Vertically center the items */
-    width: 100%; /* Make sure nav takes up the full width */
-}
-
-.nav-left {
-    float: left;
-}
-
-.nav-left ul li {
-    float: left;
-}
-
-.nav-right ul li {
-    float: right;
-}

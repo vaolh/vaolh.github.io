@@ -8,3 +8,17 @@
 body {
     font-family: 'Palatino', serif;
 }
+
+.nav {
+    display: flex; /* Use flexbox for layout */
+    justify-content: space-between; /* Separate left and right sections */
+    align-items: center; /* Vertically center items */
+}
+
+.nav-left {
+    margin-right: auto; /* Push the right-side links to the right */
+}
+
+.nav-right a {
+    margin: 0 10px; /* Add spacing between right-side menu items */
+}

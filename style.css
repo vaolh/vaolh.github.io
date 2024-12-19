@@ -11,19 +11,21 @@ body {
 
 .nav {
     display: flex; /* Use flexbox for layout */
-    justify-content: space-between; /* Distribute space between the left and right items */
+    justify-content: space-between; /* Distribute space between left and right elements */
     align-items: center; /* Vertically center the items */
-    width: 100%; /* Ensure the nav takes up the full width of the page */
+    width: 100%; /* Make sure nav takes up the full width */
 }
 
 .nav-left {
-    margin-left: 0; /* Ensure no extra margin is added to the left */
+    flex: 0; /* Prevent expansion */
 }
 
 .nav-right {
-    margin-left: auto; /* Push this section to the right */
+    flex: 1; /* Make the right section take up the remaining space */
+    display: flex; /* Make this a flex container */
+    justify-content: flex-end; /* Align all the items on the right side */
 }
 
 .nav-right a {
-    margin-left: 15px; /* Add space between the right-side navigation items */
+    margin-left: 15px; /* Space between each link on the right */
 }

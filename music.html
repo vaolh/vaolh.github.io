@@ -31,52 +31,21 @@
             text-decoration: underline;
         }
 
-        /* Style for name */
-        .name {
-            font-size: 3em;
-            font-weight: 200;
-            color: white;
-            text-align: center;
-            margin: 40px 0;
-        }
-
-        /* Navigation menu */
-        .nav {
-            font-size: 1em;
-            text-align: right;
-            position: absolute;
-            top: 10px;
-            right: 30px;
-        }
-
-        .nav a {
-            margin: 0 15px;
-        }
-
-        .nav img {
-            vertical-align: middle; /* Ensures the image aligns with the text */
-            position: relative; /* Prevents movement */
-        }
-
         .container {
             padding: 30px;
             max-width: 1200px;
             margin: 0 auto;
-            overflow: hidden;
         }
 
         .carousel {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
             gap: 20px;
+            align-items: center;
             margin-top: 30px;
         }
 
         .carousel-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            text-align: center;
         }
 
         .carousel-item img {
@@ -86,25 +55,13 @@
         }
 
         .carousel-item p {
-            margin-top: 5px;
+            margin: 0;
             font-size: 1em;
-            text-align: center;
         }
 
         @media (max-width: 768px) {
-            .nav {
-                font-size: 0.9em;
-                text-align: right;
-                position: static;
-                margin-bottom: 20px;
-            }
-
-            .nav a {
-                display: inline-block;
-                margin: 0 10px;
-            }
-
             .carousel {
+                flex-direction: column;
                 gap: 10px;
             }
 
@@ -117,24 +74,6 @@
 
 <body>
     <div class="container">
-        <p class="nav">
-            <a href="/">Home</a> 
-            <a href="/research" style="color: white;">Research</a> 
-            <a href="/teaching">Teaching</a> 
-            <a href="/lecture-notes">Lecture Notes</a> 
-            <a href="/literature">Literature</a> 
-            <a href="/music">Music</a> 
-            <a href="/cv">CV</a> 
-            <a href="/photos">Photos</a>
-        </p>
-    </div>
-
-    <div class="container">
-
-        <div class="intro">
-            <h2>Extended Plays</h2>
-        </div>
-
         <div class="carousel">
             <div class="carousel-item">
                 <a href="https://open.spotify.com/album/2K78BlDwArENFwDpvPa8sY?si=yyOx2FfeQOeWam66beVZ9A">
@@ -161,9 +100,7 @@
                 <p>to the stars</p>
             </div>
         </div>
-
     </div>
-
 </body>
 
 </html>

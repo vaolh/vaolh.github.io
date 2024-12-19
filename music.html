@@ -10,7 +10,6 @@
     <link rel="stylesheet" type="text/css" href="style.css">
 
     <style>
-        /* Set background to black */
         body {
             background-color: black;
             color: white;
@@ -31,55 +30,95 @@
             text-decoration: underline;
         }
 
-        .container {
-            padding: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-       .nav {
-       font-size: 1em;
-       text-align: right;
-       position: absolute;
-       top: 10px;
-       right: 30px;
-       }
+/* Style for name */
+.name {
+    font-size: 3em;
+    font-weight: 200;
+    color: black;
+    text-align: center;
+    margin: 40px 0;
+}
 
-       .nav a {
-       margin: 0 15px;
-       }
+/* Navigation menu */
+.nav {
+    font-size: 1em;
+    text-align: right;
+    position: absolute;
+    top: 10px;
+    right: 30px;
+}
 
-        .carousel {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            margin-top: 30px;
-        }
+.nav a {
+    margin: 0 15px;
+}
 
-        .carousel-item {
-            text-align: center;
-        }
+/* Photo and text layout */
+.picture-container {
+    float: left;
+    width: 50%;
+    margin-right: 20px;
+}
 
-        .carousel-item img {
-            width: 200px;
-            height: auto;
-            cursor: pointer;
-        }
+.picture-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
 
-        .carousel-item p {
-            margin: 0;
-            font-size: 1em;
-        }
+.intro {
+    font-size: 1em;
+    margin-top: 30px;
+}
 
-        @media (max-width: 768px) {
-            .carousel {
-                flex-direction: column;
-                gap: 15px;
-            }
+.intro p {
+    text-align: justify;
+}
 
-            .carousel-item img {
-                width: 130px;
-            }
-        }
+/* Updated paper styles */
+.paper {
+    margin-bottom: 20px;  /* Space between papers */
+    font-size: 1em;    /* Smaller font size */
+}
+
+.paper-line {
+    margin: 0;            /* Remove spacing between lines within each paper */
+    padding: 0;           /* Remove padding between lines within each paper */
+    line-height: 1.4;     /* Tighter line height for paper lines */
+}
+
+.paper-title {
+    font-weight: normal;
+}
+
+.container {
+    padding: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+.carousel {
+     display: flex;
+     gap: 20px;
+     align-items: center;
+     margin-top: 30px;
+     }
+
+     .carousel-item {
+     text-align: center;
+     }
+
+     .carousel-item img {
+     width: 200px;
+     height: auto;
+     cursor: pointer;
+     }
+
+     .carousel-item p {
+     margin: 0;
+     font-size: 1em;
+     }
+
+@media (max-width: 768px) {
     .nav {
         font-size: 0.9em;
         text-align: right;
@@ -91,14 +130,27 @@
         display: inline-block;
         margin: 0 10px;
     }
-	.intro {
-    	font-size: 1em;
-    	margin-top: 30px;
-	}
 
-	.intro p {
-    	text-align: justify;
-	}
+    .picture-container {
+        float: none;
+        width: 100%;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .intro {
+        text-align: center;
+        margin-top: 10px;
+    }
+.carousel {
+         flex-direction: column;
+         gap: 15px;
+    }
+
+    .carousel-item img {
+          width: 130px;
+    }
+}
     </style>
 </head>
 

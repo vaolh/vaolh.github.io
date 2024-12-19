@@ -17,15 +17,13 @@ body {
 }
 
 .nav-left {
-    flex: 0; /* Prevent expansion */
+    float: left;
 }
 
-.nav-right {
-    flex: 1; /* Make the right section take up the remaining space */
-    display: flex; /* Make this a flex container */
-    justify-content: flex-end; /* Align all the items on the right side */
+.nav-left ul li {
+    float: left;
 }
 
-.nav-right a {
-    margin-left: 15px; /* Space between each link on the right */
+.nav-right ul li {
+    float: right;
 }

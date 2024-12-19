@@ -6,9 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Victor Ortega</title>
 
-    <!-- Link to your external CSS file -->
-    <link rel="stylesheet" type="text/css" href="style.css">
-
     <style>
         /* Ensure all links stay blue */
         a {
@@ -35,15 +32,21 @@
         }
 
         /* Navigation menu */
-        .nav {
-            font-size: 1em; /* Slightly smaller font for navigation links */
-            text-align: right; /* Align menu to the right */
-            position: absolute; /* Place it at the top */
-            top: 10px; /* Offset from the top */
-            right: 30px; /* Offset from the right */
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .nav a {
+        .nav-left {
+            font-size: 1em; /* Slightly smaller font for navigation links */
+        }
+
+        .nav-right {
+            font-size: 1em; /* Slightly smaller font for navigation links */
+        }
+
+        .nav-right a {
             margin: 0 15px; /* Add spacing between menu items */
         }
 
@@ -77,14 +80,14 @@
         }
 
         @media (max-width: 768px) {
-            .nav {
+            .nav-left, .nav-right {
                 font-size: 0.9em; /* Slightly smaller font on narrow screens */
                 text-align: center; /* Center the menu */
                 position: static; /* Place it within the flow */
                 margin-bottom: 20px; /* Add spacing below the menu */
             }
 
-            .nav a {
+            .nav-left a, .nav-right a {
                 display: inline-block; /* Stack links for better spacing */
                 margin: 0 10px;
             }
@@ -107,15 +110,20 @@
 <body>
     <div class="container">
         <p class="name">Victor Ortega Le Hénanff</p>
-        <p class="nav">
-            <a href="/research">Research</a> 
-            <a href="/teaching">Teaching</a> 
-            <a href="/lecture-notes">Lecture Notes</a> 
-            <a href="/literature">Literature</a> 
-            <a href="/music">Music</a> 
-            <a href="/cv">CV</a> 
-            <a href="/photos">Photos</a>
-        </p>
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="/home">Home</a>
+            </div>
+            <div class="nav-right">
+                <a href="/research">Research</a>
+                <a href="/teaching">Teaching</a>
+                <a href="/lecture-notes">Lecture Notes</a>
+                <a href="/literature">Literature</a>
+                <a href="/music">Music</a>
+                <a href="/cv">CV</a>
+                <a href="/photos">Photos</a>
+            </div>
+        </div>
         <div class="picture-container">
             <picture>
                 <source srcset="home.png 1280w, home.png 640w" type="image/webp">

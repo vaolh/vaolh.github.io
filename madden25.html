@@ -36,40 +36,264 @@
 <body>
 
     <h1>NFL Passing and Rushing Statistics (2024-)</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL Passing and Rushing Statistics</title>
+    <style>
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 20px;
+        }
+        table {
+            width: 80%;
+            margin-left: 0;
+            margin-right: auto;
+            border-collapse: collapse;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            padding: 10px;
+        }
+        td {
+            padding: 8px;
+        }
+        caption {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .legend-table {
+            width: 20%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .legend-table td {
+            width: 2em;
+        }
+    </style>
+</head>
+<body>
 
-    <table class="wikitable">
-<tbody><tr>
-<th colspan="2">Legend
-</th></tr>
-<tr>
-<td style="background:#ff0; width:3em;">
-</td>
-<td>AP <a href="/wiki/NFL_MVP" class="mw-redirect" title="NFL MVP">NFL MVP</a>
-</td> </tr>
-<td style="background:#f4c842; width:3em;">
-</td>
-<td><a href="/wiki/Super_Bowl_Most_Valuable_Player_Award" title="Super Bowl Most Valuable Player Award">Super Bowl MVP</a>
-</td></tr>
-<tr>
-<td style="background:#afe6ba; width:3em;">
-</td>
-<td>Won the <a href="/wiki/Super_Bowl" title="Super Bowl">Super Bowl</a>
-</td></tr>
-<tr>
-<td style="background:#e0cef2; width:3em;">
-</td>
-<td>NFL record
-</td></tr>
-<tr>
-<td style="background:#cfecec; width:3em;">
-</td>
-<td>Led the league
-</td></tr>
-<tr>
-<td style="width:3em;"><b>Bold</b>
-</td>
-<td>Career high
-</td></tr></tbody></table>
+    <h1>NFL Passing and Rushing Statistics (2024-)</h1>
+
+    <table class="legend-table wikitable">
+        <tbody>
+            <tr>
+                <th colspan="2">Legend</th>
+            </tr>
+            <tr>
+                <td style="background:#ff0;"></td>
+                <td>AP <a href="/wiki/NFL_MVP" class="mw-redirect" title="NFL MVP">NFL MVP</a></td>
+            </tr>
+            <tr>
+                <td style="background:#f4c842;"></td>
+                <td><a href="/wiki/Super_Bowl_Most_Valuable_Player_Award" title="Super Bowl Most Valuable Player Award">Super Bowl MVP</a></td>
+            </tr>
+            <tr>
+                <td style="background:#afe6ba;"></td>
+                <td>Won the <a href="/wiki/Super_Bowl" title="Super Bowl">Super Bowl</a></td>
+            </tr>
+            <tr>
+                <td style="background:#e0cef2;"></td>
+                <td>NFL record</td>
+            </tr>
+            <tr>
+                <td style="background:#cfecec;"></td>
+                <td>Led the league</td>
+            </tr>
+            <tr>
+                <td style="width:3em;"><b>Bold</b></td>
+                <td>Career high</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 id="Regular_season">Regular season</h3>
+
+    <table class="wikitable" style="text-align:center;">
+        <thead>
+            <tr>
+                <th rowspan="2">Year</th>
+                <th rowspan="2">Team</th>
+                <th colspan="3">Games</th>
+                <th colspan="10">Passing</th>
+                <th colspan="5">Rushing</th>
+                <th colspan="1">Sacked</th>
+                <th colspan="1">Fumbles</th>
+            </tr>
+            <tr>
+                <th><abbr title="Games played">GP</abbr></th>
+                <th><abbr title="Games started">GS</abbr></th>
+                <th><abbr title="Record as a starting quarterback">Record</abbr></th>
+                <th><abbr title="Passes completed">Cmp</abbr></th>
+                <th><abbr title="Passes attempted">Att</abbr></th>
+                <th><abbr title="Completion percentage">Pct</abbr></th>
+                <th><abbr title="Passing yards">Yds</abbr></th>
+                <th><abbr title="Yards per passing attempt">Y/A</abbr></th>
+                <th><abbr title="Yards per game">Y/G</abbr></th>
+                <th><abbr title="Longest pass completion">Lng</abbr></th>
+                <th><abbr title="Passing touchdowns">TD</abbr></th>
+                <th><abbr title="Interceptions">Int</abbr></th>
+                <th><abbr title="Passer rating">Rtg</abbr></th>
+                <th><abbr title="Rushing attempts">Att</abbr></th>
+                <th><abbr title="Rushing yards">Yds</abbr></th>
+                <th><abbr title="Yards per rushing attempt">Y/A</abbr></th>
+                <th><abbr title="Longest rushing attempt">Lng</abbr></th>
+                <th><abbr title="Rushing touchdowns">TD</abbr></th>
+                <th><abbr title="Times sacked">Sck</abbr></th>
+                <th><abbr title="Fumbles">Fum</abbr></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th><a href="https://en.wikipedia.org/wiki/2024" title="2024 NFL season">2024</a></th>
+                <th><a href="https://en.wikipedia.org/wiki/New_York_Giants" title="2024 New York Giant season">NYG</a></th>
+                <td>17</td>
+                <td>17</td>
+                <td>9–8</td>
+                <td>391</td>
+                <td style="background:#cfecec;">622</td>
+                <td>62</td>
+                <td style="background:#cfecec;">5,327</td>
+                <td>8.6</td>
+                <td style="background:#cfecec;">313.4</td>
+                <td>70</td>
+                <td>37</td>
+                <td>18</td>
+                <td>97.9</td>
+                <td>88</td>
+                <td>716</td>
+                <td style="background:#cfecec;">8.1</td>
+                <td>23</td>
+                <td>7</td>
+                <td style="background:#e0cef2;">117</td>
+                <td>13</td>
+            </tr>
+            <tr>
+                <th style="background:#ff0;"><a href="https://en.wikipedia.org/wiki/2025" title="2025 NFL season">2025</a></th>
+                <th><a href="https://en.wikipedia.org/wiki/New_York_Giants" title="2025 New York Giant season">NYG</a></th>
+                <td>17</td>
+                <td>17</td>
+                <td>12–5</td>
+                <td>376</td>
+                <td style="background:#cfecec;">581</td>
+                <td>64</td>
+                <td style="background:#cfecec;">5,237</td>
+                <td>9.0</td>
+                <td style="background:#cfecec;">308.1</td>
+                <td>91</td>
+                <td>47</td>
+                <td>14</td>
+                <td>110.4</td>
+                <td>231</td>
+                <td style="background:#cfecec;">1,429</td>
+                <td>6.2</td>
+                <td>28</td>
+                <td>7</td>
+                <td style="background:#cfecec;">98</td>
+                <td>7</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 id="Playoffs">Playoffs</h3>
+
+    <table class="wikitable" style="text-align:center;">
+        <thead>
+            <tr>
+                <th rowspan="2">Year</th>
+                <th rowspan="2">Team</th>
+                <th colspan="3">Games</th>
+                <th colspan="10">Passing</th>
+                <th colspan="5">Rushing</th>
+                <th colspan="1">Sacked</th>
+                <th colspan="1">Fumbles</th>
+            </tr>
+            <tr>
+                <th><abbr title="Games played">GP</abbr></th>
+                <th><abbr title="Games started">GS</abbr></th>
+                <th><abbr title="Record as a starting quarterback">Record</abbr></th>
+                <th><abbr title="Passes completed">Cmp</abbr></th>
+                <th><abbr title="Passes attempted">Att</abbr></th>
+                <th><abbr title="Completion percentage">Pct</abbr></th>
+                <th><abbr title="Passing yards">Yds</abbr></th>
+                <th><abbr title="Yards per passing attempt">Y/A</abbr></th>
+                <th><abbr title="Yards per game">Y/G</abbr></th>
+                <th><abbr title="Longest pass completion">Lng</abbr></th>
+                <th><abbr title="Passing touchdowns">TD</abbr></th>
+                <th><abbr title="Interceptions">Int</abbr></th>
+                <th><abbr title="Passer rating">Rtg</abbr></th>
+                <th><abbr title="Rushing attempts">Att</abbr></th>
+                <th><abbr title="Rushing yards">Yds</abbr></th>
+                <th><abbr title="Yards per rushing attempt">Y/A</abbr></th>
+                <th><abbr title="Longest rushing attempt">Lng</abbr></th>
+                <th><abbr title="Rushing touchdowns">TD</abbr></th>
+                <th><abbr title="Times sacked">Sck</abbr></th>
+                <th><abbr title="Fumbles">Fum</abbr></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th><a href="https://en.wikipedia.org/wiki/2024" title="2024 NFL season">2024</a></th>
+                <th><a href="https://en.wikipedia.org/wiki/New_York_Giants" title="2024 New York Giant season">NYG</a></th>
+                <td>3</td>
+                <td>3</td>
+                <td>2–1</td>
+                <td>86</td>
+                <td>118</td>
+                <td>72</td>
+                <td>1,010</td>
+                <td>8.6</td>
+                <td style="background:#cfecec;">336.6</td>
+                <td>80</td>
+                <td>8</td>
+                <td>2</td>
+                <td>110.2</td>
+                <td>14</td>
+                <td>27</td>
+                <td>1.9</td>
+                <td>14</td>
+                <td>0</td>
+                <td>10</td>
+                <td>0</td>
+            </tr>
+            <tr>
+                <th><a href="https://en.wikipedia.org/wiki/2024" title="2025 NFL season">2025</a></th>
+                <th><a href="https://en.wikipedia.org/wiki/New_York_Giants" title="2025 New York Giant season">NYG</a></th>
+                <td>1</td>
+                <td>1</td>
+                <td>0–1</td>
+                <td>17</td>
+                <td>38</td>
+                <td>44</td>
+                <td>340</td>
+                <td>8.9</td>
+                <td>340</td>
+                <td>70</td>
+                <td>4</td>
+                <td>3</td>
+                <td>78.6</td>
+                <td>7</td>
+                <td>53</td>
+                <td>7.5</td>
+                <td>14</td>
+                <td>0</td>
+                <td>5</td>
+                <td>0</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>
+
 
     <h3 id="Regular_season">Regular season</h3>
 

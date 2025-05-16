@@ -19,6 +19,9 @@
             padding: 10px;
             vertical-align: top;
             word-wrap: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         th {
             background-color: #f0f0f0;
@@ -31,6 +34,10 @@
         }
         .notes {
             width: 40%;
+            white-space: normal;
+        }
+        .journal, .title {
+            max-width: 200px;
         }
     </style>
 </head>
@@ -42,9 +49,9 @@
     <caption>Papers Read</caption>
     <thead>
         <tr>
-            <th>Title</th>
+            <th class="title">Title</th>
             <th>Author(s)</th>
-            <th>Journal</th>
+            <th class="journal">Journal</th>
             <th>Field</th>
             <th>Date</th>
             <th class="notes">Notes</th>
@@ -54,10 +61,10 @@
         <tr>
             <td>Jeremy Bentham’s Spanish American Utopia</td>
             <td>Annie L. Cot</td>
-            <td>Revue d’Études Benthamiennes</td>
+            <td class="journal" title="Revue d’Études Benthamiennes">REB</td>
             <td>IDSC</td>
             <td>2025-05-15</td>
-            <td class="notes"></td>
+            <td class="notes">Explores Bentham’s political theory in the context of Spanish America; strong IDSC relevance, mixes philosophy, law, and economics.</td>
         </tr>
     </tbody>
 </table>

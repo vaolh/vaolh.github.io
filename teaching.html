@@ -115,17 +115,29 @@ a:hover {
 </head>
 
 <body>
-    <div class="container">
-       	<p class="nav">
-    	<a href="/">Home</a> 
-    	<a href="/research">Research</a> 
-    	<a href="/teaching"style="color: black;">Teaching</a> 
-    	<a href="/lecture-notes">Lecture Notes</a> 
-    	<a href="/literature">Literature</a> 
-    	<a href="/music">Music</a> 
-    	<a href="/cv">CV</a> 
-        <a href="/aboutme">About Me</a>
-	</p>
+<div id="navbar"></div>
+<script>
+  fetch("/nav.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("navbar").innerHTML = html;
+      const path = window.location.pathname.replace(/\/$/, "");
+      const firstSegment = path.split("/")[1] || "";
+      const normalized = (() => {
+        if (path === "") return "/"; 
+        if (path.endsWith(".html") && firstSegment === "") {
+          return "/" + path.replace("/", "").replace(".html", "");
+        }
+        return "/" + firstSegment;
+      })();
+      document.querySelectorAll('#navbar a').forEach(link => {
+        const href = link.getAttribute("href").replace(/\/$/, "");
+        if (href === normalized || href === path) {
+          link.classList.add("active");
+        }
+      });
+    });
+</script>
 
         <div class="intro">
             <h2>Facultad de Economía, UNAM</h2>
@@ -137,7 +149,7 @@ a:hover {
 
             <div class="paper">
                 <p class="paper-line">
-                    <a href="503" class="paper-title">
+                    <a href="teaching/503" class="paper-title">
                         Intermediate Macroeconomics II
                     </a>
                 </p>
@@ -147,7 +159,7 @@ a:hover {
 
             <div class="paper">
                 <p class="paper-line">
-                    <a href="403" class="paper-title">
+                    <a href="teaching/403" class="paper-title">
                         Statistics
                     </a>
                 </p>

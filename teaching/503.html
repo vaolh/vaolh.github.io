@@ -71,8 +71,8 @@ a:hover {
 
 .paper-line {
     margin: 0;            
-    padding: 0;          
-    line-height: 1.4;    
+    padding: 0;           
+    line-height: 1.4;     
 }
 
 .paper-title {
@@ -115,72 +115,73 @@ a:hover {
 </head>
 
 <body>
-    <div class="container">
-       	<p class="nav">
-    	<a href="/">Home</a> 
-    	<a href="/research">Research</a> 
-    	<a href="/teaching"style="color: black;">Teaching</a> 
-    	<a href="/lecture-notes">Lecture Notes</a> 
-    	<a href="/literature">Literature</a> 
-    	<a href="/music">Music</a> 
-    	<a href="/cv">CV</a> 
-        <a href="/aboutme">About Me</a>
-	</p>
+<div id="navbar"></div>
+<script>
+  fetch("/nav.html")
+    .then(res => res.text())
+    .then(html => {
+      document.getElementById("navbar").innerHTML = html;
+      const path = window.location.pathname.replace(/\/$/, "");
+      const firstSegment = path.split("/")[1] || "";
+      const normalized = (() => {
+        if (path === "") return "/"; 
+        if (path.endsWith(".html") && firstSegment === "") {
+          return "/" + path.replace("/", "").replace(".html", "");
+        }
+        return "/" + firstSegment;
+      })();
+      document.querySelectorAll('#navbar a').forEach(link => {
+        const href = link.getAttribute("href").replace(/\/$/, "");
+        if (href === normalized || href === path) {
+          link.classList.add("active");
+        }
+      });
+    });
+</script>
 
         <div class="intro">
-            <h2>403 - Estadística</h2>
+            <h2>503 - Macroeconomía Intermedia II</h2>
 	</div>
     
             <div class="paper">
-                <p class="paper-line">Bienvenidos al sitio para el periodo 2024-2</p>
-            </div>
-
-            <div class="paper">
-                <p class="paper-line"><a href="/teaching/403/temario.pdf" class="paper-title">
-                        Syllabus. 
-                    </a></p>
+                <p class="paper-line">Bienvenidos al sitio para el periodo 2024-1</p>
             </div>
 
             <div class="paper">
                 <p class="paper-line">
-                    <a href="/teaching/403/tema1.pdf" class="paper-title">
+                    <a href="/teaching/503/tema1.pdf" class="paper-title">
                         Tema 1. 
-                    </a> Introducción al Análisis Estadístico.  
+                    </a> Cuentas Nacionales y Balanza de Pagos. Comparativa de Economías Internacionales.
                 </p>
                <p class="paper-line">
-                    <a href="/teaching/403/tema2.pdf" class="paper-title">
+                    <a href="/teaching/503/tema2.pdf" class="paper-title">
                         Tema 2. 
-                    </a> Medidas de Tendencia Central y Dispersión.
+                    </a> Introducción a los Tipos de Cambio, Tasas de Interés y Mercados Financieros.
                 </p>
                <p class="paper-line">
-                    <a href="#" class="paper-title">
+                    <a href="/teaching/503/tema3.pdf" class="paper-title">
                         Tema 3. 
-                    </a> Taller de RStudio.
+                    </a> Enfoque de Largo Plazo de los Tipos de Cambio. El Nivel de Precios.
                 </p>
                <p class="paper-line">
-                    <a href="/teaching/403/tema4.pdf" class="paper-title">
+                    <a href="/teaching/503/tema4.pdf" class="paper-title">
                         Tema 4. 
-                    </a>Probabilidad.
+                    </a>Enfoque de Corto Plazo de los Tipos de Cambio. Mercado de Dinero y Consolidación de un Modelo Cambiario.
                 </p>
                <p class="paper-line">
-                    <a href="/teaching/403/tema5.pdf" class="paper-title">
+                    <a href="/teaching/503/tema5.pdf" class="paper-title">
                         Tema 5. 
-                    </a> Variable Aleatoria y Funciones de Densidad.
+                    </a> Modelo IS-LM-BP. El papel de la Balanza de Pagos y las Políticas Fiscales/Monetarias.
                 </p>
                <p class="paper-line">
-                    <a href="#" class="paper-title">
+                    <a href="/teaching/503/tema6.pdf" class="paper-title">
                         Tema 6. 
-                    </a> Presentaciones Distribuciones.
+                    </a> Modelo OA-DA. Efectos Monetarios, Choques de Oferta, Tipo de Cambio y Déficits.
                 </p>
                <p class="paper-line">
-                    <a href="/teaching/403/tema7.pdf" class="paper-title">
+                    <a href="/teaching/503/tema7.pdf" class="paper-title">
                         Tema 7. 
-                    </a> Teorema Central del Límite.
-                </p>
-               <p class="paper-line">
-                    <a href="/teaching/403/tema8.pdf" class="paper-title">
-                        Tema 8. 
-                    </a> Estimación.
+                    </a> Modelo de Crecimiento Neoclásico de Solow y los determinantes del Crecimiento Económico en los países.
                 </p>
             </div>
 

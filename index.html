@@ -9,12 +9,11 @@
     <!-- Link to your external CSS file -->
     <link rel="stylesheet" type="text/css" href="style.css">
 
-    <style>
-        /* Ensure all links stay blue */
+<style>
         a {
             color: blue;
             text-decoration: none;
-            margin-right: 20px; /* Add spacing between links */
+            margin-right: 20px;
         }
 
         a:visited {
@@ -25,63 +24,83 @@
             text-decoration: underline;
         }
 
-        /* Style for name */
         .name {
-            font-size: 3em; /* Large font for your name */
-            font-weight: 200; /* Thinner font */
-            color: black; /* Black color */
-            text-align: center; /* Center the name */
-            margin: 40px 0; /* Add more space below title */
+            font-size: 3em;
+            font-weight: 200;
+            color: black;
+            text-align: center;
+            margin: 40px 0;
         }
 
-        /* Navigation menu */
         .nav {
-            font-size: 1em; /* Slightly smaller font for navigation links */
-            text-align: right; /* Align menu to the right */
-            position: absolute; /* Place it at the top */
-            top: 10px; /* Offset from the top */
-            right: 30px; /* Offset from the right */
+            font-size: 1em;
+            text-align: right;
+            position: absolute;
+            top: 10px;
+            right: 30px;
+            margin-bottom: 50px;
         }
 
         .nav a {
-            margin: 0 15px; /* Add spacing between menu items */
+            margin: 0 15px;
         }
 
-        /* Photo and text layout */
         .picture-container {
-            float: left; /* Float photo to the left */
-            width: 50%; /* Take up half the width */
-            margin-right: 20px; /* Add spacing between image and text */
+            float: left;
+            width: 50%;
+            margin-right: 20px;
         }
 
         .picture-container img {
-            width: 100%; /* Make the image responsive within the container */
-            height: auto; /* Maintain aspect ratio */
-            display: block; /* Ensure proper layout */
+            width: 100%;
+            height: auto;
+            display: block;
         }
 
         .intro {
-            font-size: 0.9em; /* Smaller font for intro text */
-            margin-top: 30px; /* Add more space between title and body */
+            font-size: 1em;
+            margin-top: 30px;
         }
 
         .intro p {
-            text-align: justify; /* Justify text for better readability */
+            text-align: justify;
+        }
+
+        .paper {
+            margin-top: 30px; 
+            margin-bottom: 30px;
+            font-size: 1em;
+        }
+
+        .paper-line {
+            margin: 0;
+            padding: 0;
+            line-height: 1.4;
+        }
+
+        .paper-line a {
+            margin-right: 0;
+            margin-left: 0;
+            text-decoration: none;
+        }
+
+        .paper-line a:hover {
+            text-decoration: underline;
         }
 
         .container {
-            padding: 30px; /* Larger margins from the edge of the website */
-            max-width: 1200px; /* Restrict container width for readability */
-            margin: 0 auto; /* Center container on the page */
-            overflow: hidden; /* Clear floats */
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            overflow: hidden;
         }
 
         @media (max-width: 768px) {
             .nav {
-                font-size: 0.9em; /* Slightly smaller font on narrow screens */
-                text-align: right; /* Center the menu */
-                position: static; /* Place it within the flow */
-                margin-bottom: 20px; /* Add spacing below the menu */
+                font-size: 0.9em;
+                text-align: right;
+                position: static;
+                margin-bottom: 20px;
             }
 
             .nav a {
@@ -90,14 +109,14 @@
             }
 
             .picture-container {
-                float: none; /* Remove float on smaller screens */
-                width: 100%; /* Full width on smaller devices */
-                margin-bottom: 20px; /* Add spacing below the picture */
-                text-align: center; /* Center-align the image */
+                float: none;
+                width: 100%;
+                margin-bottom: 20px;
+                text-align: center;
             }
 
             .intro {
-                text-align: center; /* Center-align text for better readability */
+                text-align: center;
                 margin-top: 10px;
             }
         }

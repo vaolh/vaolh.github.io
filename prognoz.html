@@ -1,13 +1,11 @@
 <html lang="en-us">
 
 <head>
-    <script defer="" src="https://cloud.umami.is/script.js" data-website-id="cf31dfd6-de16-4374-befb-bc57d5daa038"></script>
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="cf31dfd6-de16-4374-befb-bc57d5daa038"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Victor Ortega</title>
-
     <link rel="stylesheet" type="text/css" href="style.css">
-
     <style>
         body {
             background-color: #FFEFCB;
@@ -68,13 +66,16 @@
         }
 
         .paper {
-            margin-bottom: 20px;  
-            font-size: 1em;    /* Smaller font size */
+            margin-bottom: 20px;
+            font-size: 1em;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .paper-line {
-            margin: 0;            
-            padding: 0;           
+            margin: 0;
+            padding: 0;
             line-height: 1.4;
         }
 
@@ -82,11 +83,17 @@
             font-weight: normal;
         }
 
-        .container {
-            padding: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-            overflow: hidden;
+        .mt-2 {
+            margin-top: 0.5rem;
+        }
+
+        .italic {
+            font-style: italic;
+        }
+
+        .post-date {
+            color: #555;
+            font-size: 0.9em;
         }
 
         @media (max-width: 768px) {
@@ -114,31 +121,19 @@
                 margin-top: 10px;
             }
         }
-        .mt-2 {
-        margin-top: 0.5rem;
-        }
-
-        .italic {
-        font-style: italic;
-        }
-        .post-date {
-        color: #555;
-        font-size: 0.9em;
-        }
-
     </style>
 </head>
 
 <body>
     <div class="container">
         <p class="nav">
-            <a href="/">Home</a> 
-            <a href="/research">Research</a> 
-            <a href="/teaching">Teaching</a> 
-            <a href="/lecture-notes">Lecture Notes</a> 
-            <a href="/literature"style="color: black;">Literature</a> 
-            <a href="/music">Music</a> 
-        <a href="/cv.pdf">CV</a> 
+            <a href="/">Home</a>
+            <a href="/research">Research</a>
+            <a href="/teaching">Teaching</a>
+            <a href="/lecture-notes">Lecture Notes</a>
+            <a href="/literature" style="color: black;">Literature</a>
+            <a href="/music">Music</a>
+            <a href="/cv.pdf">CV</a>
             <a href="/aboutme">About Me</a>
         </p>
 
@@ -147,19 +142,20 @@
         </div>
         <div class="mt-2 italic post-date">Tue, Aug 27, 2024</div>
 
-    
-    <div class="paper">
+        <div class="paper">
+            <div style="float: left; width: 300px; margin: 0 20px 10px 0;">
+                <img src="colby.jpeg" alt="Colby" style="width: 100%; height: auto; display: block;">
+                <div style="font-size: 0.9em; color: #555; margin-top: 5px;">
+                    Colby the Computer, who has the entire Bible programmed into his memory.
+                </div>
+            </div>
 
-        <div style="text-align: center; margin: 20px 0;">
-            <img src="colby.jpeg" alt="Colby" style="max-width: 100%; height: 50%;">
+            <p>This incredibly cute stuffed anthropomorphic computer is called Colby.</p>
+
+            <p>Sed aliquam mi libero, ac condimentum enim luctus vel. Integer orci erat, molestie vel magna vel, vestibulum varius nisl. Cras posuere pharetra magna nec malesuada. Nulla facilisi. Aenean tincidunt risus id venenatis imperdiet. Nunc lobortis dictum metus, eget porttitor metus lacinia et. In et..</p>
+
+            <div style="clear: both;"></div>
         </div>
-
-        <p>This incredibly cute stuffed antropomorphic computer is called Colby.</p>
-
-        <p>Sed aliquam mi libero, ac condimentum enim luctus vel. Integer orci erat, molestie vel magna vel, vestibulum varius nisl. Cras posuere pharetra magna nec malesuada. Nulla facilisi. Aenean tincidunt risus id venenatis imperdiet. Nunc lobortis dictum metus, eget porttitor metus lacinia et. In et..</p>
-    </div>
-
-        
     </div>
 </body>
 

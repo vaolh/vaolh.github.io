@@ -8,3 +8,192 @@
 body {
     font-family: 'Palatino', serif;
 }
+
+a:hover {
+    text-decoration: underline;
+}
+
+.name {
+    font-size: 3em;
+    font-weight: 200;
+    color: black;
+    text-align: center;
+    margin: 40px 0;
+}
+
+.nav {
+    font-size: 1.3rem;
+    text-align: right;
+    position: absolute;
+    top: 10px;
+    right: 30px;
+}
+
+.nav a {
+    margin: 0 15px;
+}
+
+.picture-container {
+    float: left;
+    width: 50%;
+    margin-right: 20px;
+}
+
+.picture-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.intro {
+    font-size: 1em;
+    margin-top: 50px;
+}
+
+.intro h2 {
+margin-top: 30px;
+font-size: 1.85em;
+}
+
+.intro p {
+    text-align: justify;
+}
+
+.paper {
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+}
+
+.paper-line {
+    margin: 0;
+    padding: 0;
+    line-height: 1.4;
+}
+
+.paper-title {
+    font-weight: normal;
+}
+
+.paper > p:first-of-type {
+margin-top: 0;
+}
+
+.container {
+    padding: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .nav {
+        font-size: 0.9em;
+        text-align: right;
+        position: static;
+        margin-bottom: 20px;
+    }
+    
+    .nav a {
+        display: inline-block;
+        margin: 0 10px;
+    }
+    
+    .picture-container {
+        float: none;
+        width: 100%;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .intro {
+        text-align: center;
+        margin-top: 10px;
+    }
+}
+
+
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.italic {
+    font-style: italic;
+}
+
+.post-date {
+    color: #555;
+    font-size: 1.1em;
+    margin-bottom: 30px;
+}
+
+/* Footnote styles */
+.footnote-ref {
+    color: #8B4513;
+    text-decoration: none;
+    font-size: 0.8em;
+    vertical-align: super;
+    line-height: 0;
+}
+
+.footnote-ref:hover {
+    text-decoration: underline;
+}
+
+.footnotes {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+    font-size: 0.9em;
+}
+
+.footnotes h3 {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.footnote {
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.footnote-number {
+    color: #8B4513;
+    font-weight: bold;
+}
+
+.footnote-backref {
+    color: #8B4513;
+    text-decoration: none;
+    margin-left: 5px;
+    font-size: 0.8em;
+}
+
+.footnote-backref:hover {
+    text-decoration: underline;
+}
+
+.video-grid {
+    display: flex;
+    gap: 5px;
+    margin: 20px 0;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+}
+
+.video-container {
+    flex: 1;
+}
+
+.video-container video {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .video-grid {
+        flex-wrap: wrap;
+    }
+}

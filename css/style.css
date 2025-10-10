@@ -28,6 +28,14 @@ a:hover {
     font-size: 1.3rem !important;
 }
 
+.nav a:hover {
+  text-decoration: underline;
+}
+
+.nav a.active {
+  color: black;
+}
+
 .nav a {
     margin: 0 15px;
 }

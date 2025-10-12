@@ -8,117 +8,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Victor Ortega</title>
 
-    <!-- Link to your external CSS file -->
     <link rel="stylesheet" type="text/css" href="css/style.css">
 
     <style>
-        /* Ensure all links stay blue */
-a {
-    color: blue;
-    text-decoration: none;
-    margin-right: 20px;
-}
-
-a:visited {
-    color: blue;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-/* Style for name */
-.name {
-    font-size: 3em;
-    font-weight: 200;
-    color: black;
-    text-align: center;
-    margin: 40px 0;
-}
-
-/* Navigation menu */
-.nav {
-    font-size: 1em;
-    text-align: right;
-    position: absolute;
-    top: 10px;
-    right: 30px;
-}
-
-.nav a {
-    margin: 0 15px;
-}
-
-/* Photo and text layout */
-.picture-container {
-    float: left;
-    width: 50%;
-    margin-right: 20px;
-}
-
-.picture-container img {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-.intro {
-    font-size: 1em;
-    margin-top: 30px;
-}
-
-.intro p {
-    text-align: justify;
-}
-
-/* Updated paper styles */
-.paper {
-    margin-bottom: 20px;  /* Space between papers */
-    font-size: 1em;    /* Smaller font size */
-}
-
-.paper-line {
-    margin: 0;            /* Remove spacing between lines within each paper */
-    padding: 0;           /* Remove padding between lines within each paper */
-    line-height: 1.4;     /* Tighter line height for paper lines */
-}
-
-.paper-title {
-    font-weight: normal;
-}
-
-.container {
-    padding: 30px;
-    max-width: 1200px;
-    margin: 0 auto;
-    overflow: hidden;
-}
-
-@media (max-width: 768px) {
-    .nav {
-        font-size: 0.9em;
-        text-align: right;
-        position: static;
-        margin-bottom: 20px;
+    a {
+        color: blue;
+        text-decoration: none;
+        margin-right: 20px;
     }
 
-    .nav a {
-        display: inline-block;
-        margin: 0 10px;
+    a:visited {
+        color: blue;
     }
-
-    .picture-container {
-        float: none;
-        width: 100%;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-
-    .intro {
-        text-align: center;
-        margin-top: 10px;
-    }
-}
     </style>
 </head>
 
@@ -128,20 +29,34 @@ a:hover {
     	<a href="/">Home</a> 
     	<a href="/research">Research</a> 
     	<a href="/teaching">Teaching</a> 
-    	<a href="/lecture-notes"style="color: black;">Lecture Notes</a> 
+        <a href="/lecture-notes" class="active">Lecture Notes</a>
     	<a href="/literature">Literature</a> 
     	<a href="/music">Music</a> 
         <a href="/cv.pdf">CV</a> 
         <a href="/aboutme">About Me</a>
 	</p>
 
-            <div class="intro">
-            <h2>Columbia</h2>
-	</div>
+        <div class="intro">
+            <h2>Columbia University</h2>
+	    </div>
+
+        <div class="paper">
+                <p class="paper-line"><i>Undergraduate Level</i></p>
+            </div>
+
+            <div class="paper">
+                <p class="paper-line">
+                    <a href="notes/analysis2.pdf" class="paper-title">
+                        Analysis II
+                    </a>
+                </p>
+                <p class="paper-line">Dr. Jeanne Boursier.</p>
+                <p class="paper-line">Fall 2025.</p>
+            </div>
 
         <div class="intro">
             <h2>Universidad Nacional Autónoma de México</h2>
-	</div>
+	    </div>
     
             <div class="paper">
                 <p class="paper-line"><i>Undergraduate Level</i></p>
@@ -160,7 +75,7 @@ a:hover {
             <div class="paper">
                 <p class="paper-line">
                     <a href="notes/analisismatematico.pdf" class="paper-title">
-                        Análisis Matemático I
+                        Análisis I
                     </a>
                 </p>
                 <p class="paper-line">Dr. Fidel Casarrubias Segura.</p>

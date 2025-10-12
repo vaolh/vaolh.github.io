@@ -20,99 +20,6 @@ a {
 a:visited {
     color: blue;
 }
-
-a:hover {
-    text-decoration: underline;
-}
-
-.name {
-    font-size: 3em;
-    font-weight: 200;
-    color: black;
-    text-align: center;
-    margin: 40px 0;
-}
-
-.nav {
-    font-size: 1em;
-    text-align: right;
-    position: absolute;
-    top: 10px;
-    right: 30px;
-}
-
-.nav a {
-    margin: 0 15px;
-}
-
-.picture-container {
-    float: left;
-    width: 50%;
-    margin-right: 20px;
-}
-
-.picture-container img {
-    width: 100%;
-    height: auto;
-    display: block;
-}
-
-.intro {
-    font-size: 1em;
-    margin-top: 30px;
-}
-
-.intro p {
-    text-align: justify;
-}
-
-.paper {
-    margin-bottom: 20px;  /* Space between papers */
-    font-size: 1em;    /* Smaller font size */
-}
-
-.paper-line {
-    margin: 0;            
-    padding: 0;           
-    line-height: 1.4;     
-}
-
-.paper-title {
-    font-weight: normal;
-}
-
-.container {
-    padding: 30px;
-    max-width: 1200px;
-    margin: 0 auto;
-    overflow: hidden;
-}
-
-@media (max-width: 768px) {
-    .nav {
-        font-size: 0.9em;
-        text-align: right;
-        position: static;
-        margin-bottom: 20px;
-    }
-
-    .nav a {
-        display: inline-block;
-        margin: 0 10px;
-    }
-
-    .picture-container {
-        float: none;
-        width: 100%;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-
-    .intro {
-        text-align: center;
-        margin-top: 10px;
-    }
-}
     </style>
 </head>
 
@@ -120,7 +27,7 @@ a:hover {
     <div class="container">
        	<p class="nav">
     	<a href="/">Home</a> 
-    	<a href="/research"style="color: black;">Research</a> 
+        <a href="/research" class="active">Research</a>
     	<a href="/teaching">Teaching</a> 
     	<a href="/lecture-notes">Lecture Notes</a> 
     	<a href="/literature">Literature</a> 
@@ -130,8 +37,22 @@ a:hover {
 	</p>
 
         <div class="intro">
-            <h2>RA Contributions</h2>
+            <h2>Research Assistant Contributions</h2>
 	</div>
+
+
+            <div class="paper">                    
+                <p class="paper-line">These are papers I have worked on as a Predoc. You can find me in the thank you notes!</p>
+            </div>
+
+                        <div class="paper">
+                <p class="paper-line">
+                    <a href="https://www.brookings.edu/wp-content/uploads/2025/09/1_Erten_Stiglitz_Verhoogen_unembargoed_.pdf" class="paper-title">
+                 "Employment Impacts of the CHIPS Act." </a>
+                </p>
+                <p class="paper-line">by Bilge Erten, Joseph E. Stiglitz, and Eric Verhoogen. 2025.</p>
+                <p class="paper-line"><i>Brookings Papers on Economic Activity, Fall 2025. </i></p>
+            </div>
 
 
             <div class="paper">
@@ -148,7 +69,7 @@ a:hover {
                         "All Aboard! Railroad Access and Mexico-US Mass Migration."
                     </a>
                 </p>
-                <p class="paper-line">by David Escamilla Guerrero. October 2024.</p>
+                <p class="paper-line">by David Escamilla Guerrero. 2024.</p>
                 <p class="paper-line"><i>Oxford Economic and Social History Working Paper 212. </i></p>
             </div>
 

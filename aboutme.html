@@ -16,107 +16,6 @@
         a:visited {
             color: blue;
         }
-
-        a:hover {
-            text-decoration: underline;
-        }
-
-        .name {
-            font-size: 3em;
-            font-weight: 200;
-            color: black;
-            text-align: center;
-            margin: 40px 0;
-        }
-
-        .nav {
-            font-size: 1em;
-            text-align: right;
-            position: absolute;
-            top: 10px;
-            right: 30px;
-            margin-bottom: 50px;
-        }
-
-        .nav a {
-            margin: 0 15px;
-        }
-
-        .picture-container {
-            float: left;
-            width: 50%;
-            margin-right: 20px;
-        }
-
-        .picture-container img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        .intro {
-            font-size: 1em;
-            margin-top: 30px;
-        }
-
-        .intro p {
-            text-align: justify;
-        }
-
-        .paper {
-            margin-top: 30px; 
-            margin-bottom: 30px;
-            font-size: 1em;
-        }
-
-        .paper-line {
-            margin: 0;
-            padding: 0;
-            line-height: 1.4;
-        }
-
-        .paper-line a {
-            margin-right: 0;
-            margin-left: 0;
-            text-decoration: none;
-        }
-
-        .paper-line a:hover {
-            text-decoration: underline;
-        }
-
-        .container {
-            padding: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-            overflow: hidden;
-        }
-
-        @media (max-width: 768px) {
-            .nav {
-                font-size: 0.9em;
-                text-align: right;
-                position: static;
-                margin-bottom: 20px;
-            }
-
-            .nav a {
-                display: inline-block;
-                margin: 0 10px;
-            }
-
-            .picture-container {
-                float: none;
-                width: 100%;
-                margin-bottom: 20px;
-                text-align: center;
-            }
-
-            .intro {
-                text-align: center;
-                margin-top: 10px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -128,8 +27,8 @@
             <a href="/lecture-notes">Lecture Notes</a> 
             <a href="/literature">Literature</a> 
             <a href="/music">Music</a> 
-        <a href="/cv.pdf">CV</a> 
-            <a href="/aboutme" style="color: black;">About Me</a>
+            <a href="/cv.pdf">CV</a> 
+            <a href="/aboutme" class="active">About Me</a>
         </p>
 
     <div class="intro">

@@ -1,134 +1,138 @@
-    @font-face {
-    font-family: 'EB Garamond';
-    src: url('../docs/garamond.ttf') format('truetype');
-    font-weight: 100 700;
-    font-style: normal;
-    }
-    html {
-    font-family: 'EB Garamond', serif;
-    font-weight: normal;
-    }
-    main { 
-        width: 80%; 
-        margin: auto; 
-    }
-    .row {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        max-width: 800px;
-        margin: 0 auto;
-        gap: 2em;
-        width: 100%;
-    }
-    .column {
-        display:flex;
-        flex-direction: column;
-    }
-    .column.right {
-        padding: 0 10px;
-    }
-    .column.right p {
-        line-height: 1.5rem;
-    }
-    .container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 10px 10px 50px 10px;
-        font-size: 1.05rem;
-        line-height: 1.4rem;
-    }
-    @media screen and (min-width: 800px) {
-        .row {
-            padding-top: 3rem;
-        }
-        .column.left {
-            flex: 2;
-        }
-        .column.right {
-            flex: 1
-        }
-        .container {
-            margin: 1.2rem auto 0 auto;
-        }
-    }
-    h1, h2, h3 {
-        font-weight: 600;
-    }
-    h2, h3 {
-        font-weight: 500;
-    }
-    h1 {
-        font-size: 1.5rem;
-    }
-    h2 {
-        margin-top: 3rem;
-    }
-    .intro {
-        max-width: 500px;
-    }
-    div.picture-container {
-        width: 100%;
-    }
-    img {
-        width: 100%;
-    }
-    a {
-        color: #005eff;
-        text-decoration: none;
-    }
-    a:hover {
-        text-decoration: underline;
-    }
-    p.title {
-        font-weight: 500;
-        margin-bottom: 0
-    }
-    .directory {
-    list-style: none;
-    display: flex;
-    justify-content: flex-start;
-    gap: 0.5rem;
-    width: 80%;
-    max-width: 800px;
-    margin: 2rem auto 0 auto;
-    padding: 0;
-    }
-    .directory .active-item {
-    margin: 0 0.25rem;
-    }
-    .directory li:first-child {
-    margin-left: 0;
-    }
-    .directory li:first-child a {
-    margin-left: 0;
-    }
-    .directory li a {
-    margin: 0 0.25rem;
-    }
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('../docs/garamond.ttf') format('truetype');
+  font-weight: 100 700;
+  font-style: normal;
+}
 
-    p.desc {
-        margin-top: 0;
-        margin-bottom: 0
-    }
-    p.links {
-        margin-top: 0;
-        margin-bottom: 0;
-        font-size: .95rem;
-    }
-    div.links-list p {
-        margin: .3rem auto;
-        font-size: 1rem;
-        line-height: 1.2rem;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        overflow: hidden;
-    }
-    span.date {
-        font-family: monospace;
-        font-size: .8rem;
-        position: relative;
-        bottom: 1px;
-        margin-right: 1rem;
-        color: #555;
-    }
+html {
+  font-family: 'EB Garamond', serif;
+  font-weight: normal;
+  font-size: 17px;
+  line-height: 1.6;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+main {
+  width: 90%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem 1rem;
+}
+
+.directory {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  margin: 2rem 0 2rem 0;
+  padding: 0;
+}
+
+.directory li {
+  font-size: 1rem;
+}
+
+.directory .active-item {
+  font-weight: 600;
+}
+
+.directory li a {
+  color: #005eff;
+  text-decoration: none;
+}
+
+.directory li a:hover {
+  text-decoration: underline;
+}
+
+.container {
+  width: 100%;
+  font-size: 1.05rem;
+  line-height: 1.5rem;
+}
+
+.intro {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.intro p {
+  margin: 0 0 1.25rem 0;
+}
+
+.links-list p {
+  margin: 0.4rem 0;
+  font-size: 1rem;
+}
+
+a {
+  color: #005eff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1, h2, h3 {
+  font-weight: 600;
+  margin: 2rem 0 1rem 0;
+}
+
+h1 {
+  font-size: 1.5rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+}
+
+h3 {
+  font-size: 1.1rem;
+}
+
+@media (max-width: 800px) {
+  main {
+    width: 92%;
+    padding: 0 0.75rem 2rem 0.75rem;
+  }
+
+  .directory {
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .directory li {
+    font-size: 0.95rem;
+  }
+
+  .container {
+    font-size: 1rem;
+    line-height: 1.45rem;
+  }
+}
+
+@media (max-width: 500px) {
+  main {
+    width: 95%;
+    padding: 0 0.5rem 2rem 0.5rem;
+  }
+
+  .directory {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .directory li {
+    font-size: 0.9rem;
+  }
+}

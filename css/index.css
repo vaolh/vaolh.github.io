@@ -138,3 +138,31 @@ h3 {
     font-size: 0.9rem;
   }
 }
+p.title {
+    margin-bottom: 0
+}
+p.desc {
+    margin-top: 0;
+    margin-bottom: 0
+}
+p.links {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: .95rem;
+}
+div.links-list p {
+    margin: .3rem auto;
+    font-size: 1rem;
+    line-height: 1.2rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+span.date {
+    font-family: monospace;
+    font-size: .8rem;
+    position: relative;
+    bottom: 1px;
+    margin-right: 1rem;
+    color: #555;
+}

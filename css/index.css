@@ -188,7 +188,7 @@ div.links-list p {
     overflow: hidden;
 }
 span.date {
-    font-family: 'EB Garamond';
+    font-family: monospace;
     font-size: .8rem;
     position: relative;
     bottom: 1px;

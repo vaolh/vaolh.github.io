@@ -1,0 +1,129 @@
+    @font-face {
+    font-family: 'EB Garamond';
+    src: url('../docs/garamond.ttf') format('truetype');
+    font-weight: 100 700;
+    font-style: normal;
+    }
+
+    html {
+    font-family: 'EB Garamond', serif;
+    font-weight: normal;
+    }
+    .row {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        max-width: 800px;
+        margin: 0 auto;
+        gap: 2em;
+        width: 100%;
+    }
+    .column {
+        display:flex;
+        flex-direction: column;
+    }
+    .column.right {
+        padding: 0 10px;
+    }
+    .column.right p {
+        line-height: 1.5rem;
+    }
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 10px 10px 50px 10px;
+        font-size: 1.05rem;
+        line-height: 1.4rem;
+    }
+    @media screen and (min-width: 800px) {
+        .row {
+            padding-top: 3rem;
+        }
+        .column.left {
+            flex: 2;
+        }
+        .column.right {
+            flex: 1
+        }
+        .container {
+            margin: 1.2rem auto 0 auto;
+        }
+    }
+    h1, h2, h3 {
+        font-weight: 600;
+    }
+    h2, h3 {
+        font-weight: 500;
+    }
+    h1 {
+        font-size: 1.5rem;
+    }
+    h2 {
+        margin-top: 3rem;
+    }
+    .intro {
+        max-width: 500px;
+    }
+    div.picture-container {
+        width: 100%;
+    }
+    img {
+        width: 100%;
+    }
+    a {
+        color: #005eff;
+        text-decoration: none;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+    p.title {
+        font-weight: 500;
+        margin-bottom: 0
+    }
+
+    .directory {
+    list-style-type: none;
+    display: flex;
+    margin-left: 0;
+    padding-left: 0;
+    padding-top: 1rem;
+    }
+    .directory .active-item {
+    margin: 0 0.25rem;
+    }
+    .directory li:first-child {
+    margin-left: 0;
+    }
+    .directory li:first-child a {
+    margin-left: 0;
+    }
+    .directory li a {
+    margin: 0 0.25rem;
+    }
+
+    p.desc {
+        margin-top: 0;
+        margin-bottom: 0
+    }
+    p.links {
+        margin-top: 0;
+        margin-bottom: 0;
+        font-size: .95rem;
+    }
+    div.links-list p {
+        margin: .3rem auto;
+        font-size: 1rem;
+        line-height: 1.2rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    span.date {
+        font-family: monospace;
+        font-size: .8rem;
+        position: relative;
+        bottom: 1px;
+        margin-right: 1rem;
+        color: #555;
+    }

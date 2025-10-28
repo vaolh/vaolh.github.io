@@ -68,8 +68,12 @@ main {
 }
 
 .links-list p {
-  margin: 0.4rem 0;
+  margin: 0.25rem 0;   
   font-size: 1rem;
+  line-height: 1.2rem;
+  white-space: normal;  
+  text-overflow: clip;
+  overflow: visible;
 }
 
 a {

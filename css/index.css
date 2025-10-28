@@ -4,10 +4,13 @@
     font-weight: 100 700;
     font-style: normal;
     }
-
     html {
     font-family: 'EB Garamond', serif;
     font-weight: normal;
+    }
+    main { 
+        width: 80%; 
+        margin: auto; 
     }
     .row {
         display: flex;

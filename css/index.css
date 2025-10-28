@@ -12,6 +12,20 @@ html {
   font-size: 17px;
   line-height: 1.6;
 }
+
+body {
+    background-color: #fff1e5;
+}
+
+a {
+    color: #8B4513;
+    text-decoration: none;
+}
+
+a:visited {
+    color: #8B4513;
+}
+
 */
 
 html {
@@ -132,6 +146,7 @@ h3 {
 }
 div.picture-container {
     width: 100%;
+    max-width: 600px;
 }
 img {
     width: 100%;

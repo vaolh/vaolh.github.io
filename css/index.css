@@ -39,7 +39,7 @@ main {
 }
 
 .directory .active-item {
-  font-weight: 600;
+  font-weight: normal;
 }
 
 .directory li a {

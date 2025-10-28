@@ -39,7 +39,7 @@ main {
 }
 
 .directory .active-item {
-  font-weight: normal;
+  font-size: 1rem;
 }
 
 .directory li a {
@@ -68,7 +68,7 @@ main {
 }
 
 .links-list p {
-  margin: 0.25rem 0;   
+  margin: 0.15rem 0;   
   font-size: 1rem;
   line-height: 1.2rem;
   white-space: normal;  

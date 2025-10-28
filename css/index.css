@@ -22,7 +22,7 @@ a:visited {
 
 */
 
-    @font-face {
+@font-face {
   font-family: 'EB Garamond';
   src: url('../docs/garamond.ttf') format('truetype');
   font-weight: 100 700;

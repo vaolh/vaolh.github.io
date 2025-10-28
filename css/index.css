@@ -130,7 +130,12 @@ h3 {
     line-height: 1.45rem;
   }
 }
-
+div.picture-container {
+    width: 100%;
+}
+img {
+    width: 100%;
+}
 @media (max-width: 500px) {
   main {
     width: 95%;

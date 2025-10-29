@@ -29,10 +29,11 @@ a:visited {
   font-style: normal;
 }
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
 html {
-    font-family: -apple-system, BlinkMacSystemFont, arial,
-    sans-serif;
-    -webkit-font-smoothing: antialiased;
+  font-family: -apple-system, 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {

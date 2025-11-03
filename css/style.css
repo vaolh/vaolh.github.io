@@ -276,3 +276,8 @@ span.date {
     font-size: 1.1em;
     margin-bottom: 30px;
 }
+
+.container p {
+  text-align: justify;
+  text-justify: inter-word;
+}

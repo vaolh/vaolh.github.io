@@ -37,6 +37,8 @@ html {
 }
 
 body {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   margin: 0;
   padding: 0;
 }

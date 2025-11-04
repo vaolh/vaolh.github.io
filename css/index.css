@@ -54,7 +54,7 @@ main {
         flex-direction: row;
         flex-wrap: wrap;
         max-width: 800px;
-        margin: 0 auto;
+        margin: auto;
         gap: 2em;
         width: 100%;
     }
@@ -67,13 +67,6 @@ main {
     }
     .column.right p {
         line-height: 1.5rem;
-    }
-    .container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 10px 10px 50px 10px;
-        font-size: 1.05rem;
-        line-height: 1.4rem;
     }
     @media screen and (min-width: 800px) {
         .row {

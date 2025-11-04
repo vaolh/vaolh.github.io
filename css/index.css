@@ -197,29 +197,3 @@ span.date {
     margin-right: 1rem;
     color: #555;
 }
-
-.column.left,
-.column.right {
-  display: inline-block;
-  vertical-align: top;
-  box-sizing: border-box;
-}
-
-.column.left {
-  width: 66%;
-  padding-right: 1rem;
-}
-
-.column.right {
-  width: 32%;
-  padding-left: 1rem;
-}
-
-@media (max-width: 800px) {
-  .column.left,
-  .column.right {
-    display: block;
-    width: 100%;
-    padding: 0;
-  }
-}

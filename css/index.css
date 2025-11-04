@@ -198,36 +198,28 @@ span.date {
     color: #555;
 }
 
-.container.columns {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 2rem;
+.column.left,
+.column.right {
+  display: inline-block;
+  vertical-align: top;
+  box-sizing: border-box;
 }
 
-.container.columns > .column {
-  display: flex;
-  flex-direction: column;
-  margin-top: 0;
-  flex: 1;
+.column.left {
+  width: 66%;
+  padding-right: 1rem;
 }
 
-.container.columns > .column.right {
-  padding: 0 10px;
-}
-
-@media screen and (min-width: 800px) {
-  .container.columns > .column.left {
-    flex: 2;
-  }
-  .container.columns > .column.right {
-    flex: 1;
-  }
+.column.right {
+  width: 32%;
+  padding-left: 1rem;
 }
 
 @media (max-width: 800px) {
-  .container.columns {
-    flex-direction: column;
-    gap: 1.5rem;
+  .column.left,
+  .column.right {
+    display: block;
+    width: 100%;
+    padding: 0;
   }
 }

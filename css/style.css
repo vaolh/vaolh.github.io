@@ -50,7 +50,46 @@ main {
   margin: auto;
   padding: 0 0 3rem 0;
 }
-
+    .row {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        max-width: 800px;
+        margin: 0 auto;
+        gap: 2em;
+        width: 100%;
+    }
+    .column {
+        display:flex;
+        flex-direction: column;
+    }
+    .column.right {
+        padding: 0 10px;
+    }
+    .column.right p {
+        line-height: 1.5rem;
+    }
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 10px 10px 50px 10px;
+        font-size: 1.05rem;
+        line-height: 1.4rem;
+    }
+    @media screen and (min-width: 800px) {
+        .row {
+            padding-top: 3rem;
+        }
+        .column.left {
+            flex: 2;
+        }
+        .column.right {
+            flex: 1
+        }
+        .container {
+            margin: 1.2rem auto 0 auto;
+        }
+    }
 .directory {
   list-style: none;
   display: flex;

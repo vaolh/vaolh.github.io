@@ -6,117 +6,195 @@
     <title>Amine Boukhari - Wikipedia</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f8f9fa;
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #ffffff;
         }
-        .container {
-            display: flex;
-            gap: 20px;
-        }
-        .main-content {
-            flex: 1;
-            background: white;
-            padding: 20px;
-            border-radius: 4px;
-        }
+        
         .infobox {
-            width: 300px;
-            border: 1px solid #a2a9b1;
-            background-color: #f8f9fa;
-            font-size: 0.9em;
-            line-height: 1.4;
             float: right;
-            margin: 0 0 20px 20px;
+            margin-left: 20px;
+            margin-bottom: 10px;
+            width: 310px;
+            border: 1px solid #aaa;
+            background-color: #f9f9f9;
+            padding: 5px;
+            font-size: 90%;
         }
-        .infobox-title {
-            background-color: #b0c4de;
-            color: #202122;
-            font-size: 1.25em;
-            font-weight: bold;
-            padding: 10px;
-            text-align: center;
-        }
-        .infobox-image {
-            text-align: center;
-            padding: 10px;
-            background: white;
-        }
-        .infobox-image img {
-            max-width: 100%;
+        
+        .infobox img {
+            width: 100%;
             height: auto;
         }
+        
+        .infobox-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            background-color: #b0c4de;
+            padding: 5px;
+            margin: -5px -5px 10px -5px;
+        }
+        
+        .infobox-image {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
         .infobox-caption {
             text-align: center;
-            padding: 5px 10px;
             font-size: 0.9em;
-            color: #54595d;
+            margin-bottom: 10px;
         }
-        .infobox-header {
+        
+        .infobox-content {
+            line-height: 1.4;
+        }
+        
+        .infobox-section {
             background-color: #b0c4de;
-            color: #202122;
-            padding: 8px;
             font-weight: bold;
+            padding: 3px 5px;
+            margin: 5px -5px;
             text-align: center;
         }
-        .infobox-row {
-            display: flex;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .infobox-label {
-            flex: 0 0 40%;
-            padding: 8px;
-            font-weight: bold;
-            background-color: #f8f9fa;
-        }
-        .infobox-data {
-            flex: 1;
-            padding: 8px;
-            background-color: white;
-        }
-        .stats-table {
+        
+        .infobox table {
             width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            font-size: 0.9em;
+            border: none;
+            margin: 5px 0;
         }
-        .stats-table th,
-        .stats-table td {
-            border: 1px solid #a2a9b1;
-            padding: 8px;
-            text-align: center;
-        }
-        .stats-table th {
-            background-color: #eaecf0;
-            font-weight: bold;
-        }
-        .stats-table caption {
-            caption-side: top;
-            padding: 10px;
-            font-weight: bold;
-            font-size: 1.1em;
+        
+        .infobox table td, .infobox table th {
+            border: none;
+            padding: 2px 5px;
             text-align: left;
         }
-        .stats-table tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-        .total-row {
-            background-color: #eaecf0 !important;
+        
+        .infobox table th {
+            background-color: transparent;
             font-weight: bold;
+            width: 35%;
+            vertical-align: top;
         }
-        h1 {
-            border-bottom: 1px solid #a2a9b1;
-            padding-bottom: 10px;
+        
+        .infobox table td {
+            background-color: transparent;
+        }
+        
+        .infobox-career-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            padding: 2px 5px;
+        }
+        
+        .infobox-career-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 5px;
+        }
+        
+        .infobox-career-years {
+            width: 25%;
+        }
+        
+        .infobox-career-team {
+            width: 45%;
+        }
+        
+        .infobox-career-apps {
+            width: 15%;
+            text-align: right;
+        }
+        
+        .infobox-career-goals {
+            width: 15%;
+            text-align: right;
+        }
+        
+        .medal-table {
+            width: 100%;
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        
+        .medal-table td {
+            padding: 3px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .medal-header {
+            background-color: #eeeeee;
+            font-weight: bold;
+            text-align: center;
+            padding: 3px;
+        }
+        
+        .medal-competition {
+            background-color: #cccccc;
+            font-weight: bold;
+            text-align: center;
+            padding: 3px;
+        }
+        
+        table {
+            width: 100%;
+            margin-left: 0;
+            margin-right: auto;
+            border-collapse: collapse;
+            text-align: center;
             margin-bottom: 20px;
         }
+        
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            padding: 10px;
+            font-weight: bold;
+        }
+        
+        td {
+            padding: 8px;
+        }
+        
+        caption {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .total-row {
+            background-color: #f2f2f2 !important;
+            font-weight: bold;
+        }
+        
+        h1 {
+            border-bottom: 1px solid #aaa;
+            padding-bottom: 5px;
+        }
+        
         h2 {
-            border-bottom: 1px solid #a2a9b1;
+            border-bottom: 1px solid #aaa;
             padding-bottom: 5px;
             margin-top: 30px;
         }
+        
+        h3 {
+            margin-top: 20px;
+        }
+        
+        .clearfix {
+            clear: both;
+        }
+        
         @media (max-width: 768px) {
             .infobox {
                 float: none;
@@ -127,389 +205,436 @@
     </style>
 </head>
 <body>
-    <div class="main-content">
-        <h1>Amine Boukhari</h1>
+    <h1>Amine Boukhari</h1>
+    
+    <div class="infobox">
+        <div class="infobox-title">Amine Boukhari</div>
         
-        <div class="infobox">            
-            <div class="infobox-header">Personal information</div>
-            <div class="infobox-row">
-                <div class="infobox-label">Full name</div>
-                <div class="infobox-data">Amine Samir Boukhari</div>
+        <div class="infobox-image">
+            <div style="width: 300px; height: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 48px; margin: 0 auto;">AB</div>
+        </div>
+        <div class="infobox-caption">Boukhari with Real Betis in 2025</div>
+        
+        <div class="infobox-content">
+            <div class="infobox-section">Personal information</div>
+            <table>
+                <tr>
+                    <th>Full name</th>
+                    <td>Amine Samir Boukhari</td>
+                </tr>
+                <tr>
+                    <th>Date of birth</th>
+                    <td>15 March 1998 (age 27)</td>
+                </tr>
+                <tr>
+                    <th>Place of birth</th>
+                    <td>Lyon, France</td>
+                </tr>
+                <tr>
+                    <th>Height</th>
+                    <td>1.82 m (6 ft 0 in)</td>
+                </tr>
+                <tr>
+                    <th>Position</th>
+                    <td>Midfielder</td>
+                </tr>
+            </table>
+            
+            <div class="infobox-section">Team information</div>
+            <table>
+                <tr>
+                    <th>Current team</th>
+                    <td>Real Betis</td>
+                </tr>
+                <tr>
+                    <th>Number</th>
+                    <td>10</td>
+                </tr>
+            </table>
+            
+            <div class="infobox-section">Youth career</div>
+            <table>
+                <tr>
+                    <th>2006–2012</th>
+                    <td>FC Lyon</td>
+                </tr>
+                <tr>
+                    <th>2012–2016</th>
+                    <td>Olympique Lyonnais</td>
+                </tr>
+            </table>
+            
+            <div class="infobox-section">Senior career*</div>
+            <div class="infobox-career-header">
+                <span class="infobox-career-years">Years</span>
+                <span class="infobox-career-team">Team</span>
+                <span class="infobox-career-apps">Apps</span>
+                <span class="infobox-career-goals">(Gls)</span>
             </div>
-            <div class="infobox-row">
-                <div class="infobox-label">Date of birth</div>
-                <div class="infobox-data">15 March 1998 (age 27)</div>
+            <div class="infobox-career-row">
+                <span class="infobox-career-years">2016–2018</span>
+                <span class="infobox-career-team">Stade Lavallois</span>
+                <span class="infobox-career-apps">42</span>
+                <span class="infobox-career-goals">(8)</span>
             </div>
-            <div class="infobox-row">
-                <div class="infobox-label">Place of birth</div>
-                <div class="infobox-data">Lyon, France</div>
+            <div class="infobox-career-row">
+                <span class="infobox-career-years">2018–2021</span>
+                <span class="infobox-career-team">Olympique Lyonnais</span>
+                <span class="infobox-career-apps">87</span>
+                <span class="infobox-career-goals">(15)</span>
             </div>
-            <div class="infobox-row">
-                <div class="infobox-label">Height</div>
-                <div class="infobox-data">1.82 m (6 ft 0 in)</div>
+            <div class="infobox-career-row">
+                <span class="infobox-career-years">2021–2024</span>
+                <span class="infobox-career-team">Olympique de Marseille</span>
+                <span class="infobox-career-apps">126</span>
+                <span class="infobox-career-goals">(34)</span>
             </div>
-            <div class="infobox-row">
-                <div class="infobox-label">Position</div>
-                <div class="infobox-data">Midfielder</div>
+            <div class="infobox-career-row">
+                <span class="infobox-career-years">2024–</span>
+                <span class="infobox-career-team">Real Betis</span>
+                <span class="infobox-career-apps">16</span>
+                <span class="infobox-career-goals">(4)</span>
             </div>
             
-            <div class="infobox-header">Team information</div>
-            <div class="infobox-row">
-                <div class="infobox-label">Current team</div>
-                <div class="infobox-data">Real Betis</div>
+            <div class="infobox-section">International career‡</div>
+            <div class="infobox-career-row">
+                <span class="infobox-career-years">2015–2016</span>
+                <span class="infobox-career-team">France U18</span>
+                <span class="infobox-career-apps">12</span>
+                <span class="infobox-career-goals">(3)</span>
             </div>
-            <div class="infobox-row">
-                <div class="infobox-label">Number</div>
-                <div class="infobox-data">10</div>
+            <div class="infobox-career-row">
+                <span class="infobox-career-years">2017–2018</span>
+                <span class="infobox-career-team">France U21</span>
+                <span class="infobox-career-apps">18</span>
+                <span class="infobox-career-goals">(5)</span>
             </div>
-            
-            <div class="infobox-header">Senior career*</div>
-            <div class="infobox-row">
-                <div class="infobox-label">Years</div>
-                <div class="infobox-data"><strong>Team</strong></div>
-            </div>
-            <div class="infobox-row">
-                <div class="infobox-label"></div>
-                <div class="infobox-data" style="display: flex; justify-content: space-between;">
-                    <span><strong>Apps</strong></span>
-                    <span><strong>(Gls)</strong></span>
-                </div>
-            </div>
-            <div class="infobox-row">
-                <div class="infobox-label">2016–2018</div>
-                <div class="infobox-data">Laval</div>
-            </div>
-            <div class="infobox-row">
-                <div class="infobox-label"></div>
-                <div class="infobox-data" style="display: flex; justify-content: space-between;">
-                    <span>42</span>
-                    <span>(8)</span>
-                </div>
-            </div>
-            <div class="infobox-row">
-                <div class="infobox-label">2018–2021</div>
-                <div class="infobox-data">Real Betis</div>
-            </div>
-            <div class="infobox-row">
-                <div class="infobox-label"></div>
-                <div class="infobox-data" style="display: flex; justify-content: space-between;">
-                    <span>87</span>
-                    <span>(15)</span>
-                </div>
+            <div class="infobox-career-row">
+                <span class="infobox-career-years">2019–</span>
+                <span class="infobox-career-team">France</span>
+                <span class="infobox-career-apps">45</span>
+                <span class="infobox-career-goals">(12)</span>
             </div>
             
-            <div class="infobox-header">International career‡</div>
-            <div class="infobox-row">
-                <div class="infobox-label">2019–</div>
-                <div class="infobox-data">France</div>
-            </div>
-            <div class="infobox-row">
-                <div class="infobox-label"></div>
-                <div class="infobox-data" style="display: flex; justify-content: space-between;">
-                    <span>45</span>
-                    <span>(12)</span>
-                </div>
+            <div class="infobox-section">Medal record</div>
+            <table class="medal-table">
+                <tr>
+                    <td colspan="3" class="medal-header">Men's football</td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="medal-header">Representing France</td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="medal-competition">FIFA World Cup</td>
+                </tr>
+                <tr>
+                    <td style="background-color: silver; font-weight: bold; width: 30%; text-align: center;">Runner-up</td>
+                    <td colspan="2">2030 Uruguay/Argentina/<br>Paraguay/Chile</td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="medal-competition">UEFA European Championship</td>
+                </tr>
+                <tr>
+                    <td style="text-align: center; width: 30%;">🥉</td>
+                    <td colspan="2">2024 Germany</td>
+                </tr>
+            </table>
+            
+            <div style="font-size: 0.85em; padding: 5px; border-top: 1px solid #aaa; margin-top: 10px;">
+                * Senior club appearances and goals counted for the domestic league only and correct as of 18:45, 29 November 2025 (UTC)<br>
+                ‡ National team caps and goals correct as of 20:00, 19 November 2025 (UTC)
             </div>
         </div>
-
-        <p><strong>Amine Samir Boukhari</strong> (born 15 March 1998) is a French professional footballer who plays as a midfielder for Ligue 1 club Olympique de Marseille and the France national team. Known for his technical ability, vision, and precise passing, Boukhari is considered one of the most promising midfield talents in French football.</p>
-
-        <p>Born in Lyon to Algerian parents, Boukhari began his youth career at local club FC Lyon before joining the prestigious Olympique Lyonnais academy at age 14. He progressed through Lyon's youth system and made his professional debut in 2018. After three successful seasons with Lyon, he transferred to Marseille in 2021 for a reported fee of €35 million, where he has established himself as a key player in midfield.</p>
-
-        <p>Boukhari made his senior international debut for France in 2019 and has since earned 45 caps, scoring 12 goals. He was part of the French squad that reached the semi-finals of UEFA Euro 2024.</p>
-
-        <h2>Career Statistics</h2>
-        
-        <h3>Club</h3>
-        <table class="stats-table">
-            <caption>Appearances and goals by club, season and competition</caption>
-            <thead>
-                <tr>
-                    <th rowspan="2">Club</th>
-                    <th rowspan="2">Season</th>
-                    <th colspan="2">League</th>
-                    <th colspan="2">National Cup</th>
-                    <th colspan="2">Continental</th>
-                    <th colspan="2">Other</th>
-                    <th colspan="2">Total</th>
-                </tr>
-                <tr>
-                    <th>Apps</th>
-                    <th>Goals</th>
-                    <th>Apps</th>
-                    <th>Goals</th>
-                    <th>Apps</th>
-                    <th>Goals</th>
-                    <th>Apps</th>
-                    <th>Goals</th>
-                    <th>Apps</th>
-                    <th>Goals</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td rowspan="3">Lyon B</td>
-                    <td>2016–17</td>
-                    <td>18</td>
-                    <td>3</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>18</td>
-                    <td>3</td>
-                </tr>
-                <tr>
-                    <td>2017–18</td>
-                    <td>24</td>
-                    <td>5</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>24</td>
-                    <td>5</td>
-                </tr>
-                <tr class="total-row">
-                    <td colspan="2">Total</td>
-                    <td>42</td>
-                    <td>8</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>42</td>
-                    <td>8</td>
-                </tr>
-                <tr>
-                    <td rowspan="4">Olympique Lyonnais</td>
-                    <td>2018–19</td>
-                    <td>25</td>
-                    <td>4</td>
-                    <td>3</td>
-                    <td>1</td>
-                    <td>8</td>
-                    <td>2</td>
-                    <td>1</td>
-                    <td>0</td>
-                    <td>37</td>
-                    <td>7</td>
-                </tr>
-                <tr>
-                    <td>2019–20</td>
-                    <td>31</td>
-                    <td>6</td>
-                    <td>4</td>
-                    <td>1</td>
-                    <td>6</td>
-                    <td>1</td>
-                    <td>2</td>
-                    <td>1</td>
-                    <td>43</td>
-                    <td>9</td>
-                </tr>
-                <tr>
-                    <td>2020–21</td>
-                    <td>31</td>
-                    <td>5</td>
-                    <td>5</td>
-                    <td>2</td>
-                    <td>7</td>
-                    <td>1</td>
-                    <td>1</td>
-                    <td>0</td>
-                    <td>44</td>
-                    <td>8</td>
-                </tr>
-                <tr class="total-row">
-                    <td colspan="2">Total</td>
-                    <td>87</td>
-                    <td>15</td>
-                    <td>12</td>
-                    <td>4</td>
-                    <td>21</td>
-                    <td>4</td>
-                    <td>4</td>
-                    <td>1</td>
-                    <td>124</td>
-                    <td>24</td>
-                </tr>
-                <tr>
-                    <td rowspan="6">Olympique de Marseille</td>
-                    <td>2021–22</td>
-                    <td>32</td>
-                    <td>8</td>
-                    <td>4</td>
-                    <td>2</td>
-                    <td>8</td>
-                    <td>3</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>44</td>
-                    <td>13</td>
-                </tr>
-                <tr>
-                    <td>2022–23</td>
-                    <td>35</td>
-                    <td>9</td>
-                    <td>3</td>
-                    <td>1</td>
-                    <td>10</td>
-                    <td>4</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>48</td>
-                    <td>14</td>
-                </tr>
-                <tr>
-                    <td>2023–24</td>
-                    <td>33</td>
-                    <td>10</td>
-                    <td>4</td>
-                    <td>2</td>
-                    <td>8</td>
-                    <td>3</td>
-                    <td>1</td>
-                    <td>1</td>
-                    <td>46</td>
-                    <td>16</td>
-                </tr>
-                <tr>
-                    <td>2024–25</td>
-                    <td>26</td>
-                    <td>7</td>
-                    <td>2</td>
-                    <td>1</td>
-                    <td>6</td>
-                    <td>2</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>34</td>
-                    <td>10</td>
-                </tr>
-                <tr>
-                    <td>2025–26</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td>—</td>
-                    <td>—</td>
-                    <td>0</td>
-                    <td>0</td>
-                </tr>
-                <tr class="total-row">
-                    <td colspan="2">Total</td>
-                    <td>126</td>
-                    <td>34</td>
-                    <td>13</td>
-                    <td>6</td>
-                    <td>32</td>
-                    <td>12</td>
-                    <td>1</td>
-                    <td>1</td>
-                    <td>172</td>
-                    <td>53</td>
-                </tr>
-                <tr class="total-row">
-                    <td colspan="2"><strong>Career Total</strong></td>
-                    <td><strong>255</strong></td>
-                    <td><strong>57</strong></td>
-                    <td><strong>25</strong></td>
-                    <td><strong>10</strong></td>
-                    <td><strong>53</strong></td>
-                    <td><strong>16</strong></td>
-                    <td><strong>5</strong></td>
-                    <td><strong>2</strong></td>
-                    <td><strong>338</strong></td>
-                    <td><strong>85</strong></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <h3>International</h3>
-        <table class="stats-table">
-            <caption>Appearances and goals by national team and year</caption>
-            <thead>
-                <tr>
-                    <th>National team</th>
-                    <th>Year</th>
-                    <th>Apps</th>
-                    <th>Goals</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td rowspan="7">France</td>
-                    <td>2019</td>
-                    <td>4</td>
-                    <td>1</td>
-                </tr>
-                <tr>
-                    <td>2020</td>
-                    <td>6</td>
-                    <td>2</td>
-                </tr>
-                <tr>
-                    <td>2021</td>
-                    <td>8</td>
-                    <td>2</td>
-                </tr>
-                <tr>
-                    <td>2022</td>
-                    <td>10</td>
-                    <td>3</td>
-                </tr>
-                <tr>
-                    <td>2023</td>
-                    <td>7</td>
-                    <td>2</td>
-                </tr>
-                <tr>
-                    <td>2024</td>
-                    <td>8</td>
-                    <td>2</td>
-                </tr>
-                <tr>
-                    <td>2025</td>
-                    <td>2</td>
-                    <td>0</td>
-                </tr>
-                <tr class="total-row">
-                    <td colspan="2"><strong>Total</strong></td>
-                    <td><strong>45</strong></td>
-                    <td><strong>12</strong></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <h2>Honours</h2>
-        
-        <h3>Olympique Lyonnais</h3>
-        <ul>
-            <li>Coupe de France: 2019–20</li>
-        </ul>
-
-        <h3>Olympique de Marseille</h3>
-        <ul>
-            <li>Ligue 1: 2022–23</li>
-            <li>Coupe de France: 2023–24</li>
-        </ul>
-
-        <h3>Individual</h3>
-        <ul>
-            <li>Ligue 1 Team of the Year: 2022–23, 2023–24</li>
-            <li>Marseille Player of the Season: 2022–23</li>
-            <li>France Youth International of the Year: 2017</li>
-        </ul>
     </div>
+
+    <p><strong>Amine Samir Boukhari</strong> (born 15 March 1998) is a French professional footballer who plays as a midfielder for La Liga club Real Betis and the France national team. Known for his technical ability, vision, and precise passing, Boukhari is considered one of the most talented midfielders in European football.</p>
+
+    <p>Born in Lyon to Algerian parents, Boukhari began his youth career at local club FC Lyon before joining the prestigious Olympique Lyonnais academy at age 14. He started his professional career with Stade Lavallois in Ligue 2 before moving to Lyon in 2018. After three successful seasons with Lyon, he transferred to Marseille in 2021 for a reported fee of €35 million. In 2024, he made a high-profile move to Real Betis for €45 million, where he has established himself as a key creative force in midfield.</p>
+
+    <p>Boukhari made his senior international debut for France in 2019 and has since earned 45 caps, scoring 12 goals. He was part of the French squad that finished third at UEFA Euro 2024 and reached the final of the 2030 FIFA World Cup, where France finished as runners-up.</p>
+
+    <h2>Career Statistics</h2>
+    
+    <h3>Club</h3>
+    <table>
+        <caption>Appearances and goals by club, season and competition</caption>
+        <thead>
+            <tr>
+                <th rowspan="2">Club</th>
+                <th rowspan="2">Season</th>
+                <th colspan="3">League</th>
+                <th colspan="2">National Cup</th>
+                <th colspan="2">Continental</th>
+                <th colspan="2">Other</th>
+                <th colspan="2">Total</th>
+            </tr>
+            <tr>
+                <th>Division</th>
+                <th>Apps</th>
+                <th>Goals</th>
+                <th>Apps</th>
+                <th>Goals</th>
+                <th>Apps</th>
+                <th>Goals</th>
+                <th>Apps</th>
+                <th>Goals</th>
+                <th>Apps</th>
+                <th>Goals</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td rowspan="3">Stade Lavallois</td>
+                <td>2016–17</td>
+                <td>La Liga	</td>
+                <td>18</td>
+                <td>3</td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td>18</td>
+                <td>3</td>
+            </tr>
+            <tr>
+                <td>2017–18</td>
+                <td>La Liga	</td>
+                <td>24</td>
+                <td>5</td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td>24</td>
+                <td>5</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="2">Total</td>
+                <td>42</td>
+                <td>8</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>42</td>
+                <td>8</td>
+            </tr>
+            <tr>
+                <td rowspan="4">Olympique Lyonnais</td>
+                <td>2018–19</td>
+                <td>La Liga	</td>
+                <td>25</td>
+                <td>4</td>
+                <td>3</td>
+                <td>1</td>
+                <td>8</td>
+                <td>2</td>
+                <td>1</td>
+                <td>0</td>
+                <td>37</td>
+                <td>7</td>
+            </tr>
+            <tr>
+                <td>2019–20</td>
+                <td>La Liga	</td>
+                <td>31</td>
+                <td>6</td>
+                <td>4</td>
+                <td>1</td>
+                <td>6</td>
+                <td>1</td>
+                <td>2</td>
+                <td>1</td>
+                <td>43</td>
+                <td>9</td>
+            </tr>
+            <tr>
+                <td>2020–21</td>
+                <td>La Liga	</td>
+                <td>31</td>
+                <td>5</td>
+                <td>5</td>
+                <td>2</td>
+                <td>7</td>
+                <td>1</td>
+                <td>1</td>
+                <td>0</td>
+                <td>44</td>
+                <td>8</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="2">Total</td>
+                <td>87</td>
+                <td>15</td>
+                <td>12</td>
+                <td>4</td>
+                <td>21</td>
+                <td>4</td>
+                <td>4</td>
+                <td>1</td>
+                <td>124</td>
+                <td>24</td>
+            </tr>
+            <tr>
+                <td rowspan="5">Olympique de Marseille</td>
+                <td>2021–22</td>
+                <td>La Liga	</td>
+                <td>32</td>
+                <td>8</td>
+                <td>4</td>
+                <td>2</td>
+                <td>8</td>
+                <td>3</td>
+                <td>—</td>
+                <td>—</td>
+                <td>44</td>
+                <td>13</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="2"><strong>Total</strong></td>
+                <td><strong>126</strong></td>
+                <td><strong>34</strong></td>
+                <td><strong>13</strong></td>
+                <td><strong>6</strong></td>
+                <td><strong>32</strong></td>
+                <td><strong>12</strong></td>
+                <td><strong>1</strong></td>
+                <td><strong>1</strong></td>
+                <td><strong>172</strong></td>
+                <td><strong>53</strong></td>
+            </tr>
+            <tr>
+                <td rowspan="2">Real Betis</td>
+                <td>2024–25</td>
+                <td>La Liga	</td>
+                <td>16</td>
+                <td>4</td>
+                <td>2</td>
+                <td>1</td>
+                <td>3</td>
+                <td>1</td>
+                <td>—</td>
+                <td>—</td>
+                <td>21</td>
+                <td>6</td>
+            </tr>
+            <tr class="total-row">
+                <td><strong>Total</strong></td>
+                <td><strong>16</strong></td>
+                <td><strong>4</strong></td>
+                <td><strong>2</strong></td>
+                <td><strong>1</strong></td>
+                <td><strong>3</strong></td>
+                <td><strong>1</strong></td>
+                <td><strong>0</strong></td>
+                <td><strong>0</strong></td>
+                <td><strong>21</strong></td>
+                <td><strong>6</strong></td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="2"><strong>Career Total</strong></td>
+                <td><strong>271</strong></td>
+                <td><strong>61</strong></td>
+                <td><strong>27</strong></td>
+                <td><strong>11</strong></td>
+                <td><strong>56</strong></td>
+                <td><strong>17</strong></td>
+                <td><strong>5</strong></td>
+                <td><strong>2</strong></td>
+                <td><strong>359</strong></td>
+                <td><strong>91</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>International</h3>
+    <table>
+        <caption>Appearances and goals by national team and year</caption>
+        <thead>
+            <tr>
+                <th>National team</th>
+                <th>Year</th>
+                <th>Apps</th>
+                <th>Goals</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td rowspan="7">France</td>
+                <td>2019</td>
+                <td>4</td>
+                <td>1</td>
+            </tr>
+            <tr>
+                <td>2020</td>
+                <td>6</td>
+                <td>2</td>
+            </tr>
+            <tr>
+                <td>2021</td>
+                <td>8</td>
+                <td>2</td>
+            </tr>
+            <tr>
+                <td>2022</td>
+                <td>10</td>
+                <td>3</td>
+            </tr>
+            <tr>
+                <td>2023</td>
+                <td>7</td>
+                <td>2</td>
+            </tr>
+            <tr>
+                <td>2024</td>
+                <td>8</td>
+                <td>2</td>
+            </tr>
+            <tr>
+                <td>2025</td>
+                <td>2</td>
+                <td>0</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="2"><strong>Total</strong></td>
+                <td><strong>45</strong></td>
+                <td><strong>12</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="clearfix"></div>
+
+    <h2>Honours</h2>
+    
+    <h3>Olympique Lyonnais</h3>
+    <ul>
+        <li>Coupe de France: 2019–20</li>
+    </ul>
+
+    <h3>Olympique de Marseille</h3>
+    <ul>
+        <li>Ligue 1: 2022–23</li>
+        <li>Coupe de France: 2023–24</li>
+    </ul>
+
+    <h3>France</h3>
+    <ul>
+        <li>FIFA World Cup: Runner-up 2030</li>
+        <li>UEFA European Championship: Third place 2024</li>
+    </ul>
+
+    <h3>Individual</h3>
+    <ul>
+        <li>Ligue 1 Team of the Year: 2022–23, 2023–24</li>
+        <li>Marseille Player of the Season: 2022–23</li>
+        <li>France Youth International of the Year: 2017</li>
+    </ul>
 </body>
 </html>

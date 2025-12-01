@@ -115,6 +115,7 @@ a:hover {
 h1, h2, h3 {
   font-weight: 400;
   margin: 2rem 0 1rem 0;
+  color: #e68080;
 }
 
 h1 {
@@ -197,7 +198,7 @@ span.date {
     position: relative;
     bottom: 1px;
     margin-right: 1rem;
-    color: #cecece;
+    color: #ffffff;
 }
 
 .footnote-ref {

@@ -31,6 +31,12 @@ a:visited {
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
+:root {
+  --accent-primary: #ff6b35;
+  --accent-secondary: #ff006e;
+  --accent-glow: rgba(255, 107, 53, 0.3);
+}
+
 html {
   font-family: -apple-system, 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -41,7 +47,7 @@ body {
   scrollbar-gutter: stable;
   margin: 0;
   padding: 0;
-  background-color: #000000;
+  background-color: #0a0a0a;
   color: #ffffff;
 }
 
@@ -51,6 +57,7 @@ main {
   margin: auto;
   padding: 0 0 3rem 0;
 }
+
 .directory {
   list-style: none;
   display: flex;
@@ -70,12 +77,30 @@ main {
 }
 
 .directory li a {
-  color: #ffffff;
+  color: var(--accent-primary);
   text-decoration: none;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .directory li a:hover {
-  text-decoration: underline;
+  color: var(--accent-secondary);
+  text-shadow: 0 0 15px var(--accent-glow);
+}
+
+.directory li a::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  transition: width 0.3s ease;
+}
+
+.directory li a:hover::before {
+  width: 100%;
 }
 
 .container {
@@ -104,18 +129,36 @@ main {
 }
 
 a {
-  color: #e68080;
+  color: var(--accent-primary);
   text-decoration: none;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 a:hover {
-  text-decoration: underline;
+  color: var(--accent-secondary);
+  text-shadow: 0 0 15px var(--accent-glow);
+}
+
+a::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  transition: width 0.3s ease;
+}
+
+a:hover::before {
+  width: 100%;
 }
 
 h1, h2, h3 {
   font-weight: 400;
   margin: 2rem 0 1rem 0;
-  color: #e68080;
+  color: var(--accent-primary);
 }
 
 h1 {
@@ -150,13 +193,16 @@ h3 {
     line-height: 1.45rem;
   }
 }
+
 div.picture-container {
     width: 100%;
     max-width: 300px;
 }
+
 img {
     width: 100%;
 }
+
 @media (max-width: 500px) {
   main {
     width: 95%;
@@ -172,18 +218,22 @@ img {
     font-size: 0.9rem;
   }
 }
+
 p.title {
     margin-bottom: 0
 }
+
 p.desc {
     margin-top: 0;
     margin-bottom: 0
 }
+
 p.links {
     margin-top: 0;
     margin-bottom: 0;
     font-size: .95rem;
 }
+
 div.links-list p {
     margin: .3rem auto;
     font-size: 1rem;
@@ -192,17 +242,18 @@ div.links-list p {
     white-space: nowrap;
     overflow: hidden;
 }
+
 span.date {
     font-family: monospace;
     font-size: .8rem;
     position: relative;
     bottom: 1px;
     margin-right: 1rem;
-    color: #ffffff;
+    color: #888888;
 }
 
 .footnote-ref {
-    color: #e68080;
+    color: var(--accent-primary);
     text-decoration: none;
     font-size: 0.8em;
     vertical-align: super;
@@ -210,20 +261,21 @@ span.date {
 }
 
 .footnote-ref:hover {
-    text-decoration: underline;
+    color: var(--accent-secondary);
+    text-shadow: 0 0 15px var(--accent-glow);
 }
 
 .footnotes {
     margin-top: 40px;
     padding-top: 20px;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid #333;
     font-size: 0.9em;
 }
 
 .footnotes h3 {
     font-size: 1.1em;
     margin-bottom: 15px;
-    color: #e68080;
+    color: var(--accent-primary);
 }
 
 .footnote {
@@ -234,19 +286,20 @@ span.date {
 }
 
 .footnote-number {
-    color: #e68080;
+    color: var(--accent-primary);
     font-weight: bold;
 }
 
 .footnote-backref {
-    color: #e68080;
+    color: var(--accent-primary);
     text-decoration: none;
     margin-left: 5px;
     font-size: 0.8em;
 }
 
 .footnote-backref:hover {
-    text-decoration: underline;
+    color: var(--accent-secondary);
+    text-shadow: 0 0 15px var(--accent-glow);
 }
 
 .video-grid {

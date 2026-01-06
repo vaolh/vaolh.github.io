@@ -239,8 +239,8 @@ div.links-list p {
     font-size: 1rem;
     line-height: 1.2rem;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
+    white-space: normal;
+    overflow: visible;
 }
 
 span.date {

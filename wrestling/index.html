@@ -277,262 +277,287 @@
         table.bracket .h7 { 
             height:7px;
         }
+
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            font-weight: bold;
+            cursor: pointer;
+            padding: 10px;
+            background-color: #f2f2f2;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+
+        summary:hover {
+            background-color: #e3f2fd;
+        }
+
+        details table caption {
+            display: none;
+        }
     </style>
 </head>
 
 <body>
     <!-- Match Table -->
-    <table class="match-card">
-    <caption>There Can Only Be One: The Rock vs. Apostol </caption>
-        <tbody><tr>
-            <th>No.</th>
-            <th>Match Type</th>
-            <th>Weight Class</th>
-            <th></th>
-            <th>vs.</th>
-            <th></th>
-            <th>Method</th>
-            <th>Falls</th>
-            <th>Notes</th>
-        </tr>
-        <tr>
-            <th>1</th>
-            <td>Singles</td>
-            <td>Middleweight</td>
-            <td><span class="fi fi-mx fis"></span> Hijo del Apostol (c) </td>
-            <td>def.</td>
-            <td><span class="fi fi-us fis"></span> <span class="fi fi-ca fis"></span> The Rock </td>
-            <td>Pinfall</td>
-            <td>1</td>
-            <td>WWF, WWO, IWB, and <i>The Ring</i> titles</td>
-        </tr>
-        <tr>
-            <th>2</th>
-            <td>Singles</td>
-            <td>Heavyweight</td>
-            <td><span class="fi fi-jp fis"></span> Charlie Sakamoto </td>
-            <td>def.</td>
-            <td><span class="fi fi-ng fis"></span> </span> Oba Femi </td>
-            <td>Pinfall</td>
-            <td>1</td>
-            <td>WWF #1 Contender</td>
-        </tr>
-        <tr>
-            <th>3</th>
-            <td>Trios</td>
-            <td>Openweight</td>
-            <td><span class="fi fi-us fis"></span> The Bloodline </td>
-            <td>def.</td>
-            <td><span class="fi fi-mx fis"></span> Sky Team</td>
-            <td>Pinfall</td>
-            <td>3</td>
-            <td></td>
-        </tr>
-        <tr>
-            <th>4</th>
-            <td>Gauntlet</td>
-            <td>Bridgerweight</td>
-            <td><span class="fi fi-mx fis"></span> Atlantis III </td>
-            <td>def.</td>
-            <td><span class="fi fi-un fis"></span> Eight Opponents </td>
-            <td>Submission</td>
-            <td>8</td>
-            <td>IWB Contender Spot</td>
-        </tr>
-    <tr>
-        <th colspan="2">Livestream</th>
-        <th colspan="2">September 2021</th>
-        <th colspan="2">Coca Cola Arena</th>
-        <th colspan="2">Imagen/ESPN</th>
-        <th>500K Buys</th>
-    </tr>
-    </tbody></table>
+    <details>
+        <summary>There Can Only Be One: The Rock vs. Apostol</summary>
+        <table class="match-card">
+            <tbody><tr>
+                <th>No.</th>
+                <th>Match Type</th>
+                <th>Weight Class</th>
+                <th></th>
+                <th>vs.</th>
+                <th></th>
+                <th>Method</th>
+                <th>Falls</th>
+                <th>Notes</th>
+            </tr>
+            <tr>
+                <th>1</th>
+                <td>Singles</td>
+                <td>Middleweight</td>
+                <td><span class="fi fi-mx fis"></span> Hijo del Apostol (c) </td>
+                <td>def.</td>
+                <td><span class="fi fi-us fis"></span> <span class="fi fi-ca fis"></span> The Rock </td>
+                <td>Pinfall</td>
+                <td>1</td>
+                <td>WWF, WWO, IWB, and <i>The Ring</i> titles</td>
+            </tr>
+            <tr>
+                <th>2</th>
+                <td>Singles</td>
+                <td>Heavyweight</td>
+                <td><span class="fi fi-jp fis"></span> Charlie Sakamoto </td>
+                <td>def.</td>
+                <td><span class="fi fi-ng fis"></span> </span> Oba Femi </td>
+                <td>Pinfall</td>
+                <td>1</td>
+                <td>WWF #1 Contender</td>
+            </tr>
+            <tr>
+                <th>3</th>
+                <td>Trios</td>
+                <td>Openweight</td>
+                <td><span class="fi fi-us fis"></span> The Bloodline </td>
+                <td>def.</td>
+                <td><span class="fi fi-mx fis"></span> Sky Team</td>
+                <td>Pinfall</td>
+                <td>3</td>
+                <td></td>
+            </tr>
+            <tr>
+                <th>4</th>
+                <td>Gauntlet</td>
+                <td>Bridgerweight</td>
+                <td><span class="fi fi-mx fis"></span> Atlantis III </td>
+                <td>def.</td>
+                <td><span class="fi fi-un fis"></span> Eight Opponents </td>
+                <td>Submission</td>
+                <td>8</td>
+                <td>IWB Contender Spot</td>
+            </tr>
+            <tr>
+                <th colspan="2">Livestream</th>
+                <th colspan="2">September 2021</th>
+                <th colspan="2">Coca Cola Arena</th>
+                <th colspan="2">Imagen/ESPN</th>
+                <th>500K Buys</th>
+            </tr>
+        </tbody></table>
+    </details>
 
     <!-- Bracket Table -->
-    <table cellpadding="0" class="bracket">
-    <caption>2021 Open Tournament </caption>
-    <tbody>
-    <!-- Header Row -->
-    <tr>
-        <td></td>
-        <td colspan="3" class="header">Quarterfinals</td>
-        <td></td>
-        <td></td>
-        <td colspan="3" class="header">Semifinals</td>
-        <td></td>
-        <td></td>
-        <td colspan="3" class="header">Finals</td>
-        <td></td>
-    </tr>
-    <!-- Width Definition Row -->
-    <tr>
-        <td style="width:1px"></td>
-        <td style="width:25px">&nbsp;</td>
-        <td style="width:150px">&nbsp;</td>
-        <td style="width:25px">&nbsp;</td>
-        <td style="width:5px"></td>
-        <td style="width:5px"></td>
-        <td style="width:25px">&nbsp;</td>
-        <td style="width:150px">&nbsp;</td>
-        <td style="width:25px">&nbsp;</td>
-        <td style="width:5px"></td>
-        <td style="width:5px"></td>
-        <td style="width:25px">&nbsp;</td>
-        <td style="width:150px">&nbsp;</td>
-        <td style="width:25px">&nbsp;</td>
-        <td style="width:1px"></td>
-    </tr>
-    <!-- Seed 1 -->
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" class="seed">1</td>
-        <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #1</td>
-        <td rowspan="2" class="score">Pinfall</td>
-        <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
-        <td rowspan="3" colspan="5" class="conn"></td>
-        <td rowspan="9" colspan="5" class="conn"></td>
-    </tr>
-    <tr>
-        <td class="h7"></td>
-    </tr>
-    <!-- Seed 8 -->
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" class="seed">8</td>
-        <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #8</td>
-        <td rowspan="2" class="score"></td>
-        <td rowspan="2" class="conn" style="border-top-width:2px;border-right-width:2px"></td>
-    </tr>
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
-        <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span>#1 or #8</td>
-        <td rowspan="2" class="score"></td>
-        <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
-    </tr>
-    <!-- Connector -->
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" colspan="3" style="text-align:center"></td>
-        <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
-    </tr>
-    <tr>
-        <td class="h7"></td>
-        <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
-        <td rowspan="2" class="conn" style="border-top-width:2px"></td>
-        <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span>#4 or #5</td>
-        <td rowspan="2" class="score">Submission</td>
-        <td rowspan="2" class="conn" style="border-top-width:2px;border-right-width:2px"></td>
-    </tr>
-    <!-- Seed 4 -->
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" class="seed">4</td>
-        <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #4</td>
-        <td rowspan="2" class="score">Pinfall</td>
-        <td rowspan="2" class="conn" style="border-bottom-width:2px;border-right-width:2px"></td>
-    </tr>
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="3" colspan="5" class="conn" style="border-right-width:2px"></td>
-    </tr>
-    <!-- Seed 5 -->
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" class="seed">5</td>
-        <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #5</td>
-        <td rowspan="2" class="score"></td>
-        <td rowspan="2" class="conn" style="border-top-width:2px"></td>
-    </tr>
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
-        <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span>#1 or #4 or #5 or #8</td>
-        <td rowspan="2" class="score"></td>
-        <td rowspan="2" class="conn"></td>
-    </tr>
-    <!-- Connector -->
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" colspan="8" style="text-align:center"></td>
-        <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
-    </tr>
-    <tr>
-        <td class="h7"></td>
-        <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
-        <td rowspan="2" class="conn" style="border-top-width:2px"></td>
-        <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span> #2 or #3 or #6 or #7</td>
-        <td rowspan="2" class="score">Pinfall</td>
-        <td rowspan="2" class="conn"></td>
-    </tr>
-    <!-- Seed 2 -->
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" class="seed">2</td>
-        <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #2</td>
-        <td rowspan="2" class="score"></td>
-        <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
-        <td rowspan="3" colspan="5" class="conn" style="border-right-width:2px"></td>
-    </tr>
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="8" colspan="5" class="conn"></td>
-    </tr>
-    <!-- Seed 7 -->
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" class="seed">7</td>
-        <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #7</td>
-        <td rowspan="2" class="score">Submission</td>
-        <td rowspan="2" class="conn" style="border-top-width:2px;border-right-width:2px"></td>
-    </tr>
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
-        <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span> #2 or #7</td>
-        <td rowspan="2" class="score">Pinfall</td>
-        <td rowspan="2" class="conn" style="border-bottom-width:2px;border-right-width:2px"></td>
-    </tr>
-    <!-- Connector -->
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" colspan="3" style="text-align:center"></td>
-        <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
-    </tr>
-    <tr>
-        <td class="h7"></td>
-        <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
-        <td rowspan="2" class="conn" style="border-top-width:2px"></td>
-        <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span> #3 or #6</td>
-        <td rowspan="2" class="score"></td>
-        <td rowspan="2" class="conn" style="border-top-width:2px"></td>
-    </tr>
-    <!-- Seed 3 -->
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" class="seed">3</td>
-        <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #3</td>
-        <td rowspan="2" class="score"></td>
-        <td rowspan="2" class="conn" style="border-bottom-width:2px;border-right-width:2px"></td>
-    </tr>
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" colspan="5" class="conn"></td>
-    </tr>
-    <!-- Seed 6 -->
-    <tr>
-        <td class="h7"></td>
-        <td rowspan="2" class="seed">6</td>
-        <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #6</td>
-        <td rowspan="2" class="score">Pinfall</td>
-        <td class="conn" style="border-top-width:2px"></td>
-    </tr>
-    </tbody>
-    </table>
+    <details>
+        <summary>2021 Open Tournament</summary>
+        <table cellpadding="0" class="bracket">
+        <tbody>
+        <!-- Header Row -->
+        <tr>
+            <td></td>
+            <td colspan="3" class="header">Quarterfinals</td>
+            <td></td>
+            <td></td>
+            <td colspan="3" class="header">Semifinals</td>
+            <td></td>
+            <td></td>
+            <td colspan="3" class="header">Finals</td>
+            <td></td>
+        </tr>
+        <!-- Width Definition Row -->
+        <tr>
+            <td style="width:1px"></td>
+            <td style="width:25px">&nbsp;</td>
+            <td style="width:150px">&nbsp;</td>
+            <td style="width:25px">&nbsp;</td>
+            <td style="width:5px"></td>
+            <td style="width:5px"></td>
+            <td style="width:25px">&nbsp;</td>
+            <td style="width:150px">&nbsp;</td>
+            <td style="width:25px">&nbsp;</td>
+            <td style="width:5px"></td>
+            <td style="width:5px"></td>
+            <td style="width:25px">&nbsp;</td>
+            <td style="width:150px">&nbsp;</td>
+            <td style="width:25px">&nbsp;</td>
+            <td style="width:1px"></td>
+        </tr>
+        <!-- Seed 1 -->
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" class="seed">1</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #1</td>
+            <td rowspan="2" class="score">Pinfall</td>
+            <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
+            <td rowspan="3" colspan="5" class="conn"></td>
+            <td rowspan="9" colspan="5" class="conn"></td>
+        </tr>
+        <tr>
+            <td class="h7"></td>
+        </tr>
+        <!-- Seed 8 -->
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" class="seed">8</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #8</td>
+            <td rowspan="2" class="score"></td>
+            <td rowspan="2" class="conn" style="border-top-width:2px;border-right-width:2px"></td>
+        </tr>
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span>#1 or #8</td>
+            <td rowspan="2" class="score"></td>
+            <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
+        </tr>
+        <!-- Connector -->
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" colspan="3" style="text-align:center"></td>
+            <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
+        </tr>
+        <tr>
+            <td class="h7"></td>
+            <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
+            <td rowspan="2" class="conn" style="border-top-width:2px"></td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span>#4 or #5</td>
+            <td rowspan="2" class="score">Submission</td>
+            <td rowspan="2" class="conn" style="border-top-width:2px;border-right-width:2px"></td>
+        </tr>
+        <!-- Seed 4 -->
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" class="seed">4</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #4</td>
+            <td rowspan="2" class="score">Pinfall</td>
+            <td rowspan="2" class="conn" style="border-bottom-width:2px;border-right-width:2px"></td>
+        </tr>
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="3" colspan="5" class="conn" style="border-right-width:2px"></td>
+        </tr>
+        <!-- Seed 5 -->
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" class="seed">5</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #5</td>
+            <td rowspan="2" class="score"></td>
+            <td rowspan="2" class="conn" style="border-top-width:2px"></td>
+        </tr>
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span>#1 or #4 or #5 or #8</td>
+            <td rowspan="2" class="score"></td>
+            <td rowspan="2" class="conn"></td>
+        </tr>
+        <!-- Connector -->
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" colspan="8" style="text-align:center"></td>
+            <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
+        </tr>
+        <tr>
+            <td class="h7"></td>
+            <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
+            <td rowspan="2" class="conn" style="border-top-width:2px"></td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span> #2 or #3 or #6 or #7</td>
+            <td rowspan="2" class="score">Pinfall</td>
+            <td rowspan="2" class="conn"></td>
+        </tr>
+        <!-- Seed 2 -->
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" class="seed">2</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #2</td>
+            <td rowspan="2" class="score"></td>
+            <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
+            <td rowspan="3" colspan="5" class="conn" style="border-right-width:2px"></td>
+        </tr>
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="8" colspan="5" class="conn"></td>
+        </tr>
+        <!-- Seed 7 -->
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" class="seed">7</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #7</td>
+            <td rowspan="2" class="score">Submission</td>
+            <td rowspan="2" class="conn" style="border-top-width:2px;border-right-width:2px"></td>
+        </tr>
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span> #2 or #7</td>
+            <td rowspan="2" class="score">Pinfall</td>
+            <td rowspan="2" class="conn" style="border-bottom-width:2px;border-right-width:2px"></td>
+        </tr>
+        <!-- Connector -->
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" colspan="3" style="text-align:center"></td>
+            <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
+        </tr>
+        <tr>
+            <td class="h7"></td>
+            <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
+            <td rowspan="2" class="conn" style="border-top-width:2px"></td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span> #3 or #6</td>
+            <td rowspan="2" class="score"></td>
+            <td rowspan="2" class="conn" style="border-top-width:2px"></td>
+        </tr>
+        <!-- Seed 3 -->
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" class="seed">3</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #3</td>
+            <td rowspan="2" class="score"></td>
+            <td rowspan="2" class="conn" style="border-bottom-width:2px;border-right-width:2px"></td>
+        </tr>
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" colspan="5" class="conn"></td>
+        </tr>
+        <!-- Seed 6 -->
+        <tr>
+            <td class="h7"></td>
+            <td rowspan="2" class="seed">6</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #6</td>
+            <td rowspan="2" class="score">Pinfall</td>
+            <td class="conn" style="border-top-width:2px"></td>
+        </tr>
+        </tbody>
+        </table>
+    </details>
 
     <!-- Championships Table -->
     <table>
-    <caption>Bridgerweight (214 lb / 97 kg) </caption>
+    <caption>Bridgerweight (214 lb / 97 kg)</caption>
         <tbody><tr>
             <th>WWF</th>
             <th>WWO</th>
@@ -548,85 +573,87 @@
     </tbody></table>
 
     <!-- P4P Table -->
-    <table style="width: 65%;" class="p4p">
-    <caption>2024 Men's <i>The Ring</i> P4P Rankings </caption>
-        <tbody><tr>
-            <th>Rank</th>
-            <th>Wrestler</th>
-            <th>Record</th>
-            <th>Weight Class</th>
-            <th>Titles</th>
-        </tr>
-        <tr>
-            <th>1</th>
-            <td><span class="fi fi-mx fis"></span> Hijo del Apostol </td>
-            <td>12-0</td>
-            <td>Middleweight</td>
-            <td>WWF, WWO, IWB, and <i>The Ring</i></td>
-        </tr>
-        <tr>
-            <th>2</th>
-            <td><span class="fi fi-at fis"></span> Gunther </td>
-            <td>8-0</td>
-            <td>Heavyweight</td>
-            <td>WWO, IWB, and <i>The Ring</i></td>
-        </tr>
-        <tr>
-            <th>3</th>
-            <td><span class="fi fi-us fis"></span> Roman Reigns </td>
-            <td>10-0</td>
-            <td>Heavyweight</td>
-            <td>WWF</td>
-        </tr>
-        <tr>
-            <th>4</th>
-            <td><span class="fi fi-mx fis"></span> Mistico </td>
-            <td>6-0</td>
-            <td>Welterweight</td>
-            <td>WWO and  <i>The Ring</i></td>
-        </tr>
-        <tr>
-            <th>5</th>
-            <td><span class="fi fi-mx fis"></span> Nieto del Santo </td>
-            <td>12-2</td>
-            <td>Middleweight</td>
-            <td>-</td>
-        </tr>
-        <tr>
-            <th>6</th>
-            <td><span class="fi fi-mx fis"></span> Atlantis III </td>
-            <td>7-1</td>
-            <td>Middleweight</td>
-            <td>-</td>
-        </tr>
-        <tr>
-            <th>7</th>
-            <td><span class="fi fi-jp fis"></span> Charlie Sakamoto </td>
-            <td>5-0</td>
-            <td>Heavyweight</td>
-            <td>-</td>
-        </tr>
-        <tr>
-            <th>8</th>
-            <td><span class="fi fi-us fis"></span> Montez Ford </td>
-            <td>6-0</td>
-            <td>Bridgerweight</td>
-            <td>WWF</td>
-        </tr>
-        <tr>
-            <th>9</th>
-            <td><span class="fi fi-mx fis"></span> JJ Muñoz </td>
-            <td>7-4</td>
-            <td>Middleweight</td>
-            <td>-</td>
-        </tr>
-        <tr>
-            <th>10</th>
-            <td><span class="fi fi-us fis"></span> CM Punk</td>
-            <td>14-3</td>
-            <td>Bridgerweight</td>
-            <td>-</td>
-        </tr>
-    </tbody></table>
+    <details>
+        <summary>2024 Men's <i>The Ring</i> P4P Rankings</summary>
+        <table style="width: 65%;" class="p4p">
+            <tbody><tr>
+                <th>Rank</th>
+                <th>Wrestler</th>
+                <th>Record</th>
+                <th>Weight Class</th>
+                <th>Titles</th>
+            </tr>
+            <tr>
+                <th>1</th>
+                <td><span class="fi fi-mx fis"></span> Hijo del Apostol </td>
+                <td>12-0</td>
+                <td>Middleweight</td>
+                <td>WWF, WWO, IWB, and <i>The Ring</i></td>
+            </tr>
+            <tr>
+                <th>2</th>
+                <td><span class="fi fi-at fis"></span> Gunther </td>
+                <td>8-0</td>
+                <td>Heavyweight</td>
+                <td>WWO, IWB, and <i>The Ring</i></td>
+            </tr>
+            <tr>
+                <th>3</th>
+                <td><span class="fi fi-us fis"></span> Roman Reigns </td>
+                <td>10-0</td>
+                <td>Heavyweight</td>
+                <td>WWF</td>
+            </tr>
+            <tr>
+                <th>4</th>
+                <td><span class="fi fi-mx fis"></span> Mistico </td>
+                <td>6-0</td>
+                <td>Welterweight</td>
+                <td>WWO and  <i>The Ring</i></td>
+            </tr>
+            <tr>
+                <th>5</th>
+                <td><span class="fi fi-mx fis"></span> Nieto del Santo </td>
+                <td>12-2</td>
+                <td>Middleweight</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <th>6</th>
+                <td><span class="fi fi-mx fis"></span> Atlantis III </td>
+                <td>7-1</td>
+                <td>Middleweight</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <th>7</th>
+                <td><span class="fi fi-jp fis"></span> Charlie Sakamoto </td>
+                <td>5-0</td>
+                <td>Heavyweight</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <th>8</th>
+                <td><span class="fi fi-us fis"></span> Montez Ford </td>
+                <td>6-0</td>
+                <td>Bridgerweight</td>
+                <td>WWF</td>
+            </tr>
+            <tr>
+                <th>9</th>
+                <td><span class="fi fi-mx fis"></span> JJ Muñoz </td>
+                <td>7-4</td>
+                <td>Middleweight</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <th>10</th>
+                <td><span class="fi fi-us fis"></span> CM Punk</td>
+                <td>14-3</td>
+                <td>Bridgerweight</td>
+                <td>-</td>
+            </tr>
+        </tbody></table>
+    </details>
 
 </body></html>

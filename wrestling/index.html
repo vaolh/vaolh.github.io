@@ -189,7 +189,12 @@
             background-size: cover !important;
             border: 1px solid #ddd;
         }
-        
+        .match-card td:nth-child(4),
+        .match-card td:nth-child(6),
+        .match-card th:nth-child(4),
+        .match-card th:nth-child(6) {
+            text-align: left;
+        }
         h1 {
             padding-bottom: 5px;
         }
@@ -270,7 +275,7 @@
 
 <body>
     <!-- Original Table -->
-    <table>
+    <table class="match-card">
     <caption>There Can Only Be One: The Rock vs. Apostol </caption>
         <tbody><tr>
             <th>No.</th>
@@ -287,7 +292,7 @@
             <th>1</th>
             <td>Singles</td>
             <td>Middleweight</td>
-            <td><span class="fi fi-mx fis"></span> Hijo del Apostol </td>
+            <td><span class="fi fi-mx fis"></span> Hijo del Apostol (c) </td>
             <td>def.</td>
             <td><span class="fi fi-us fis"></span> <span class="fi fi-ca fis"></span> The Rock </td>
             <td>Pinfall</td>
@@ -308,10 +313,10 @@
         <tr>
             <th>3</th>
             <td>Trios</td>
-            <td>-</td>
-            <td> The Bloodline </td>
+            <td>Openweight</td>
+            <td><span class="fi fi-us fis"></span> The Bloodline </td>
             <td>def.</td>
-            <td> Sky Team</td>
+            <td><span class="fi fi-mx fis"></span> Sky Team</td>
             <td>Pinfall</td>
             <td>3</td>
             <td></td>
@@ -322,7 +327,7 @@
             <td>Super Middleweight</td>
             <td><span class="fi fi-mx fis"></span> Atlantis III </td>
             <td>def.</td>
-            <td> 8 Men </td>
+            <td><span class="fi fi-un fis"></span> Eight Opponents </td>
             <td>Pinfall</td>
             <td>8</td>
             <td>IWB Contender Spot</td>

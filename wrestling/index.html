@@ -182,16 +182,34 @@
         }
         
 
-        .fi.fis {
+        .fi {
             display: inline-block !important;
             width: 23px !important;
             height: 15px !important;
             background-size: cover !important;
             border: 1px solid #ddd;
         }
+
         .match-card td {
             text-align: left;
         }
+
+        .champ-history td {
+            text-align: left;
+        }
+
+        .champ-history td:nth-child(7) {
+            font-size: 0.7em;
+            overflow-wrap: break-word;
+            word-break: break-word; 
+        }
+
+        .champ-history td:nth-child(6),
+        .champ-history td:nth-child(5) {
+            text-align: center;
+
+        }
+
         .p4p td:nth-child(2),
         .p4p td:nth-child(5),
         .p4p th:nth-child(2),
@@ -317,9 +335,9 @@
                 <th>1</th>
                 <td>Singles</td>
                 <td>Middleweight</td>
-                <td><span class="fi fi-mx fis"></span> Hijo del Apostol (c) </td>
+                <td><span class="fi fi-mx"></span> Hijo del Apostol (c) </td>
                 <td>def.</td>
-                <td><span class="fi fi-us fis"></span> <span class="fi fi-ca fis"></span> The Rock </td>
+                <td><span class="fi fi-us"></span> <span class="fi fi-ca"></span> The Rock </td>
                 <td>Pinfall</td>
                 <td>WWF, WWO, IWB, and <i>The Ring</i> titles</td>
             </tr>
@@ -327,9 +345,9 @@
                 <th>2</th>
                 <td>Singles</td>
                 <td>Heavyweight</td>
-                <td><span class="fi fi-jp fis"></span> Charlie Sakamoto </td>
+                <td><span class="fi fi-jp"></span> Charlie Sakamoto </td>
                 <td>def.</td>
-                <td><span class="fi fi-ng fis"></span> </span> Oba Femi </td>
+                <td><span class="fi fi-ng"></span> Oba Femi </td>
                 <td>Pinfall</td>
                 <td>WWF #1 Contender</td>
             </tr>
@@ -337,9 +355,9 @@
                 <th>3</th>
                 <td>Trios</td>
                 <td>Openweight</td>
-                <td><span class="fi fi-us fis"></span> The Bloodline </td>
+                <td><span class="fi fi-us"></span> The Bloodline </td>
                 <td>def.</td>
-                <td><span class="fi fi-mx fis"></span> Sky Team</td>
+                <td><span class="fi fi-mx"></span> Sky Team</td>
                 <td>Disqualification</td>
                 <th></th>
             </tr>
@@ -347,9 +365,9 @@
                 <th>4</th>
                 <td>Gauntlet</td>
                 <td>Bridgerweight</td>
-                <td><span class="fi fi-mx fis"></span> Atlantis III </td>
+                <td><span class="fi fi-mx"></span> Atlantis III </td>
                 <td>def.</td>
-                <td><span class="fi fi-un fis"></span> Eight Opponents </td>
+                <td><span class="fi fi-un"></span> Eight Opponents </td>
                 <td>Submission</td>
                 <td>IWB Contender Spot</td>
             </tr>
@@ -402,7 +420,7 @@
         <tr>
             <td class="h7"></td>
             <td rowspan="2" class="seed">1</td>
-            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #1</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx"></span> #1</td>
             <td rowspan="2" class="score">Pinfall</td>
             <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
             <td rowspan="3" colspan="5" class="conn"></td>
@@ -415,14 +433,14 @@
         <tr>
             <td class="h7"></td>
             <td rowspan="2" class="seed">8</td>
-            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #8</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx"></span> #8</td>
             <td rowspan="2" class="score"></td>
             <td rowspan="2" class="conn" style="border-top-width:2px;border-right-width:2px"></td>
         </tr>
         <tr>
             <td class="h7"></td>
             <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
-            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span>#1 or #8</td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx"></span>#1 or #8</td>
             <td rowspan="2" class="score"></td>
             <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
         </tr>
@@ -436,7 +454,7 @@
             <td class="h7"></td>
             <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
             <td rowspan="2" class="conn" style="border-top-width:2px"></td>
-            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span>#4 or #5</td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx"></span>#4 or #5</td>
             <td rowspan="2" class="score">Submission</td>
             <td rowspan="2" class="conn" style="border-top-width:2px;border-right-width:2px"></td>
         </tr>
@@ -444,7 +462,7 @@
         <tr>
             <td class="h7"></td>
             <td rowspan="2" class="seed">4</td>
-            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #4</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx"></span> #4</td>
             <td rowspan="2" class="score">Pinfall</td>
             <td rowspan="2" class="conn" style="border-bottom-width:2px;border-right-width:2px"></td>
         </tr>
@@ -456,14 +474,14 @@
         <tr>
             <td class="h7"></td>
             <td rowspan="2" class="seed">5</td>
-            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #5</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx"></span> #5</td>
             <td rowspan="2" class="score"></td>
             <td rowspan="2" class="conn" style="border-top-width:2px"></td>
         </tr>
         <tr>
             <td class="h7"></td>
             <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
-            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span>#1 or #4 or #5 or #8</td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx"></span>#1 or #4 or #5 or #8</td>
             <td rowspan="2" class="score"></td>
             <td rowspan="2" class="conn"></td>
         </tr>
@@ -477,7 +495,7 @@
             <td class="h7"></td>
             <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
             <td rowspan="2" class="conn" style="border-top-width:2px"></td>
-            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span> #2 or #3 or #6 or #7</td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx"></span> #2 or #3 or #6 or #7</td>
             <td rowspan="2" class="score">Pinfall</td>
             <td rowspan="2" class="conn"></td>
         </tr>
@@ -485,7 +503,7 @@
         <tr>
             <td class="h7"></td>
             <td rowspan="2" class="seed">2</td>
-            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #2</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx"></span> #2</td>
             <td rowspan="2" class="score"></td>
             <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
             <td rowspan="3" colspan="5" class="conn" style="border-right-width:2px"></td>
@@ -498,14 +516,14 @@
         <tr>
             <td class="h7"></td>
             <td rowspan="2" class="seed">7</td>
-            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #7</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx"></span> #7</td>
             <td rowspan="2" class="score">Submission</td>
             <td rowspan="2" class="conn" style="border-top-width:2px;border-right-width:2px"></td>
         </tr>
         <tr>
             <td class="h7"></td>
             <td rowspan="2" class="conn" style="border-bottom-width:2px"></td>
-            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span> #2 or #7</td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx"></span> #2 or #7</td>
             <td rowspan="2" class="score">Pinfall</td>
             <td rowspan="2" class="conn" style="border-bottom-width:2px;border-right-width:2px"></td>
         </tr>
@@ -519,7 +537,7 @@
             <td class="h7"></td>
             <td style="border-color:inherit;border-width:0 2px 0 0;border-style:solid"></td>
             <td rowspan="2" class="conn" style="border-top-width:2px"></td>
-            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx fis"></span> #3 or #6</td>
+            <td rowspan="2" colspan="2" class="team"><span class="fi fi-mx"></span> #3 or #6</td>
             <td rowspan="2" class="score"></td>
             <td rowspan="2" class="conn" style="border-top-width:2px"></td>
         </tr>
@@ -527,7 +545,7 @@
         <tr>
             <td class="h7"></td>
             <td rowspan="2" class="seed">3</td>
-            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #3</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx"></span> #3</td>
             <td rowspan="2" class="score"></td>
             <td rowspan="2" class="conn" style="border-bottom-width:2px;border-right-width:2px"></td>
         </tr>
@@ -539,7 +557,7 @@
         <tr>
             <td class="h7"></td>
             <td rowspan="2" class="seed">6</td>
-            <td rowspan="2" class="team"><span class="fi fi-mx fis"></span> #6</td>
+            <td rowspan="2" class="team"><span class="fi fi-mx"></span> #6</td>
             <td rowspan="2" class="score">Pinfall</td>
             <td class="conn" style="border-top-width:2px"></td>
         </tr>
@@ -557,10 +575,10 @@
             <th><i>The Ring</i></th>
         </tr>
         <tr>
-            <td> <span class="fi fi-us fis"></span> Montez Ford <br> 18-4 <br> August 2022</td>
-            <td><span class="fi fi-mx fis"></span> Nieto del Santo <br> 22-4 <br> September 2023</td>
-            <td><span class="fi fi-mx fis"></span> Nieto del Santo <br> 22-4 <br> October 2023</td>
-            <td><span class="fi fi-us fis"></span> CM Punk <br> 4-6 <br> July 2022</td>
+            <td> <span class="fi fi-us"></span> Montez Ford <br> 18-4 <br> August 2022</td>
+            <td><span class="fi fi-mx"></span> Nieto del Santo <br> 22-4 <br> September 2023</td>
+            <td><span class="fi fi-mx"></span> Nieto del Santo <br> 22-4 <br> October 2023</td>
+            <td><span class="fi fi-us"></span> CM Punk <br> 4-6 <br> July 2022</td>
         </tr>
     </tbody></table>
 
@@ -577,70 +595,70 @@
             </tr>
             <tr>
                 <th>1</th>
-                <td><span class="fi fi-mx fis"></span> Hijo del Apostol </td>
+                <td><span class="fi fi-mx"></span> Hijo del Apostol </td>
                 <td>12-0</td>
                 <td>Middleweight</td>
                 <td>WWF, WWO, IWB, and <i>The Ring</i></td>
             </tr>
             <tr>
                 <th>2</th>
-                <td><span class="fi fi-at fis"></span> Gunther </td>
+                <td><span class="fi fi-at"></span> Gunther </td>
                 <td>8-0</td>
                 <td>Heavyweight</td>
                 <td>WWO, IWB, and <i>The Ring</i></td>
             </tr>
             <tr>
                 <th>3</th>
-                <td><span class="fi fi-us fis"></span> Roman Reigns </td>
+                <td><span class="fi fi-us"></span> Roman Reigns </td>
                 <td>10-0</td>
                 <td>Heavyweight</td>
                 <td>WWF</td>
             </tr>
             <tr>
                 <th>4</th>
-                <td><span class="fi fi-mx fis"></span> Mistico </td>
+                <td><span class="fi fi-mx"></span> Mistico </td>
                 <td>6-0</td>
                 <td>Welterweight</td>
                 <td>WWO and  <i>The Ring</i></td>
             </tr>
             <tr>
                 <th>5</th>
-                <td><span class="fi fi-mx fis"></span> Nieto del Santo </td>
+                <td><span class="fi fi-mx"></span> Nieto del Santo </td>
                 <td>12-2</td>
                 <td>Middleweight</td>
                 <th></th>
             </tr>
             <tr>
                 <th>6</th>
-                <td><span class="fi fi-mx fis"></span> Atlantis III </td>
+                <td><span class="fi fi-mx"></span> Atlantis III </td>
                 <td>7-1</td>
                 <td>Middleweight</td>
                 <th></th>
             </tr>
             <tr>
                 <th>7</th>
-                <td><span class="fi fi-jp fis"></span> Charlie Sakamoto </td>
+                <td><span class="fi fi-jp"></span> Charlie Sakamoto </td>
                 <td>5-0</td>
                 <td>Heavyweight</td>
                 <th></th>
             </tr>
             <tr>
                 <th>8</th>
-                <td><span class="fi fi-us fis"></span> Montez Ford </td>
+                <td><span class="fi fi-us"></span> Montez Ford </td>
                 <td>6-0</td>
                 <td>Bridgerweight</td>
                 <td>WWF</td>
             </tr>
             <tr>
                 <th>9</th>
-                <td><span class="fi fi-mx fis"></span> JJ Muñoz </td>
+                <td><span class="fi fi-mx"></span> JJ Muñoz </td>
                 <td>7-4</td>
                 <td>Middleweight</td>
                 <th></th>
             </tr>
             <tr>
                 <th>10</th>
-                <td><span class="fi fi-us fis"></span> CM Punk</td>
+                <td><span class="fi fi-us"></span> CM Punk</td>
                 <td>14-3</td>
                 <td>Bridgerweight</td>
                 <th></th>
@@ -648,4 +666,172 @@
         </tbody></table>
     </details>
 
+    <!-- Champ History Table -->
+    <details>
+    <summary>WWO World Heavyweight Champion</summary> 
+        <table class="champ-history">
+        <tr>
+            <th>No.</th>
+            <th>Champion</th>
+            <th>Date</th>
+            <th>Event</th>
+            <th>Days</th>
+            <th>Defenses</th>
+            <th>Notes</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-ng"></span> Oba Femi</td>
+            <td>May 2024</td>
+            <td>WLO 1</td>
+            <td>107</td>
+            <td>1</td>
+            <td>Won a ten man Gauntlet.</td>
+        </tr>
+        <tr>
+            <th>2</th>
+            <td><span class="fi fi-lu"></span> Argus</td>
+            <td>September 2024</td>
+            <td>LibreMania I Night 1</td>
+            <td>224</td>
+            <td>3</td>
+            <td>Defeated Oba Femi in singles action.</td>
+        </tr>
+        <tr>
+            <th>3</th>
+            <td><span class="fi fi-at"></span> Gunther</td>
+            <td>May 2025</td>
+            <td>WLO 6</td>
+            <td>112</td>
+            <td>3</td>
+            <td>Defeated Argus in singles action.</td>
+        </tr>
+        <tr>
+            <th>4</th>
+            <td><span class="fi fi-us"></span> Roman Reigns</td>
+            <td>September 2025</td>
+            <td>LibreMania II Night 1</td>
+            <td>672</td>
+            <td style="background:#dbf3f3;">13</td>
+            <td>Defeated Gunther in a two-out-of-three <br> falls match to unify the heavyweight titles.</td>
+        </tr>
+        <tr>
+            <th>5</th>
+            <td><span class="fi fi-us"></span> The Rock</td>
+            <td>September 2027</td>
+            <td>LibreMania IV Night 1</td>
+            <td>134</td>
+            <td>4</td>
+            <td>Defeated Reigns in a fatal four-way <br> match for the undisputed heavyweight title.</td>
+        </tr>
+        <tr>
+            <td style="background:#f2f2f2;"> - </td>
+            <td style="background:#f2f2f2;"> Vacated</td>
+            <td style="background:#f2f2f2;">February 2028</td>
+            <td style="background:#f2f2f2;"> - </td>
+            <td style="background:#f2f2f2;"> 26 </td>
+            <td style="background:#f2f2f2;"> - </td>
+            <td style="background:#f2f2f2;">The Rock vacated the title <br> to focus on his WWE reign.</td>
+        </tr>
+        <tr>
+            <th>6</th>
+            <td><span class="fi fi-mx"></span> Olmeca</td>
+            <td>March 2028</td>
+            <td>WLO 25</td>
+            <td>56</td>
+            <td>0</td>
+            <td>Defeated Mil Muertes and Momia Azul <br> in a triple threat match.</td>
+        </tr>
+        <tr>
+            <th>7</th>
+            <td><span class="fi fi-jp"></span> Charlie Sakamoto</td>
+            <td>May 2028</td>
+            <td>WLO 26</td>
+            <td> <1 </td>
+            <td>0</td>
+            <td>Defeated Olmeca in singles action.</td>
+        </tr>
+        <tr>
+            <th>8</th>
+            <td><span class="fi fi-at"></span> Gunther</td>
+            <td>May 2028</td>
+            <td>WLO 26</td>
+            <td>336</td>
+            <td>8</td>
+            <td>Cashed in his WLO contract and <br> defeated Sakamoto in singles action.</td>
+        </tr>
+        <tr>
+            <th>9</th>
+            <td><span class="fi fi-jp"></span> Charlie Sakamoto</td>
+            <td>May 2029</td>
+            <td>WLO 34</td>
+            <td>114</td>
+            <td>3</td>
+            <td>Defeated Gunther in singles action.</td>
+        </tr>
+    </table>
+    </details>
+
+    <!-- Champ Totals Table -->
+    <details>
+    <summary>WWO World Heavyweight Total Defenses</summary> 
+        <table style="width: 65%;" class="champ-history">
+        <tr>
+            <th>Rank</th>
+            <th>Wrestler</th>
+            <th>No. of reigns</th>
+            <th>Combined days</th>
+            <th>Championship Defenses</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-us"></span> Roman Reigns</td>
+            <td>1</td>
+            <td>672</td>
+            <td>13</td>
+        </tr>
+        <tr>
+            <th>2</th>
+            <td><span class="fi fi-at"></span> Gunther</td>
+            <td>2</td>
+            <td>448</td>
+            <td>11</td>
+        </tr>
+        <tr>
+            <th>3</th>
+            <td><span class="fi fi-lu"></span> Argus</td>
+            <td>1</td>
+            <td>224</td>
+            <td>3</td>
+        </tr>
+        <tr>
+            <th>4</th>
+            <td><span class="fi fi-us"></span> The Rock</td>
+            <td>1</td>
+            <td>134</td>
+            <td>4</td>
+        </tr>
+        <tr>
+            <th>5</th>
+            <td><span class="fi fi-jp"></span> Charlie Sakamoto</td>
+            <td>2</td>
+            <td>114</td>
+            <td>3</td>
+        </tr>
+        <tr>
+            <th>6</th>
+            <td><span class="fi fi-ng"></span> Oba Femi</td>
+            <td>1</td>
+            <td>107</td>
+            <td>1</td>
+        </tr>
+        <tr>
+            <th>7</th>
+            <td><span class="fi fi-mx"></span> Olmeca</td>
+            <td>1</td>
+            <td>56</td>
+            <td>0</td>
+        </tr>
+    </table>
+    </details>
 </body></html>

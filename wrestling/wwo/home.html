@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.3.2/css/flag-icons.min.css">
+    <title>Wrestling Wiki</title>
+    <style>
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #ffffff;
+        }
+        
+        .infobox {
+            float: right;
+            margin-left: 20px;
+            margin-bottom: 10px;
+            width: 310px;
+            border: 1px solid #aaa;
+            background-color: #f9f9f9;
+            padding: 5px;
+            font-size: 90%;
+        }
+        
+        .infobox img {
+            width: 100%;
+            height: auto;
+        }
+        
+        .infobox-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 5px;
+            margin: -5px -5px 10px -5px;
+        }
+        
+        .infobox-image {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .infobox-caption {
+            text-align: center;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .infobox-content {
+            line-height: 1.4;
+        }
+        
+        .infobox-section {
+            background-color: #b0c4de;
+            font-weight: bold;
+            padding: 3px 5px;
+            margin: 5px -5px;
+            text-align: center;
+        }
+
+        .infobox-resection {
+            background-color: #d4d9df;
+            font-weight: bold;
+            padding: 3px 5px;
+            margin: 5px -5px;
+            text-align: center;
+        }
+        .infobox table {
+            width: 100%;
+            border: none;
+            margin: 5px 0;
+        }
+        
+        .infobox table td, .infobox table th {
+            border: none;
+            padding: 2px 5px;
+            text-align: left;
+        }
+        
+        .infobox table th {
+            background-color: transparent;
+            font-weight: bold;
+            width: 35%;
+            vertical-align: top;
+        }
+        
+        .infobox table td {
+            background-color: transparent;
+        }
+        
+        .infobox-career-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            padding: 2px 5px;
+        }
+        
+        .infobox-career-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 5px;
+        }
+        
+        .infobox-career-years {
+            width: 35%;
+        }
+        
+        .infobox-career-team {
+            width: 35%;
+        }
+        
+        .infobox-career-apps {
+            width: 15%;
+            text-align: right;
+        }
+        
+        .infobox-career-goals {
+            width: 15%;
+            text-align: right;
+        }
+        
+        .medal-table {
+            width: 100%;
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        
+        .medal-table td {
+            padding: 3px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .medal-header {
+            background-color: #eeeeee;
+            font-weight: bold;
+            text-align: center;
+            padding: 3px;
+        }
+        
+        .medal-competition {
+            background-color: #cccccc;
+            font-weight: bold;
+            text-align: center;
+            padding: 3px;
+        }
+        
+        table {
+            width: 100%;
+            margin-left: 0;
+            margin-right: auto;
+            border-collapse: collapse;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            padding: 10px;
+            font-weight: bold;
+        }
+        
+        td {
+            padding: 8px;
+            background-color: #f8f9fa;
+        }
+        
+        caption {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        
+        
+        .total-row td {
+            background-color: #f2f2f2 !important;
+            font-weight: bold;
+        }
+        
+
+        .fi {
+            display: inline-block !important;
+            width: 23px !important;
+            height: 15px !important;
+            background-size: cover !important;
+            border: 1px solid #ddd;
+        }
+
+        .match-card td {
+            text-align: left;
+        }
+
+        .champ-history td {
+            text-align: left;
+        }
+
+        .champ-history td:nth-child(7) {
+            font-size: 0.8em;
+            overflow-wrap: break-word;
+            word-break: break-word; 
+        }
+
+        .champ-history td:nth-child(6),
+        .champ-history td:nth-child(5) {
+            text-align: center;
+
+        }
+
+        .totals td:nth-child(2) {
+            text-align: left;
+        }
+
+        .p4p td:nth-child(2),
+        .p4p td:nth-child(5),
+        .p4p th:nth-child(2),
+        .p4p th:nth-child(5) {
+            text-align: left;
+        }
+
+        h1 {
+            padding-bottom: 5px;
+        }
+        
+        h2 {
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        
+        h3 {
+            margin-top: 20px;
+        }
+        
+        .clearfix {
+            clear: both;
+        }
+        
+        @media (max-width: 768px) {
+            .infobox {
+                float: none;
+                width: 100%;
+                margin: 0 0 20px 0;
+            }
+        }
+        
+        /* Bracket table - completely separate styles */
+        table.bracket {
+            width: auto;
+            margin: 1em 2em 1em 1em;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 90%;
+            border-style: none;
+        }
+        
+        table.bracket td {
+            border: none;
+            background-color: transparent;
+            padding: 0;
+        }
+        
+        /* Bracket cell styles */
+        table.bracket .header {
+            background-color: #f2f2f2;
+            padding: 8px;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+        table.bracket .seed {
+            background-color: #f2f2f2;
+            padding: 8px;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+        table.bracket .team {
+            padding: 8px;
+            background-color: #f8f9fa;
+            overflow:inherit;
+            border: 1px solid #ddd;
+        }
+        table.bracket .score {
+            text-align:center;
+          padding: 8px;
+            background-color: #f8f9fa;
+            overflow:inherit;
+            border: 1px solid #ddd;
+        }
+        table.bracket .conn {
+            border-style:solid;
+            border-width:0;
+            border-color:inherit;
+        }
+        table.bracket .h7 { 
+            height:7px;
+        }
+
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            font-weight: bold;
+            cursor: pointer;
+            padding: 10px;
+            background-color: #f2f2f2;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+
+        summary:hover {
+            background-color: #e3f2fd;
+        }
+
+        details table caption {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Infobox Table -->
+    <div class="infobox">
+        <img src="/docs/wrestling/1.png" alt="World Wrestling Organization Logo">
+        <div class="infobox-content">
+        <caption class="infobox-title fn org" style="font-size: 125%;">World Wrestling Organization</caption>
+            <table>
+                <tr>
+                    <th>Sport</th>
+                    <td>Professional wrestling</td>
+                </tr>
+                <tr>
+                    <th>Acronym</th>
+                    <td>WWO</td>
+                </tr>
+                <tr>
+                    <th>Formation</th>
+                    <td>1986</td>
+                </tr>
+                <tr>
+                    <th>Headquarters</th>
+                    <td>Mexico City, Mexico</td>
+                </tr>
+                <tr>
+                    <th>Jurisdiction</th>
+                    <td>Worldwide</td>
+                </tr>
+                <tr>
+                    <th>President</th>
+                    <td>Espanto</td>
+                </tr>
+                <tr>
+                    <th>Website</th>
+                    <td><a href="/wrestling/wwo/home.html">wwo.com</td>
+                </tr>
+            </table>
+            
+            
+        <div class="infobox-section">Championships</div>
+            <div class="infobox-resection">Men's</div>
+            <table class="medal-table">
+                <tr>
+                    <td style="background-color: goldenrod; font-weight: bold; width: 30%; text-align: center;">Runner-up</td>
+                    <td colspan="2">2030 Morocco-Portugal-Spain</td>
+                </tr>
+            </table>
+        </div>
+        <div class="infobox-resection">UEFA European Championship</div>
+            <table class="medal-table">
+                <tr>
+                    <td style="background-color: gold; font-weight: bold; width: 30%; text-align: center;">Winner</td>
+                    <td colspan="2">2032 Italy-Turkey</td>
+                </tr>
+            </table>
+            </div>
+        </div>
+    </div>
+
+</body></html>

@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.3.2/css/flag-icons.min.css">
+    <title>Wrestling Wiki</title>
+    <style>
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #ffffff;
+        }
+        
+        .infobox {
+            float: right;
+            margin-left: 20px;
+            margin-bottom: 10px;
+            width: 310px;
+            border: 1px solid #aaa;
+            background-color: #f9f9f9;
+            padding: 5px;
+            font-size: 90%;
+        }
+        
+        .infobox img {
+            width: 100%;
+            height: auto;
+        }
+        
+        .infobox-title caption {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 5px;
+            margin: -5px -5px 10px -5px;
+        }
+        
+        .infobox-image {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .infobox-caption {
+            text-align: center;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .infobox-content {
+            line-height: 1.4;
+        }
+        
+        .infobox-section {
+            background-color: #b0c4de;
+            font-weight: bold;
+            padding: 3px 5px;
+            margin: 5px -5px;
+            text-align: center;
+        }
+
+        .infobox-resection {
+            background-color: #d4d9df;
+            font-weight: bold;
+            padding: 3px 5px;
+            margin: 5px -5px;
+            text-align: center;
+        }
+        .infobox table {
+            width: 100%;
+            border: none;
+            margin: 5px 0;
+        }
+        
+        .infobox table td, .infobox table th {
+            border: none;
+            padding: 2px 5px;
+            text-align: left;
+        }
+        
+        .infobox table th {
+            background-color: transparent;
+            font-weight: bold;
+            width: 35%;
+            vertical-align: top;
+        }
+        
+        .infobox table td {
+            background-color: transparent;
+        }
+        
+        .infobox-career-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            padding: 2px 5px;
+        }
+        
+        .infobox-career-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 5px;
+        }
+        
+        .infobox-career-years {
+            width: 35%;
+        }
+        
+        .infobox-career-team {
+            width: 35%;
+        }
+        
+        .infobox-career-apps {
+            width: 15%;
+            text-align: right;
+        }
+        
+        .infobox-career-goals {
+            width: 15%;
+            text-align: right;
+        }
+        
+        .medal-table {
+            width: 100%;
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        
+        .medal-table td {
+            padding: 3px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .medal-header {
+            background-color: #eeeeee;
+            font-weight: bold;
+            text-align: center;
+            padding: 3px;
+        }
+        
+        .medal-competition {
+            background-color: #cccccc;
+            font-weight: bold;
+            text-align: center;
+            padding: 3px;
+        }
+        
+        table {
+            width: 100%;
+            margin-left: 0;
+            margin-right: auto;
+            border-collapse: collapse;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            padding: 10px;
+            font-weight: bold;
+        }
+        
+        td {
+            padding: 8px;
+            background-color: #f8f9fa;
+        }
+        
+        caption {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        
+        
+        .total-row td {
+            background-color: #f2f2f2 !important;
+            font-weight: bold;
+        }
+        
+
+        .fi {
+            display: inline-block !important;
+            width: 23px !important;
+            height: 15px !important;
+            background-size: cover !important;
+            border: 1px solid #ddd;
+        }
+
+        .match-card td {
+            text-align: left;
+        }
+
+        .champ-history td {
+            text-align: left;
+        }
+
+        .champ-history td:nth-child(7) {
+            font-size: 0.8em;
+            overflow-wrap: break-word;
+            word-break: break-word; 
+        }
+
+        .champ-history td:nth-child(6),
+        .champ-history td:nth-child(5) {
+            text-align: center;
+
+        }
+
+        .totals td:nth-child(2) {
+            text-align: left;
+        }
+
+        .p4p td:nth-child(2),
+        .p4p td:nth-child(5),
+        .p4p th:nth-child(2),
+        .p4p th:nth-child(5) {
+            text-align: left;
+        }
+
+        h1 {
+            padding-bottom: 5px;
+        }
+        
+        h2 {
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        
+        h3 {
+            margin-top: 20px;
+        }
+        
+        .clearfix {
+            clear: both;
+        }
+        
+        @media (max-width: 768px) {
+            .infobox {
+                float: none;
+                width: 100%;
+                margin: 0 0 20px 0;
+            }
+        }
+        
+        /* Bracket table - completely separate styles */
+        table.bracket {
+            width: auto;
+            margin: 1em 2em 1em 1em;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 90%;
+            border-style: none;
+        }
+        
+        table.bracket td {
+            border: none;
+            background-color: transparent;
+            padding: 0;
+        }
+        
+        /* Bracket cell styles */
+        table.bracket .header {
+            background-color: #f2f2f2;
+            padding: 8px;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+        table.bracket .seed {
+            background-color: #f2f2f2;
+            padding: 8px;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+        table.bracket .team {
+            padding: 8px;
+            background-color: #f8f9fa;
+            overflow:inherit;
+            border: 1px solid #ddd;
+        }
+        table.bracket .score {
+            text-align:center;
+          padding: 8px;
+            background-color: #f8f9fa;
+            overflow:inherit;
+            border: 1px solid #ddd;
+        }
+        table.bracket .conn {
+            border-style:solid;
+            border-width:0;
+            border-color:inherit;
+        }
+        table.bracket .h7 { 
+            height:7px;
+        }
+
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            font-weight: bold;
+            cursor: pointer;
+            padding: 10px;
+            background-color: #f2f2f2;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+
+        summary:hover {
+            background-color: #e3f2fd;
+        }
+
+        details table caption {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Infobox Table -->
+    <div class="infobox">
+    <div class="infobox-resection">World Wrestling Organization</div>
+    <img src="/docs/wrestling/1.png" alt="World Wrestling Organization Logo" style="display:block; margin:0 auto; width:230px !important; height:auto; max-width:none;">
+        <div class="infobox-content">
+            <table>
+                <tr>
+                    <th>Acronym</th>
+                    <td>IWB</td>             
+                </tr>
+                <tr>
+                    <th>Full name</th>
+                    <td>World Wrestling Organization</td>             
+                </tr>
+                <tr>
+                    <th>Native name</th>
+                    <td>Organización Mundial de Lucha Libre</td>
+                </tr>
+                <tr>
+                    <th>Sport</th>
+                    <td>Professional wrestling</td>
+                </tr>
+                <tr>
+                    <th>Type</th>
+                    <td>Sanctioning organization</td>
+                </tr>
+                <tr>
+                    <th>Formation</th>
+                    <td>1986</td>
+                </tr>
+                <tr>
+                    <th>Jurisdiction</th>
+                    <td>Worldwide</td>
+                </tr>
+                <tr>
+                    <th>Headquarters</th>
+                    <td><span class="fi fi-mx"></span> Mexico City, Mexico</td>
+                </tr>
+                <tr>
+                    <th>President</th>
+                    <td><span class="fi fi-mx"></span> Espanto VI</td>
+                </tr>
+                <tr>
+                    <th>Main organ</th>
+                    <td>General Assembly</td>
+                </tr>
+                <tr>
+                    <th>Website</th>
+                    <td><a href="/wrestling/org/IWB.html">IWB.com</td>
+                </tr>
+            </table>
+            
+        </div>
+    </div>
+
+    <h1>World Wrestling Organization</h1>
+
+    <p>The <b>International Wrestling Board</b>(こくさいレスリングひょうぎかい,Kokusai Resuringu Hyōgikai) <b>(IWB)</b> is an international professional wrestling organization based in Japan. It is among the three major organizations which sanction professional wrestling bouts, alongside the <a href="/wrestling/org/wwf.html">World Wrestling Federation (WWF)</a> and the <a href="/wrestling/org/wwo.html">World Wrestling Organization (WWO).</a>  The IWB awards its prestigious blue championship belt -- that proudly displays the flags of some member countries of the organization -- at the professional level, and is colloqually known by wrestling fans as <i>La Mundial</i>.  The organization recognizes four primary men's divisions: Welterweight, Middleweight, Bridgerweight, and Heavyweight along with Lightweight and Featherweight for women’s wrestling.  The IWB is governed by a General Assembly where members (officials, promoters, trainers, wrestlers) meet to discuss rules, safety, financial education for fighters, and future goals.</p>
+
+    <p>The World Wrestling Organization traces its origins to the international climate surrounding the 1986 Olympic Games. In the years preceding the Games, Mexican sporting authorities and national wrestling commissions sought to have lucha libre recognized as a regulated Olympic combat sport. Although the effort failed due to International Olympic Committee opposition and concerns over professionalism, it led to the expropriation of sanctioning powers from major promotions, most notably UWA and CMLL. The IWB assumed functions previously held by the Comisión de Box y Lucha Libre Mexico D.F., including licensing, rankings, mandatory challengers, and championship recognition. By the late 2020s, the organization had expanded into an internationally recognized governing body, and as of May 2023 it comprised 213 member nations. Espanto VI has served as president since 1999, succeeding the inaugural president, Blue Demon.</p>
+
+    <p>In 2020, the IWB, WWF, and IWB reached an agreement to standardize professional wrestling rules. The deal created a unified ruleset for matches, officiating, and discipline, while each body created new world championships across four men’s and two women’s divisions, with tag team and trios titles discontinued. The Ring magazine was recognized as an independent authority for lineal championships and pound-for-pound rankings. The agreement also established a shared calendar, including an annual openweight tournament (The Open), trios tournament, and the bimonthly World Title Series, which features mandatory title defenses and contender matches from all three organizations. </p>
+
+    <p>Many historically high-profile bouts have been sanctioned by the IWB, with numerous notable wrestlers recognized as world champions under its titles. The organization also sanctions important <i>Lucha de Apuestas</i> matches, in which wrestlers wager their mask, hair, or other valuable stakes, with the most common forms being mask-against-mask, hair-against-hair, or mask-against-hair. Putting one's mask on the line against a hated opponent is a tradition in lucha libre as a means to settle a heated feud between two or more wrestlers. These matches are generally contested under a two-out-of-three-falls format with a one-hour time limit. The World Title Series is regularly held at Arena Coca Cola in Mexico City, which is owned and operated by the IWB. The IWB also created and coordinates <i>LibreMania</i> at Estadio Azteca in partnership with other bodies to celebrate Mexican Independence Day, highlighting the sport’s cultural and international significance.</p>
+
+    <h2>List of IWB men's world champions</h2>
+
+    <!-- IWB Heavyweight Championship -->
+    <details>
+    <summary>IWB World Heavyweight Champion</summary> 
+        <table class="champ-history">
+        <tr>
+            <th>No.</th>
+            <th>Champion</th>
+            <th>Date</th>
+            <th>Event</th>
+            <th>Days</th>
+            <th>Defenses</th>
+            <th>Notes</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-ng"></span> Oba Femi</td>
+            <td>May 2024</td>
+            <td>WLO 1</td>
+            <td>107</td>
+            <td>1</td>
+            <td>Won ten man Gauntlet</td>
+        </tr>
+        <tr>
+            <th>2</th>
+            <td><span class="fi fi-lu"></span> Argus</td>
+            <td>September 2024</td>
+            <td>LibreMania I Night 1</td>
+            <td>224</td>
+            <td>3</td>
+            <td>Def. Oba Femi (singles)</td>
+        </tr>
+        <tr>
+            <th>3</th>
+            <td><span class="fi fi-at"></span> Gunther</td>
+            <td>May 2025</td>
+            <td>WLO 6</td>
+            <td>112</td>
+            <td>3</td>
+            <td>Def. Argus (singles)</td>
+        </tr>
+        <tr>
+            <th>4</th>
+            <td><span class="fi fi-us"></span> Roman Reigns</td>
+            <td>September 2025</td>
+            <td>LibreMania II Night 1</td>
+            <td>672</td>
+            <th>13</th>
+            <td>Def. Gunther (2/3 falls)</td>
+        </tr>
+        <tr>
+            <th>5</th>
+            <td><span class="fi fi-us"></span> The Rock</td>
+            <td>September 2027</td>
+            <td>LibreMania IV Night 1</td>
+            <td>134</td>
+            <td>4</td>
+            <td>Def. Various (four-way)</td>
+        </tr>
+        <tr>
+            <th colspan="7" style="font-size:0.8em; line-height:1.3; text-align:center;">
+                The Rock vacated the title because he was unsure whether he would continue his wrestling career.
+            </th>
+        </tr>
+        <tr>
+            <th>6</th>
+            <td><span class="fi fi-mx"></span> Olmeca</td>
+            <td>March 2028</td>
+            <td>WLO 25</td>
+            <td>56</td>
+            <td>0</td>
+            <td>Def. Various (three-way)</td>
+        </tr>
+        <tr>
+            <th>7</th>
+            <td><span class="fi fi-jp"></span> Charlie Sakamoto</td>
+            <td>May 2028</td>
+            <td>WLO 26</td>
+            <td> <1 </td>
+            <td>0</td>
+            <td>Def. Olmeca (singles)</td>
+        </tr>
+        <tr>
+            <th>8</th>
+            <td><span class="fi fi-at"></span> Gunther (2)</td>
+            <td>May 2028</td>
+            <td>WLO 26</td>
+            <td>336</td>
+            <td>8</td>
+            <td>WLO Contract cash-in</td>
+        </tr>
+        <tr>
+            <th>9</th>
+            <td><span class="fi fi-jp"></span> Charlie Sakamoto (2)</td>
+            <td>May 2029</td>
+            <td>WLO 34</td>
+            <td>114</td>
+            <td>3</td>
+            <td>Def. Gunther (singles)</td>
+        </tr>
+    </table>
+    <!-- Champ Totals Table -->
+        <table style="width: 75%;" class="totals">
+        <tr>
+            <th>Rank</th>
+            <th>Wrestler</th>
+            <th>No. of reigns</th>
+            <th>Total days</th>
+            <th>Defenses</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-us"></span> Roman Reigns</td>
+            <td>1</td>
+            <td>672</td>
+            <td>13</td>
+        </tr>
+        <tr>
+            <th>2</th>
+            <td><span class="fi fi-at"></span> Gunther</td>
+            <td>2</td>
+            <td>448</td>
+            <td>11</td>
+        </tr>
+        <tr>
+            <th>3</th>
+            <td><span class="fi fi-lu"></span> Argus</td>
+            <td>1</td>
+            <td>224</td>
+            <td>3</td>
+        </tr>
+        <tr>
+            <th>4</th>
+            <td><span class="fi fi-us"></span> The Rock</td>
+            <td>1</td>
+            <td>134</td>
+            <td>4</td>
+        </tr>
+        <tr>
+            <th>5</th>
+            <td><span class="fi fi-jp"></span> Charlie Sakamoto</td>
+            <td>2</td>
+            <td>114</td>
+            <td>3</td>
+        </tr>
+        <tr>
+            <th>6</th>
+            <td><span class="fi fi-ng"></span> Oba Femi</td>
+            <td>1</td>
+            <td>107</td>
+            <td>1</td>
+        </tr>
+        <tr>
+            <th>7</th>
+            <td><span class="fi fi-mx"></span> Olmeca</td>
+            <td>1</td>
+            <td>56</td>
+            <td>0</td>
+        </tr>
+    </table>
+    </details>
+
+    <!-- IWB Bridgerweight Championship -->
+    <details>
+    <summary>IWB World Bridgerweight Champion</summary> 
+        <table class="champ-history">
+        <tr>
+            <th>No.</th>
+            <th>Champion</th>
+            <th>Date</th>
+            <th>Event</th>
+            <th>Days</th>
+            <th>Defenses</th>
+            <th>Notes</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> Vacant</td>
+            <td>May 2024</td>
+            <td>WTS 1</td>
+            <td>0</td>
+            <td>0</td>
+            <td></td>
+        </tr>
+    </table>
+    <!-- Champ Totals Table -->
+        <table style="width: 75%;" class="totals">
+        <tr>
+            <th>Rank</th>
+            <th>Wrestler</th>
+            <th>No. of reigns</th>
+            <th>Total days</th>
+            <th>Defenses</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> Vacant</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+        </tr>
+    </table>
+    </details>
+
+    <!-- IWB Middleweight Championship -->
+    <details>
+    <summary>IWB World Middleweight Champion</summary> 
+        <table class="champ-history">
+        <tr>
+            <th>No.</th>
+            <th>Champion</th>
+            <th>Date</th>
+            <th>Event</th>
+            <th>Days</th>
+            <th>Defenses</th>
+            <th>Notes</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> Vacant</td>
+            <td>May 2024</td>
+            <td>WTS 1</td>
+            <td>0</td>
+            <td>0</td>
+            <td></td>
+        </tr>
+    </table>
+    <!-- Champ Totals Table -->
+        <table style="width: 75%;" class="totals">
+        <tr>
+            <th>Rank</th>
+            <th>Wrestler</th>
+            <th>No. of reigns</th>
+            <th>Total days</th>
+            <th>Defenses</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> Vacant</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+        </tr>
+    </table>
+    </details>
+
+    <!-- IWB Welterweight Championship -->
+    <details>
+    <summary>IWB World Welterweight Champion</summary> 
+        <table class="champ-history">
+        <tr>
+            <th>No.</th>
+            <th>Champion</th>
+            <th>Date</th>
+            <th>Event</th>
+            <th>Days</th>
+            <th>Defenses</th>
+            <th>Notes</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> Vacant</td>
+            <td>May 2024</td>
+            <td>WTS 1</td>
+            <td>0</td>
+            <td>0</td>
+            <td></td>
+        </tr>
+    </table>
+    <!-- Champ Totals Table -->
+        <table style="width: 75%;" class="totals">
+        <tr>
+            <th>Rank</th>
+            <th>Wrestler</th>
+            <th>No. of reigns</th>
+            <th>Total days</th>
+            <th>Defenses</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> Vacant</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+        </tr>
+    </table>
+    </details>
+
+    <h2>List of IWB women's world champions</h2>
+
+    <!-- IWB Lightweight Championship -->
+    <details>
+    <summary>IWB World Lightweight Champion</summary> 
+        <table class="champ-history">
+        <tr>
+            <th>No.</th>
+            <th>Champion</th>
+            <th>Date</th>
+            <th>Event</th>
+            <th>Days</th>
+            <th>Defenses</th>
+            <th>Notes</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> Vacant</td>
+            <td>May 2024</td>
+            <td>WTS 1</td>
+            <td>0</td>
+            <td>0</td>
+            <td></td>
+        </tr>
+    </table>
+    <!-- Champ Totals Table -->
+        <table style="width: 75%;" class="totals">
+        <tr>
+            <th>Rank</th>
+            <th>Wrestler</th>
+            <th>No. of reigns</th>
+            <th>Total days</th>
+            <th>Defenses</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> Vacant</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+        </tr>
+    </table>
+    </details>
+
+    <!-- IWB Featherweight Championship -->
+    <details>
+    <summary>IWB World Featherweight Champion</summary> 
+        <table class="champ-history">
+        <tr>
+            <th>No.</th>
+            <th>Champion</th>
+            <th>Date</th>
+            <th>Event</th>
+            <th>Days</th>
+            <th>Defenses</th>
+            <th>Notes</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> Vacant</td>
+            <td>May 2024</td>
+            <td>WTS 1</td>
+            <td>0</td>
+            <td>0</td>
+            <td></td>
+        </tr>
+    </table>
+    <!-- Champ Totals Table -->
+        <table style="width: 75%;" class="totals">
+        <tr>
+            <th>Rank</th>
+            <th>Wrestler</th>
+            <th>No. of reigns</th>
+            <th>Total days</th>
+            <th>Defenses</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> Vacant</td>
+            <td>0</td>
+            <td>0</td>
+            <td>0</td>
+        </tr>
+    </table>
+    </details>
+
+</body></html>

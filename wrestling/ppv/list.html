@@ -1,0 +1,417 @@
+ <!DOCTYPE html>
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.3.2/css/flag-icons.min.css">
+    <title>Wrestling Wiki</title>
+    <style>
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #ffffff;
+        }
+        
+        .infobox {
+            float: right;
+            margin-left: 20px;
+            margin-bottom: 10px;
+            width: 310px;
+            border: 1px solid #aaa;
+            background-color: #f9f9f9;
+            padding: 5px;
+            font-size: 90%;
+        }
+        
+        .infobox img {
+            width: 100%;
+            height: auto;
+        }
+        
+        .infobox-title caption {
+            font-size: 1.2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 5px;
+            margin: -5px -5px 10px -5px;
+        }
+        
+        .infobox-image {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        
+        .infobox-caption {
+            text-align: center;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .infobox-content {
+            line-height: 1.4;
+        }
+        
+        .infobox-section {
+            background-color: #b0c4de;
+            font-weight: bold;
+            padding: 3px 5px;
+            margin: 5px -5px;
+            text-align: center;
+        }
+
+        .infobox-resection {
+            background-color: #d4d9df;
+            font-weight: bold;
+            padding: 3px 5px;
+            margin: 5px -5px;
+            text-align: center;
+        }
+        .infobox table {
+            width: 100%;
+            border: none;
+            margin: 5px 0;
+        }
+        
+        .infobox table td, .infobox table th {
+            border: none;
+            padding: 2px 5px;
+            text-align: left;
+        }
+        
+        .infobox table th {
+            background-color: transparent;
+            font-weight: bold;
+            width: 35%;
+            vertical-align: top;
+        }
+        
+        .infobox table td {
+            background-color: transparent;
+        }
+        
+        .infobox-career-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            padding: 2px 5px;
+        }
+        
+        .infobox-career-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 5px;
+        }
+        
+        .infobox-career-years {
+            width: 35%;
+        }
+        
+        .infobox-career-team {
+            width: 35%;
+        }
+        
+        .infobox-career-apps {
+            width: 15%;
+            text-align: right;
+        }
+        
+        .infobox-career-goals {
+            width: 15%;
+            text-align: right;
+        }
+        
+        .medal-table {
+            width: 100%;
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        
+        .medal-table td {
+            padding: 3px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .medal-header {
+            background-color: #eeeeee;
+            font-weight: bold;
+            text-align: center;
+            padding: 3px;
+        }
+        
+        .medal-competition {
+            background-color: #cccccc;
+            font-weight: bold;
+            text-align: center;
+            padding: 3px;
+        }
+        
+        table {
+            width: 100%;
+            margin-left: 0;
+            margin-right: auto;
+            border-collapse: collapse;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            padding: 10px;
+            font-weight: bold;
+        }
+        
+        td {
+            padding: 8px;
+            background-color: #f8f9fa;
+        }
+        
+        caption {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        
+        
+        .total-row td {
+            background-color: #f2f2f2 !important;
+            font-weight: bold;
+        }
+        
+
+        .fi {
+            display: inline-block !important;
+            width: 23px !important;
+            height: 15px !important;
+            background-size: cover !important;
+            border: 1px solid #ddd;
+        }
+
+        .match-card td {
+            text-align: left;
+        }
+
+        .champ-history td {
+            text-align: left;
+        }
+
+        .champ-history td:nth-child(7) {
+            font-size: 0.8em;
+            overflow-wrap: break-word;
+            word-break: break-word; 
+        }
+
+        .champ-history td:nth-child(6),
+        .champ-history td:nth-child(5) {
+            text-align: center;
+
+        }
+
+        .totals td:nth-child(2) {
+            text-align: left;
+        }
+
+        .p4p td:nth-child(2),
+        .p4p td:nth-child(5),
+        .p4p th:nth-child(2),
+        .p4p th:nth-child(5) {
+            text-align: left;
+        }
+
+        h1 {
+            padding-bottom: 5px;
+        }
+        
+        h2 {
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        
+        h3 {
+            margin-top: 20px;
+        }
+        
+        .clearfix {
+            clear: both;
+        }
+        
+        @media (max-width: 768px) {
+            .infobox {
+                float: none;
+                width: 100%;
+                margin: 0 0 20px 0;
+            }
+        }
+        
+        /* Bracket table - completely separate styles */
+        table.bracket {
+            width: auto;
+            margin: 1em 2em 1em 1em;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 90%;
+            border-style: none;
+        }
+        
+        table.bracket td {
+            border: none;
+            background-color: transparent;
+            padding: 0;
+        }
+        
+        /* Bracket cell styles */
+        table.bracket .header {
+            background-color: #f2f2f2;
+            padding: 8px;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+        table.bracket .seed {
+            background-color: #f2f2f2;
+            padding: 8px;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+        table.bracket .team {
+            padding: 8px;
+            background-color: #f8f9fa;
+            overflow:inherit;
+            border: 1px solid #ddd;
+        }
+        table.bracket .score {
+            text-align:center;
+          padding: 8px;
+            background-color: #f8f9fa;
+            overflow:inherit;
+            border: 1px solid #ddd;
+        }
+        table.bracket .conn {
+            border-style:solid;
+            border-width:0;
+            border-color:inherit;
+        }
+        table.bracket .h7 { 
+            height:7px;
+        }
+
+        details {
+            margin-bottom: 20px;
+        }
+
+        summary {
+            font-weight: bold;
+            cursor: pointer;
+            padding: 10px;
+            background-color: #f2f2f2;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+
+        summary:hover {
+            background-color: #e3f2fd;
+        }
+
+        details table caption {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- Match Table -->
+    <details>
+        <summary>World Title Series 1: Austin vs. Misawa</summary>
+        <table class="match-card">
+            <tbody><tr>
+                <th>No.</th>
+                <th>Match Type</th>
+                <th>Weight Class</th>
+                <th></th>
+                <th>vs.</th>
+                <th></th>
+                <th>Method</th>
+                <th>Notes</th>
+            </tr>
+            <tr>
+                <th>1</th>
+                <td>Singles</td>
+                <td>Middleweight</td>
+                <td><span class="fi fi-mx"></span> Blue Panther </td>
+                <td>vs.</td>
+                <td><span class="fi fi-us"></span> Kurt Angle </td>
+                <td></td>
+                <th></th>
+            </tr>
+            <tr>
+                <th>3</th>
+                <td>6-Man Tag</td>
+                <td>Openweight</td>
+                <td>
+                    <div>
+                        <span class="fi fi-us" style="margin-right:3px;"></span>Hulk Hogan
+                    </div>
+                    <div style="margin-top:2px;">
+                        <span class="fi fi-us" style="margin-right:3px;"></span>Kevin Nash
+                    </div>
+                    <div style="margin-top:2px;">
+                        <span class="fi fi-us" style="margin-right:3px;"></span>Scott Hall
+                    </div>
+                </td>
+                <td>vs.</td>
+                <td>
+                    <div>
+                        <span class="fi fi-us" style="margin-right:3px;"></span>Vader
+                    </div>
+                    <div style="margin-top:2px;">
+                        <span class="fi fi-us" style="margin-right:3px;"></span>Goldberg
+                    </div>
+                    <div style="margin-top:2px;">
+                        <span class="fi fi-mx" style="margin-right:3px;"></span>Mil Mascaras
+                    </div>
+                </td>
+                <td></td>
+                <td>nWo: Hogan, Hall, Scott</td>
+            </tr>
+            <tr>
+                <th>4</th>
+                <td>Singles</td>
+                <td>Bridgerweight</td>
+                <td><span class="fi fi-mx"></span> Atlantis </td>
+                <td>vs.</td>
+                <td><span class="fi fi-us"></span> Shawn Michaels </td>
+                <td></td>
+                <th></th>
+            </tr>
+            <tr>
+                <th>5</th>
+                <td>Singles</td>
+                <td>Heavyweight</td>
+                <td><span class="fi fi-us"></span> The Rock </td>
+                <td>vs.</td>
+                <td><span class="fi fi-jp"></span> Kenta Kobashi </td>
+                <td></td>
+                <th></th>
+            </tr>
+            <tr>
+                <th>6</th>
+                <td>Singles</td>
+                <td>Heavyweight</td>
+                <td><span class="fi fi-us"></span> Steve Austin </td>
+                <td>vs.</td>
+                <td><span class="fi fi-jp"></span> Mitsuharu Misawa </td>
+                <td></td>
+                <th></th>
+            </tr>
+            <tr>
+                <th colspan="2">Livestream</th>
+                <th colspan="2"><span class="fi fi-jp"></span> Tokyo Dome</th>
+                <th colspan="2">July 2000</th>
+                <th>NHK / ESPN </th>
+                <th> 600K Buys</th>
+            </tr>
+        </tbody></table>
+
+    </details>

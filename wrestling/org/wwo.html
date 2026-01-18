@@ -29,10 +29,11 @@
             height: auto;
         }
         
-        .infobox-title caption {
+        .infobox-title {
             font-size: 1.2em;
             font-weight: bold;
             text-align: center;
+            background-color: #b0c4de;
             padding: 5px;
             margin: -5px -5px 10px -5px;
         }
@@ -54,6 +55,14 @@
         
         .infobox-section {
             background-color: #b0c4de;
+            font-weight: bold;
+            padding: 3px 5px;
+            margin: 5px -5px;
+            text-align: center;
+        }
+
+        .infobox-champion {
+            background-color: #ded2b0;
             font-weight: bold;
             padding: 3px 5px;
             margin: 5px -5px;
@@ -318,6 +327,61 @@
         details table caption {
             display: none;
         }
+        .win {
+            background-color: #bbffdd;
+        }
+        .loss {
+            background-color: #f8d7da;
+        }
+        .draw {
+            background-color: #ccddee;
+        }
+        .records td:nth-child(2),
+        .records td:nth-child(4),
+        .records td:nth-child(6),
+        .records td:nth-child(8),
+        .records td:nth-child(10) {
+            text-align: left;
+        }
+
+        .matches td:nth-child(4),
+        .matches td:nth-child(5),
+        .matches td:nth-child(6),
+        .matches td:nth-child(7),
+        .matches td:nth-child(8),
+        .matches td:nth-child(9) {
+            text-align: left;
+        }
+
+        .matches {
+            font-size: 0.9em;
+        }
+
+        .matches td:nth-child(9) {
+            font-size: 0.75em;
+        }
+
+        .matchesum {
+            width: 25%;
+            font-size: 0.85em;
+        }
+
+        details summary {
+            margin-bottom: 0;   /* remove extra space below summary */
+        }
+        details[open] summary {
+            margin-bottom: 10px;   /* remove extra space below summary */
+        }
+        details {
+            margin-bottom: 10px; /* space between details blocks */
+        }
+
+        table.matchesum th,
+        table.matchesum td {
+            padding: 6px 6px;  /* smaller than the default 8px/10px */
+        }
+
+
     </style>
 </head>
 

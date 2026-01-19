@@ -1,0 +1,1281 @@
+#!/usr/bin/env python3
+"""
+Wrestling Database Auto-Updater
+================================
+Reads wrestling/ppv/list.html, extracts SINGLES match data only, updates all HTML files.
+
+Usage:
+    python update_wrestling.py
+
+After running, check the changes and git push if everything looks good.
+"""
+
+from bs4 import BeautifulSoup, Comment
+from datetime import datetime
+from collections import defaultdict
+import os
+import re
+
+class WrestlingDatabase:
+    def __init__(self):
+        self.wrestlers = {}
+        self.championships = {
+            'wwf': {'heavyweight': [], 'bridgerweight': [], 'middleweight': [], 
+                   'welterweight': [], 'lightweight': [], 'featherweight': []},
+            'wwo': {'heavyweight': [], 'bridgerweight': [], 'middleweight': [], 
+                   'welterweight': [], 'lightweight': [], 'featherweight': []},
+            'iwb': {'heavyweight': [], 'bridgerweight': [], 'middleweight': [], 
+                   'welterweight': [], 'lightweight': [], 'featherweight': []},
+            'ring': {'heavyweight': [], 'bridgerweight': [], 'middleweight': [], 
+                    'welterweight': [], 'lightweight': [], 'featherweight': []}
+        }
+        self.events = []
+        self.broadcasts = []
+        self.tournaments = {'open': [], 'trios': []}
+        self.vacancies = []
+
+    def parse_date(self, date_str):
+        """Parse date from various formats"""
+        try:
+            # Try "Month DD, YYYY" format (e.g., "July 6, 2000")
+            date_obj = datetime.strptime(date_str.strip(), "%B %d, %Y")
+            return date_obj
+        except:
+            try:
+                # Try "Month YYYY" format (defaults to 1st of month)
+                date_obj = datetime.strptime(date_str.strip(), "%B %Y")
+                return date_obj
+            except:
+                return None
+
+    def days_between(self, date1_str, date2_str):
+        """Calculate days between two dates"""
+        d1 = self.parse_date(date1_str)
+        d2 = self.parse_date(date2_str)
+        if d1 and d2:
+            return abs((d2 - d1).days)
+        return None
+
+    def format_number(self, num):
+        """Format number with comma for thousands"""
+        if num is None:
+            return ""
+        return f"{num:,}"
+
+    def get_country(self, element):
+        """Extract country code from flag span"""
+        flag = element.find('span', class_='fi')
+        if flag:
+            classes = flag.get('class', [])
+            for c in classes:
+                if c.startswith('fi-'):
+                    return c.replace('fi-', '')
+        return 'un'
+
+    def clean_name(self, text):
+        """Clean wrestler name (remove (c) champion markers)"""
+        text = text.strip()
+        text = re.sub(r'\s*\(c\)\s*', '', text, flags=re.IGNORECASE)
+        return text.strip()
+
+    def get_wrestler(self, name):
+        """Get or create wrestler"""
+        if name not in self.wrestlers:
+            self.wrestlers[name] = {
+                'name': name,
+                'country': 'un',
+                'matches': [],
+                'wins': 0,
+                'losses': 0,
+                'draws': 0,
+                'pinfall_wins': 0,
+                'submission_wins': 0,
+                'decision_wins': 0,
+                'pinfall_losses': 0,
+                'submission_losses': 0,
+                'decision_losses': 0,
+                'lucha_wins': 0,
+                'championships': [],
+                'main_events': 0,
+                'wrestlemania_main_events': 0,
+                'libremania_main_events': 0,
+                'open_tournament_wins': 0,
+                'trios_tournament_wins': 0
+            }
+        return self.wrestlers[name]
+
+    def parse_vacancy_comments(self, html_content):
+        """Parse VACATED comments from HTML"""
+        # Find all comments
+        soup = BeautifulSoup(html_content, 'html.parser')
+        comments = soup.find_all(string=lambda text: isinstance(text, Comment))
+        
+        for comment in comments:
+            comment_text = comment.strip()
+            if 'VACATED TITLE' in comment_text.upper():
+                # Parse: <!-- VACATED TITLE: WWF Heavyweight. Champion: The Rock. Message: ... Date: 3 December 2028. -->
+                vacancy = {}
+                
+                # Extract org and weight
+                if 'WWF' in comment_text.upper():
+                    vacancy['org'] = 'wwf'
+                elif 'WWO' in comment_text.upper():
+                    vacancy['org'] = 'wwo'
+                elif 'IWB' in comment_text.upper():
+                    vacancy['org'] = 'iwb'
+                elif 'RING' in comment_text.upper():
+                    vacancy['org'] = 'ring'
+                else:
+                    continue
+                
+                # Extract weight class
+                weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
+                for weight in weights:
+                    if weight in comment_text.lower():
+                        vacancy['weight'] = weight
+                        break
+                
+                # Extract champion name
+                champion_match = re.search(r'Champion:\s*([^.]+)', comment_text, re.IGNORECASE)
+                if champion_match:
+                    vacancy['champion'] = champion_match.group(1).strip()
+                
+                # Extract date
+                date_match = re.search(r'Date:\s*([^.]+)', comment_text, re.IGNORECASE)
+                if date_match:
+                    vacancy['date'] = date_match.group(1).strip()
+                
+                # Extract message
+                message_match = re.search(r'Message:\s*([^.]+(?:\.[^D])*)', comment_text, re.IGNORECASE)
+                if message_match:
+                    vacancy['message'] = message_match.group(1).strip()
+                
+                if 'weight' in vacancy and 'date' in vacancy:
+                    self.vacancies.append(vacancy)
+
+    def parse_events(self, html_file):
+        """Parse all events from wrestling/ppv/list.html"""
+        with open(html_file, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        
+        # Parse vacancy comments first
+        self.parse_vacancy_comments(html_content)
+        
+        soup = BeautifulSoup(html_content, 'html.parser')
+        details = soup.find_all('details')
+        
+        for detail in details:
+            summary = detail.find('summary')
+            if not summary:
+                continue
+                
+            event_name = summary.get_text().strip()
+            table = detail.find('table', class_='match-card')
+            event_name = event_name.split(':')[0].strip()
+            event_name = re.sub(r'World Title Series (\d+)', r'WTS \1', event_name)
+
+            if table:
+                self.parse_match_card(table, event_name)
+            
+
+    def parse_match_card(self, table, event_name):
+        """Parse individual match card - SINGLES MATCHES ONLY"""
+        rows = table.find('tbody').find_all('tr')
+        info_row = rows[-1]
+        match_rows = rows[1:-1]
+        
+        # Extract event info
+        cells = info_row.find_all(['th', 'td'])
+        event_date = None
+        event_location = None
+        event_country = 'un'
+        ppv_buys = None
+        
+        for cell in cells:
+            text = cell.get_text().strip()
+            flag = cell.find('span', class_='fi')
+            
+            if flag and not event_location:
+                event_country = self.get_country(cell)
+                event_location = text
+            elif re.search(r'\d{4}', text) and re.search(r'[A-Za-z]', text):
+                event_date = text
+            elif 'Buys' in text or 'buys' in text:
+                ppv_buys = text
+
+        event = {
+            'name': event_name,
+            'date': event_date,
+            'location': event_location,
+            'country': event_country,
+            'ppv_buys': ppv_buys,
+            'matches': []
+        }
+
+        singles_match_idx = -1
+        
+        # Parse matches
+        for idx, row in enumerate(match_rows):
+            cols = row.find_all(['td', 'th'])
+            if len(cols) < 7:
+                continue
+
+            match_num = cols[0].get_text().strip()
+            match_type = cols[1].get_text().strip()
+            weight_class = cols[2].get_text().strip()
+            fighter1_cell = cols[3]
+            result_cell = cols[4]
+            fighter2_cell = cols[5]
+            method = cols[6].get_text().strip()
+            notes = cols[7].get_text().strip() if len(cols) > 7 else ''
+
+            # ONLY PROCESS SINGLES MATCHES
+            if match_type.lower() != 'singles':
+                continue
+            
+            singles_match_idx += 1
+
+            fighter1 = self.clean_name(fighter1_cell.get_text())
+            fighter1_country = self.get_country(fighter1_cell)
+            fighter2 = self.clean_name(fighter2_cell.get_text())
+            fighter2_country = self.get_country(fighter2_cell)
+            result = result_cell.get_text().strip().lower()
+
+            winner = None
+            loser = None
+            is_draw = False
+            
+            if result in ['def.', 'defeated', 'def']:
+                winner = fighter1
+                loser = fighter2
+            elif result in ['draw', 'vs.', 'vs']:
+                is_draw = True
+
+            match = {
+                'match_num': int(match_num) if match_num.isdigit() else 0,
+                'type': match_type,
+                'weight_class': weight_class,
+                'fighter1': fighter1,
+                'fighter1_country': fighter1_country,
+                'fighter2': fighter2,
+                'fighter2_country': fighter2_country,
+                'winner': winner,
+                'loser': loser,
+                'is_draw': is_draw,
+                'method': method,
+                'notes': notes,
+                'event': event_name,
+                'date': event_date,
+                'location': event_location,
+                'location_country': event_country
+            }
+
+            event['matches'].append(match)
+            
+            # Check if this is the main event (last singles match)
+            is_main_event = (idx == len(match_rows) - 1)
+            self.record_match(match, is_main_event)
+
+        self.events.append(event)
+        
+        if ppv_buys:
+            self.broadcasts.append({
+                'event': event_name,
+                'date': event_date,
+                'buys': ppv_buys
+            })
+
+    def is_title_match(self, notes):
+        """Check if notes indicate a title match"""
+        if not notes:
+            return False, None
+        
+        notes_lower = notes.lower()
+        orgs = ['wwf', 'wwo', 'iwb', 'ring']
+        title_keywords = ['title', 'titles', 'championship', 'championships']
+        
+        matched_orgs = []
+        for org in orgs:
+            if org in notes_lower:
+                for keyword in title_keywords:
+                    if keyword in notes_lower:
+                        matched_orgs.append(org)
+                        break
+
+        return (len(matched_orgs) > 0), matched_orgs
+
+    def record_match(self, match, is_main_event):
+        """Record match in wrestler stats"""
+        w1 = self.get_wrestler(match['fighter1'])
+        w2 = self.get_wrestler(match['fighter2'])
+        
+        w1['country'] = match['fighter1_country']
+        w2['country'] = match['fighter2_country']
+
+        if is_main_event:
+            w1['main_events'] += 1
+            w2['main_events'] += 1
+            
+            if 'wrestlemania' in match['event'].lower():
+                w1['wrestlemania_main_events'] += 1
+                w2['wrestlemania_main_events'] += 1
+            elif 'libremania' in match['event'].lower():
+                w1['libremania_main_events'] += 1
+                w2['libremania_main_events'] += 1
+
+        # Build enhanced notes for wrestler bio
+        # Build enhanced notes for wrestler bio
+        is_title, orgs = self.is_title_match(match['notes'])
+
+        if is_title and match['winner']:
+            weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
+            notes_lower = match['notes'].lower()
+            weight = None
+            for w in weights:
+                if w in notes_lower or w in match['weight_class'].lower():
+                    weight = w
+                    break
+            
+            if weight:
+                retained_orgs = []
+                won_orgs = []
+                
+                for org in orgs:
+                    current_reigns = self.championships[org][weight]
+                    last_reign = current_reigns[-1] if current_reigns else None
+                    
+                    # Check if this is a new championship win or retention
+                    if last_reign and last_reign['champion'] == match['winner']:
+                        retained_orgs.append('The Ring' if org == 'ring' else org.upper())
+                    else:
+                        won_orgs.append('The Ring' if org == 'ring' else org.upper())
+                
+                # Build bio notes - championships only, ignore original notes
+                bio_notes_parts = []
+                if retained_orgs:
+                    bio_notes_parts.append(f"Retained {', '.join(retained_orgs)} {weight.capitalize()} Championship")
+                if won_orgs:
+                    bio_notes_parts.append(f"Won {', '.join(won_orgs)} {weight.capitalize()} Championship")
+                
+                bio_notes = '<br>'.join(bio_notes_parts)
+            else:
+                # Title match but no weight found - keep original notes
+                bio_notes = match['notes']
+        else:
+            # Not a title match - keep original notes
+            bio_notes = match['notes']
+
+        if match['is_draw']:
+            w1['draws'] += 1
+            w2['draws'] += 1
+            w1['matches'].append({**match, 'result': 'Draw', 
+                                 'record': f"{w1['wins']}-{w1['losses']}-{w1['draws']}",
+                                 'bio_notes': bio_notes})
+            w2['matches'].append({**match, 'result': 'Draw', 
+                                 'record': f"{w2['wins']}-{w2['losses']}-{w2['draws']}",
+                                 'bio_notes': bio_notes})
+        elif match['winner']:
+            winner = w1 if match['winner'] == match['fighter1'] else w2
+            loser = w2 if match['winner'] == match['fighter1'] else w1
+            
+            winner['wins'] += 1
+            loser['losses'] += 1
+
+            # Classify method: Pinfall, Submission, Draw, or Decision (anything else)
+            method_lower = match['method'].lower()
+            if 'pinfall' in method_lower:
+                winner['pinfall_wins'] += 1
+                loser['pinfall_losses'] += 1
+            elif 'submission' in method_lower:
+                winner['submission_wins'] += 1
+                loser['submission_losses'] += 1
+            elif 'draw' not in method_lower:
+                # Anything that's not pinfall, submission, or draw = decision
+                winner['decision_wins'] += 1
+                loser['decision_losses'] += 1
+            
+            # Check for Lucha de Apuestas in notes
+            if 'lucha de apuestas' in match['notes'].lower() or 'apuesta' in match['notes'].lower():
+                winner['lucha_wins'] += 1
+
+            # Build loser notes if it was a title match
+            if is_title and weight:
+                loser_bio_notes = f"For {', '.join(retained_orgs + won_orgs)} {weight.capitalize()} Championship"
+            else:
+                loser_bio_notes = bio_notes
+
+            winner['matches'].append({**match, 'result': 'Win', 
+                                    'record': f"{winner['wins']}-{winner['losses']}-{winner['draws']}",
+                                    'bio_notes': bio_notes})
+            loser['matches'].append({**match, 'result': 'Loss', 
+                                    'record': f"{loser['wins']}-{loser['losses']}-{loser['draws']}",
+                                    'bio_notes': loser_bio_notes})
+
+            # Check for championship
+            self.check_championship_change(match)
+
+    def check_championship_change(self, match):
+        """Check if match involved a championship and update reigns properly."""
+        is_title, orgs = self.is_title_match(match['notes'])
+        if not is_title:
+            return
+
+        weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
+        notes_lower = match['notes'].lower()
+        weight = None
+        for w in weights:
+            if w in notes_lower or w in match['weight_class'].lower():
+                weight = w
+                break
+        if not weight:
+            return
+
+        for org in orgs:
+            current_reigns = self.championships[org][weight]
+            last_reign = current_reigns[-1] if current_reigns else None
+
+            # Determine if this is a new reign
+            # Titles only change on pinfall, submission, or decision (not DQ/countout)
+            method_lower = match['method'].lower()
+            can_change_title = 'pinfall' in method_lower or 'submission' in method_lower or ('dq' not in method_lower and 'countout' not in method_lower and 'count out' not in method_lower and 'disqualification' not in method_lower)
+
+            if match['winner'] and (not last_reign or last_reign['champion'] != match['winner']) and can_change_title:
+                # Start new reign
+                self.add_championship_reign(org, weight, match)
+                # Set notes to opponent for the first match of reign
+                current_reigns[-1]['notes'] = f"Def. {match['fighter2'] if match['winner']==match['fighter1'] else match['fighter1']}"
+            elif last_reign:
+                # Existing reign - check if champion retained (any result except pinfall/submission loss)
+                method_lower = match['method'].lower()
+                
+                # Determine if champion lost the title (pinfall or submission loss)
+                champion_lost = False
+                if match['winner'] and match['winner'] != last_reign['champion']:
+                    if 'pinfall' in method_lower or 'submission' in method_lower:
+                        champion_lost = True
+                
+                # If champion didn't lose, it's a successful defense
+                if not champion_lost:
+                    last_reign['defenses'] += 1
+                    
+                    # Update days held up to this match
+                    if last_reign['date'] and match['date']:
+                        last_reign['days'] = self.days_between(last_reign['date'], match['date'])
+
+    def add_championship_reign(self, org, weight, match):
+        """Add new championship reign"""
+        winner_country = match['fighter1_country'] if match['winner'] == match['fighter1'] else match['fighter2_country']
+            
+        champ = {
+            'champion': match['winner'],
+            'country': winner_country,
+            'date': match['date'],
+            'event': match['event'],
+            'defenses': 0,  # Start at 0 - the win itself is not a defense
+            'days': None,
+            'notes': match['notes']
+        }
+        
+        self.championships[org][weight].append(champ)
+        
+        wrestler = self.get_wrestler(match['winner'])
+        wrestler['championships'].append({'org': org, 'weight': weight, 'date': match['date']})
+
+    def process_vacancies(self):
+        """Process vacancy comments and add them to championship history"""
+        for vacancy in self.vacancies:
+            org = vacancy['org']
+            weight = vacancy['weight']
+            
+            # Add vacancy note to championship history
+            current_reigns = self.championships[org][weight]
+            if current_reigns:
+                # Find the last reign that matches the vacating champion
+                for reign in reversed(current_reigns):
+                    if reign['champion'] == vacancy.get('champion', ''):
+                        # Calculate days if we have both dates
+                        if reign['date'] and vacancy['date']:
+                            reign['days'] = self.days_between(reign['date'], vacancy['date'])
+                        reign['vacancy_message'] = vacancy.get('message', 'Title vacated')
+                        break
+
+    def calculate_championship_days(self):
+        """Calculate days held for each championship reign"""
+        for org in self.championships:
+            for weight in self.championships[org]:
+                reigns = self.championships[org][weight]
+                
+                for i in range(len(reigns)):
+                    if reigns[i]['days'] is not None:
+                        # Days already set (from vacancy comment)
+                        continue
+                    
+                    # Calculate days to next reign
+                    if i < len(reigns) - 1:
+                        reigns[i]['days'] = self.days_between(reigns[i]['date'], reigns[i + 1]['date'])
+
+    def generate_wrestler_page(self, wrestler_name):
+        """Generate wrestler page HTML"""
+        w = self.wrestlers[wrestler_name]
+        total_bouts = w['wins'] + w['losses'] + w['draws']
+        
+        # Sort matches in reverse chronological order
+        sorted_matches = sorted(w['matches'], key=lambda x: self.events.index(
+            next(e for e in self.events if e['name'] == x['event'])), reverse=True)
+
+        html = "<h3>Professional wrestling record</h3>\n\n"
+        
+        # Summary table
+        html += '<table class="matchesum">\n'
+        html += '    <tbody><tr>\n'
+        html += f'        <th>{total_bouts} fights</th>\n'
+        html += f'        <th>{w["wins"]} wins</th>\n'
+        html += f'        <th>{w["losses"]} losses</th>\n'
+        html += '    </tr>\n'
+        html += '    <tr>\n'
+        html += '        <th style="text-align: left;"> By pinfall</th>\n'
+        html += f'        <td class="win">{w["pinfall_wins"]}</td>\n'
+        html += f'        <td class="loss">{w["pinfall_losses"]}</td>\n'
+        html += '    </tr>\n'
+        html += '    <tr>\n'
+        html += '        <th style="text-align: left;"> By submission</th>\n'
+        html += f'        <td class="win">{w["submission_wins"]}</td>\n'
+        html += f'        <td class="loss">{w["submission_losses"]}</td>\n'
+        html += '    </tr>\n'
+        html += '    <tr>\n'
+        html += '        <th style="text-align: left;"> By decision</th>\n'
+        html += f'        <td class="win">{w["decision_wins"]}</td>\n'
+        html += f'        <td class="loss">{w["decision_losses"]}</td>\n'
+        html += '    </tr>\n'
+        html += '    <tr>\n'
+        html += '        <th style="text-align: left;"> Draws</th>\n'
+        html += f'        <td colspan="2" class="draw">{w["draws"]}</td>\n'
+        html += '    </tr>\n'
+        html += '</tbody></table>\n\n'
+
+        # Matches table
+        html += '<table class="matches">\n'
+        html += '    <tbody><tr>\n'
+        html += '        <th>No.</th>\n'
+        html += '        <th>Res.</th>\n'
+        html += '        <th>Record</th>\n'
+        html += '        <th>Opponent</th>\n'
+        html += '        <th>Method</th>\n'
+        html += '        <th>Date</th>\n'
+        html += '        <th>Event</th>\n'
+        html += '        <th>Location</th>\n'
+        html += '        <th>Notes</th>\n'
+        html += '    </tr>\n'
+
+        for idx, match in enumerate(sorted_matches):
+            opponent = match['fighter2'] if match['fighter1'] == w['name'] else match['fighter1']
+            opponent_country = match['fighter2_country'] if match['fighter1'] == w['name'] else match['fighter1_country']
+            result_class = match['result'].lower()
+            
+            html += '    <tr>\n'
+            html += f'        <th>{total_bouts - idx}</th>\n'
+            html += f'        <td class="{result_class}">{match["result"]}</td>\n'
+            html += f'        <td>{match["record"]}</td>\n'
+            html += f'        <td><span class="fi fi-{opponent_country}"></span> {opponent}</td>\n'
+            html += f'        <td>{match["method"]}</td>\n'
+            html += f'        <td>{match["date"]}</td>\n'
+            html += f'        <td>{match["event"]}</td>\n'
+            html += f'        <td><span class="fi fi-{match["location_country"]}"></span> {match["location"]}</td>\n'
+            html += f'        <td>{match.get("bio_notes", match["notes"])}</td>\n'
+            html += '    </tr>\n'
+
+        html += '</tbody></table>\n'
+        return html
+
+    def generate_championship_history_html(self, org, weight):
+        """Generate championship history table for an org/weight"""
+        reigns = self.championships[org][weight]
+        if not reigns:
+            return ''
+        
+        # Calculate totals per wrestler
+        totals = defaultdict(lambda: {'reigns': 0, 'days': 0, 'defenses': 0, 'country': 'un'})
+        
+        for reign in reigns:
+            champ = reign['champion']
+            totals[champ]['reigns'] += 1
+            totals[champ]['days'] += reign['days'] if reign['days'] else 0
+            totals[champ]['defenses'] += reign['defenses']
+            totals[champ]['country'] = reign['country']
+        
+        # Sort by total days
+        sorted_totals = sorted(totals.items(), key=lambda x: x[1]['days'], reverse=True)
+        
+        # Build history table
+        html = f'    <!-- {org.upper()} {weight.capitalize()} Championship -->\n'
+        html += '    <details>\n'
+        org_display = 'The Ring' if org == 'ring' else org.upper()
+        html += f'    <summary>{org_display} World {weight.capitalize()} Champion</summary>\n'
+        html += '        <table class="champ-history">\n'
+        html += '        <tr>\n'
+        html += '            <th>No.</th>\n'
+        html += '            <th>Champion</th>\n'
+        html += '            <th>Date</th>\n'
+        html += '            <th>Event</th>\n'
+        html += '            <th>Days</th>\n'
+        html += '            <th>Defenses</th>\n'
+        html += '            <th>Notes</th>\n'
+        html += '        </tr>\n'
+        
+        for idx, reign in enumerate(reigns):
+            html += '        <tr>\n'
+            html += f'            <th>{idx + 1}</th>\n'
+            html += f'            <td><span class="fi fi-{reign["country"]}"></span> {reign["champion"]}</td>\n'
+            html += f'            <td>{reign["date"]}</td>\n'
+            html += f'            <td>{reign["event"]}</td>\n'
+            html += f'            <td>{self.format_number(reign["days"])}</td>\n'
+            html += f'            <td>{reign["defenses"]}</td>\n'
+            html += f'            <td>{reign["notes"]}</td>\n'
+            html += '        </tr>\n'
+            
+            # Add vacancy message if exists
+            if 'vacancy_message' in reign:
+                html += '        <tr>\n'
+                html += f'            <th colspan="7" style="font-size:0.8em; line-height:1.3; text-align:center;">\n'
+                html += f'                {reign["vacancy_message"]}\n'
+                html += '            </th>\n'
+                html += '        </tr>\n'
+        
+        html += '    </table>\n'
+        
+        # Totals table
+        html += '    <!-- Champ Totals Table -->\n'
+        html += '        <table style="width: 75%;" class="totals">\n'
+        html += '        <tr>\n'
+        html += '            <th>Rank</th>\n'
+        html += '            <th>Wrestler</th>\n'
+        html += '            <th>No. of reigns</th>\n'
+        html += '            <th>Total days</th>\n'
+        html += '            <th>Defenses</th>\n'
+        html += '        </tr>\n'
+        
+        for idx, (champ, stats) in enumerate(sorted_totals):
+            html += '        <tr>\n'
+            html += f'            <th>{idx + 1}</th>\n'
+            html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ}</td>\n'
+            html += f'            <td>{stats["reigns"]}</td>\n'
+            html += f'            <td>{self.format_number(stats["days"])}</td>\n'
+            html += f'            <td>{stats["defenses"]}</td>\n'
+            html += '        </tr>\n'
+        
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+        
+        return html
+
+    def generate_current_champions_html(self):
+        """Generate current champions summary"""
+        weights = {
+            'heavyweight': '(224+ lb / 102+ kg)',
+            'bridgerweight': '(224 lb / 102 kg)',
+            'middleweight': '(202 lb / 92 kg)',
+            'welterweight': '(180 lb / 82 kg)',
+            'lightweight': '(+140 lb / +64 kg)',
+            'featherweight': '(140 lb / 64 kg)'
+        }
+
+        html = ''
+        for weight, limit in weights.items():
+            html += f'    <!-- {weight.capitalize()} Champions -->\n'
+            html += '    <table>\n'
+            html += f'    <caption>{weight.capitalize()} {limit}</caption>\n'
+            html += '        <tbody><tr>\n'
+            html += '            <th>WWF</th>\n'
+            html += '            <th>WWO</th>\n'
+            html += '            <th>IWB</th>\n'
+            html += '            <th><i>The Ring</i></th>\n'
+            html += '        </tr>\n'
+            html += '        <tr>\n'
+
+            for org in ['wwf', 'wwo', 'iwb', 'ring']:
+                reigns = self.championships[org][weight]
+                if reigns:
+                    current = reigns[-1]
+                    wrestler = self.wrestlers.get(current['champion'])
+                    if wrestler:
+                        record = f"{wrestler['wins']}-{wrestler['losses']}-{wrestler['draws']}"
+                    else:
+                        record = f"{current['defenses']} Defenses"
+                    html += f'            <td> <span class="fi fi-{current["country"]}"></span> {current["champion"]} <br> {record} <br> {current["date"]}</td>\n'
+                else:
+                    html += '            <td> <span class="fi fi-un"></span> Vacant <br> Record <br> Date</td>\n'
+
+            html += '        </tr>\n'
+            html += '    </tbody></table>\n\n'
+
+        return html
+
+    def generate_records_html(self):
+        """Generate records page HTML"""
+        wrestler_list = list(self.wrestlers.values())
+
+        # Singles Records
+        top_bouts = sorted(wrestler_list, key=lambda x: x['wins'] + x['losses'] + x['draws'], reverse=True)[:5]
+        top_wins = sorted(wrestler_list, key=lambda x: x['wins'], reverse=True)[:5]
+        top_pinfall = sorted(wrestler_list, key=lambda x: x['pinfall_wins'], reverse=True)[:5]
+        top_submission = sorted(wrestler_list, key=lambda x: x['submission_wins'], reverse=True)[:5]
+        top_lucha = sorted(wrestler_list, key=lambda x: x['lucha_wins'], reverse=True)[:5]
+
+        html = '    <!-- Singles Records -->\n'
+        html += '    <details>\n'
+        html += '    <summary>Singles Records</summary>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2">No.</th>\n'
+        html += '            <th colspan="2">Bouts</th>\n'
+        html += '            <th colspan="2">Wins</th>\n'
+        html += '            <th colspan="2">Pinfall Wins</th>\n'
+        html += '            <th colspan="2">Submission Wins</th>\n'
+        html += '            <th colspan="2"><i>Lucha de Apuestas</i> Wins</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th>Name</th><th>#</th>\n' * 5
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+
+        for i in range(5):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            for top_list, stat_key in [(top_bouts, None), (top_wins, 'wins'), (top_pinfall, 'pinfall_wins'), 
+                                        (top_submission, 'submission_wins'), (top_lucha, 'lucha_wins')]:
+                if i < len(top_list):
+                    w = top_list[i]
+                    if stat_key:
+                        stat = w[stat_key]
+                    else:
+                        stat = w['wins'] + w['losses'] + w['draws']
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                else:
+                    html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+            
+            html += '        </tr>\n'
+
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+
+        return html
+
+    def update_html_files(self):
+        """Update all HTML files"""
+        print("Updating HTML files...")
+        
+        # 1. Update wrestling/wiki.html (current champions at #ringchamps, records at #records)
+        wiki_path = 'wrestling/wiki.html'
+        if os.path.exists(wiki_path):
+            with open(wiki_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Update summary championships
+            current_champs_html = self.generate_current_champions_html()
+            if '<!-- SUMMARYCHAMPS_START -->' in content and '<!-- SUMMARYCHAMPS_END -->' in content:
+                before = content.split('<!-- SUMMARYCHAMPS_START -->')[0]
+                after = content.split('<!-- SUMMARYCHAMPS_END -->')[1]
+                content = before + '<!-- SUMMARYCHAMPS_START -->\n' + current_champs_html + '<!-- SUMMARYCHAMPS_END -->' + after
+            
+            # Update records
+            records_html = self.generate_records_html()
+            if '<!-- RECORDS_START -->' in content and '<!-- RECORDS_END -->' in content:
+                before = content.split('<!-- RECORDS_START -->')[0]
+                after = content.split('<!-- RECORDS_END -->')[1]
+                content = before + '<!-- RECORDS_START -->\n' + records_html + '<!-- RECORDS_END -->' + after
+            
+            with open(wiki_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            print(f"✓ Updated {wiki_path}")
+        
+        # 2. Update org championship pages
+        for org in ['wwf', 'wwo', 'iwb', 'ring']:
+            org_path = f'wrestling/org/{org}.html'
+            if os.path.exists(org_path):
+                with open(org_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Generate all championship histories for this org
+                org_champs_html = ''
+                for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
+                    org_champs_html += self.generate_championship_history_html(org, weight)
+                
+                if f'<!-- {org.upper()}CHAMPS_START -->' in content and f'<!-- {org.upper()}CHAMPS_END -->' in content:
+                    before = content.split(f'<!-- {org.upper()}CHAMPS_START -->')[0]
+                    after = content.split(f'<!-- {org.upper()}CHAMPS_END -->')[1]
+                    content = before + f'<!-- {org.upper()}CHAMPS_START -->\n' + org_champs_html + f'<!-- {org.upper()}CHAMPS_END -->' + after
+                    
+                    with open(org_path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                    print(f"✓ Updated {org_path}")
+
+        HTML_HEADER = """<!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.3.2/css/flag-icons.min.css">
+            <title>Wrestling PPV List</title>
+            <style>
+                body {
+                    max-width: 1450px;
+                    font-family: 'Helvetica', 'Arial', sans-serif;
+                    margin-left: max(20px, calc((100vw - 1450px) / 2));
+                    margin-right: max(20px, calc((100vw - 1450px) / 2));
+                    background-color: #ffffff;
+                }
+                
+                .infobox {
+                    float: right;
+                    margin-left: 20px;
+                    margin-bottom: 10px;
+                    width: 310px;
+                    border: 1px solid #aaa;
+                    background-color: #f9f9f9;
+                    padding: 5px;
+                    font-size: 90%;
+                }
+                
+                .infobox img {
+                    width: 100%;
+                    height: auto;
+                }
+                
+                .infobox-title {
+                    font-size: 1.2em;
+                    font-weight: bold;
+                    text-align: center;
+                    background-color: #b0c4de;
+                    padding: 5px;
+                    margin: -5px -5px 10px -5px;
+                }
+                
+                .infobox-image {
+                    text-align: center;
+                    margin-bottom: 5px;
+                }
+                
+                .infobox-caption {
+                    text-align: center;
+                    font-size: 0.9em;
+                    margin-bottom: 10px;
+                }
+                
+                .infobox-content {
+                    line-height: 1.4;
+                }
+                
+                .infobox-section {
+                    background-color: #b0c4de;
+                    font-weight: bold;
+                    padding: 3px 5px;
+                    margin: 5px -5px;
+                    text-align: center;
+                }
+
+                .infobox-champion {
+                    background-color: #ded2b0;
+                    font-weight: bold;
+                    padding: 3px 5px;
+                    margin: 5px -5px;
+                    text-align: center;
+                }
+
+                .infobox-resection {
+                    background-color: #d4d9df;
+                    font-weight: bold;
+                    padding: 3px 5px;
+                    margin: 5px -5px;
+                    text-align: center;
+                }
+                .infobox table {
+                    width: 100%;
+                    border: none;
+                    margin: 5px 0;
+                }
+                
+                .infobox table td, .infobox table th {
+                    border: none;
+                    padding: 2px 5px;
+                    text-align: left;
+                }
+                
+                .infobox table th {
+                    background-color: transparent;
+                    font-weight: bold;
+                    width: 35%;
+                    vertical-align: top;
+                }
+                
+                .infobox table td {
+                    background-color: transparent;
+                }
+                
+                .infobox-career-header {
+                    display: flex;
+                    justify-content: space-between;
+                    font-weight: bold;
+                    padding: 2px 5px;
+                }
+                
+                .infobox-career-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 2px 5px;
+                }
+                
+                .infobox-career-years {
+                    width: 35%;
+                }
+                
+                .infobox-career-team {
+                    width: 35%;
+                }
+                
+                .infobox-career-apps {
+                    width: 15%;
+                    text-align: right;
+                }
+                
+                .infobox-career-goals {
+                    width: 15%;
+                    text-align: right;
+                }
+                
+                .medal-table {
+                    width: 100%;
+                    margin: 5px 0;
+                    font-size: 0.9em;
+                }
+                
+                .medal-table td {
+                    padding: 3px;
+                    border-bottom: 1px solid #eee;
+                }
+                
+                .medal-header {
+                    background-color: #eeeeee;
+                    font-weight: bold;
+                    text-align: center;
+                    padding: 3px;
+                }
+                
+                .medal-competition {
+                    background-color: #cccccc;
+                    font-weight: bold;
+                    text-align: center;
+                    padding: 3px;
+                }
+                
+                table {
+                    width: 100%;
+                    margin-left: 0;
+                    margin-right: auto;
+                    border-collapse: collapse;
+                    text-align: center;
+                    margin-bottom: 20px;
+                }
+                
+                table, th, td {
+                    border: 1px solid #ddd;
+                }
+                
+                th {
+                    background-color: #f2f2f2;
+                    padding: 10px;
+                    font-weight: bold;
+                }
+                
+                td {
+                    padding: 8px;
+                    background-color: #f8f9fa;
+                }
+                
+                caption {
+                    font-weight: bold;
+                    margin-bottom: 10px;
+                    text-align: left;
+                }
+                
+                
+                .total-row td {
+                    background-color: #f2f2f2 !important;
+                    font-weight: bold;
+                }
+                
+
+                .fi {
+                    display: inline-block !important;
+                    width: 23px !important;
+                    height: 15px !important;
+                    background-size: cover !important;
+                    border: 1px solid #ddd;
+                }
+
+                .match-card td {
+                    text-align: left;
+                }
+
+                .champ-history td {
+                    text-align: left;
+                }
+
+                .champ-history td:nth-child(7) {
+                    font-size: 0.8em;
+                    overflow-wrap: break-word;
+                    word-break: break-word; 
+                }
+
+                .champ-history td:nth-child(6),
+                .champ-history td:nth-child(5) {
+                    text-align: center;
+
+                }
+
+                .totals td:nth-child(2) {
+                    text-align: left;
+                }
+
+                .p4p td:nth-child(2),
+                .p4p td:nth-child(5),
+                .p4p th:nth-child(2),
+                .p4p th:nth-child(5) {
+                    text-align: left;
+                }
+
+                h1 {
+                    padding-bottom: 5px;
+                }
+                
+                h2 {
+                    padding-bottom: 5px;
+                    margin-top: 30px;
+                }
+                
+                h3 {
+                    margin-top: 20px;
+                }
+                
+                .clearfix {
+                    clear: both;
+                }
+                
+                @media (max-width: 768px) {
+                    .infobox {
+                        float: none;
+                        width: 100%;
+                        margin: 0 0 20px 0;
+                    }
+                }
+                
+                /* Bracket table - completely separate styles */
+                table.bracket {
+                    width: auto;
+                    margin: 1em 2em 1em 1em;
+                    border-collapse: separate;
+                    border-spacing: 0;
+                    font-size: 90%;
+                    border-style: none;
+                }
+                
+                table.bracket td {
+                    border: none;
+                    background-color: transparent;
+                    padding: 0;
+                }
+                
+                /* Bracket cell styles */
+                table.bracket .header {
+                    background-color: #f2f2f2;
+                    padding: 8px;
+                    font-weight: bold;
+                    border: 1px solid #ddd;
+                }
+                table.bracket .seed {
+                    background-color: #f2f2f2;
+                    padding: 8px;
+                    font-weight: bold;
+                    border: 1px solid #ddd;
+                }
+                table.bracket .team {
+                    padding: 8px;
+                    background-color: #f8f9fa;
+                    overflow:inherit;
+                    border: 1px solid #ddd;
+                }
+                table.bracket .score {
+                    text-align:center;
+                padding: 8px;
+                    background-color: #f8f9fa;
+                    overflow:inherit;
+                    border: 1px solid #ddd;
+                }
+                table.bracket .conn {
+                    border-style:solid;
+                    border-width:0;
+                    border-color:inherit;
+                }
+                table.bracket .h7 { 
+                    height:7px;
+                }
+
+                details {
+                    margin-bottom: 20px;
+                }
+
+                summary {
+                    font-weight: bold;
+                    cursor: pointer;
+                    padding: 10px;
+                    background-color: #f2f2f2;
+                    border: 1px solid #ddd;
+                    margin-bottom: 10px;
+                }
+
+                summary:hover {
+                    background-color: #e3f2fd;
+                }
+
+                details table caption {
+                    display: none;
+                }
+                .win {
+                    background-color: #bbffdd;
+                }
+                .loss {
+                    background-color: #f8d7da;
+                }
+                .draw {
+                    background-color: #ccddee;
+                }
+                .records td:nth-child(2),
+                .records td:nth-child(4),
+                .records td:nth-child(6),
+                .records td:nth-child(8),
+                .records td:nth-child(10) {
+                    text-align: left;
+                }
+
+                .matches td:nth-child(4),
+                .matches td:nth-child(5),
+                .matches td:nth-child(6),
+                .matches td:nth-child(7),
+                .matches td:nth-child(8),
+                .matches td:nth-child(9) {
+                    text-align: left;
+                }
+
+                .matches {
+                    font-size: 0.9em;
+                }
+
+                .matches td:nth-child(9) {
+                    font-size: 0.75em;
+                }
+
+                .matchesum {
+                    width: 25%;
+                    font-size: 0.85em;
+                }
+
+                details summary {
+                    margin-bottom: 0;   /* remove extra space below summary */
+                }
+                details[open] summary {
+                    margin-bottom: 10px;   /* remove extra space below summary */
+                }
+                details {
+                    margin-bottom: 10px; /* space between details blocks */
+                }
+
+                table.matchesum th,
+                table.matchesum td {
+                    padding: 6px 6px;  /* smaller than the default 8px/10px */
+                }
+            </style>
+        </head>
+        <body>
+        """
+
+        HTML_FOOTER = """
+        </body>
+        </html>
+        """
+        
+        # 3. Create/update wrestler pages
+        wrestlers_dir = 'wrestling/wrestlers'
+        os.makedirs(wrestlers_dir, exist_ok=True)
+        for wrestler_name in self.wrestlers.keys():
+            filename = wrestler_name.lower().replace(' ', '-').replace('.', '')
+            filepath = f'{wrestlers_dir}/{filename}.html'
+            
+            wrestler_html = self.generate_wrestler_page(wrestler_name)
+            
+            if os.path.exists(filepath):
+                # File exists - update between markers only
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                if '<!-- MATCHES_START -->' in content and '<!-- MATCHES_END -->' in content:
+                    before = content.split('<!-- MATCHES_START -->')[0]
+                    after = content.split('<!-- MATCHES_END -->')[1]
+                    content = before + '<!-- MATCHES_START -->\n' + wrestler_html + '<!-- MATCHES_END -->' + after
+                    
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                    print(f"✓ Updated {filepath}")
+                else:
+                    # Markers don't exist - wrap content and add markers
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        existing_content = f.read()
+                    
+                    # Extract just the body content (remove header/footer if present)
+                    if '<body>' in existing_content and '</body>' in existing_content:
+                        body_start = existing_content.find('<body>') + len('<body>')
+                        body_end = existing_content.find('</body>')
+                        existing_body = existing_content[body_start:body_end].strip()
+                    else:
+                        existing_body = existing_content
+                    
+                    # Create new file with markers
+                    new_content = HTML_HEADER + '\n<!-- MATCHES_START -->\n' + wrestler_html + '<!-- MATCHES_END -->\n' + HTML_FOOTER
+                    
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        f.write(new_content)
+                    print(f"✓ Added markers to {filepath}")
+            else:
+                # File doesn't exist - create new with markers
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(HTML_HEADER)
+                    f.write(f'\n<h1>{wrestler_name}</h1>\n\n')  # Add h1 BEFORE markers
+                    f.write('\n<!-- MATCHES_START -->\n')
+                    f.write(wrestler_html)
+                    f.write('<!-- MATCHES_END -->\n')
+                    f.write(HTML_FOOTER)
+                print(f"✓ Created {filepath}")
+
+def main():
+    db = WrestlingDatabase()
+    
+    print("Parsing wrestling/ppv/list.html...")
+    db.parse_events('wrestling/ppv/list.html')
+    
+    print(f"Found {len(db.events)} events")
+    print(f"Found {len(db.wrestlers)} wrestlers")
+    print(f"Found {len(db.vacancies)} vacancy comments")
+    
+    # Process vacancies and calculate championship days
+    db.process_vacancies()
+    db.calculate_championship_days()
+    
+    db.update_html_files()
+    
+    print("\n✓ All files updated!")
+    print("Review the changes and run 'git add . && git commit -m \"Update wrestling database\" && git push'")
+
+if __name__ == '__main__':
+    main()

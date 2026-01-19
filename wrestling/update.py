@@ -647,7 +647,8 @@ class WrestlingDatabase:
             html += f'            <td><span class="fi fi-{reign["country"]}"></span> {reign["champion"]}</td>\n'
             html += f'            <td>{reign["date"]}</td>\n'
             html += f'            <td>{reign["event"]}</td>\n'
-            html += f'            <td>{self.format_number(reign["days"])}</td>\n'
+            days_display = self.format_number(reign["days"]) if reign["days"] else "0"
+            html += f'            <td>{days_display}</td>\n'
             html += f'            <td>{reign["defenses"]}</td>\n'
             html += f'            <td>{reign["notes"]}</td>\n'
             html += '        </tr>\n'

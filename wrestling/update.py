@@ -4,8 +4,27 @@ Wrestling Database Auto-Updater
 ================================
 Reads wrestling/ppv/list.html, extracts SINGLES match data only, updates all HTML files.
 
-Usage:
-    python update_wrestling.py
+Virtual Environment Setup:
+=========================
+
+1. Create virtual environment (first time only):
+   python3 -m venv venv
+
+2. Activate virtual environment:
+   source ~/wrestling-venv/bin/activate
+
+3. Install required packages:
+   pip install beautifulsoup4
+
+4. Run the script:
+   python3 wrestling/update.py
+
+5. Deactivate when done:
+   deactivate
+
+Required packages:
+- beautifulsoup4 (for HTML parsing)
+- datetime, collections, os, re (built-in, no install needed)
 
 After running, check the changes and git push if everything looks good.
 """
@@ -1257,6 +1276,25 @@ class WrestlingDatabase:
                     f.write('<!-- MATCHES_END -->\n')
                     f.write(HTML_FOOTER)
                 print(f"✓ Created {filepath}")
+
+        # 4. Create/update wrestlers index page
+        index_path = 'wrestling/wrestlers/index.html'
+        sorted_wrestlers = sorted(self.wrestlers.keys())
+
+        index_html = HTML_HEADER
+        index_html += '<h1>Wrestler Directory</h1>\n\n'
+        index_html += '<ul style="column-count: 3; column-gap: 20px; list-style: none; padding: 0;">\n'
+
+        for wrestler_name in sorted_wrestlers:
+            filename = wrestler_name.lower().replace(' ', '-').replace('.', '')
+            index_html += f'    <li style="margin-bottom: 8px;"><a href="{filename}.html">{wrestler_name}</a></li>\n'
+
+        index_html += '</ul>\n'
+        index_html += HTML_FOOTER
+
+        with open(index_path, 'w', encoding='utf-8') as f:
+            f.write(index_html)
+        print(f"✓ Updated {index_path}")
 
 def main():
     db = WrestlingDatabase()

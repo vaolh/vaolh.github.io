@@ -298,10 +298,26 @@ class WrestlingDatabase:
         self.events.append(event)
         
         if ppv_buys:
+            # Get main event info (last singles match)
+            main_event_match = event['matches'][-1] if event['matches'] else None
+            main_event_text = ""
+            if main_event_match:
+                main_event_text = f"{main_event_match['fighter1']} vs. {main_event_match['fighter2']}"
+            
+            # Extract network (second to last th cell in info row)
+            network = ""
+            th_cells = info_row.find_all('th')
+            if len(th_cells) >= 2:
+                network = th_cells[-2].get_text().strip()
+            
             self.broadcasts.append({
                 'event': event_name,
                 'date': event_date,
-                'buys': ppv_buys
+                'buys': ppv_buys,
+                'network': network,
+                'location': event_location,
+                'country': event_country,
+                'main_event': main_event_text
             })
 
     def is_title_match(self, notes):
@@ -731,7 +747,15 @@ class WrestlingDatabase:
         return html
 
     def generate_records_html(self):
-        """Generate records page HTML"""
+        """Generate all records page HTML"""
+        html = self.generate_singles_records_html()
+        html += self.generate_world_titles_records_html()
+        html += self.generate_event_records_html()
+        html += self.generate_broadcast_records_html()
+        return html
+
+    def generate_singles_records_html(self):
+        """Generate singles records table"""
         wrestler_list = list(self.wrestlers.values())
 
         # Singles Records
@@ -783,6 +807,238 @@ class WrestlingDatabase:
         html += '    </details>\n\n'
 
         return html
+    def generate_world_titles_records_html(self):
+        """Generate world titles records table"""
+        # Collect all individual reigns across all orgs and weights
+        all_reigns = []
+        
+        for org in ['wwf', 'wwo', 'iwb', 'ring']:
+            for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
+                for reign in self.championships[org][weight]:
+                    all_reigns.append({
+                        'champion': reign['champion'],
+                        'country': reign['country'],
+                        'org': org,
+                        'weight': weight,
+                        'defenses': reign['defenses'],
+                        'days': reign['days'] if reign['days'] else 0
+                    })
+        
+        # Calculate totals per wrestler
+        totals = defaultdict(lambda: {'total_reigns': 0, 'total_defenses': 0, 'total_days': 0, 'country': 'un'})
+        
+        for reign in all_reigns:
+            champ = reign['champion']
+            totals[champ]['total_reigns'] += 1
+            totals[champ]['total_defenses'] += reign['defenses']
+            totals[champ]['total_days'] += reign['days']
+            totals[champ]['country'] = reign['country']
+        
+        # Top 5 lists
+        top_reigns = sorted(totals.items(), key=lambda x: x[1]['total_reigns'], reverse=True)[:5]
+        top_defenses = sorted(totals.items(), key=lambda x: x[1]['total_defenses'], reverse=True)[:5]
+        top_days = sorted(totals.items(), key=lambda x: x[1]['total_days'], reverse=True)[:5]
+        
+        # Consecutive defenses - max single reign defenses
+        max_cons_defenses = defaultdict(lambda: {'max_defenses': 0, 'country': 'un'})
+        for reign in all_reigns:
+            champ = reign['champion']
+            if reign['defenses'] >= max_cons_defenses[champ]['max_defenses']:
+                max_cons_defenses[champ]['max_defenses'] = reign['defenses']
+                max_cons_defenses[champ]['country'] = reign['country']
+        top_cons_defenses = sorted(max_cons_defenses.items(), key=lambda x: x[1]['max_defenses'], reverse=True)[:5]
+        
+        # Consecutive days - max single reign days
+        max_cons_days = defaultdict(lambda: {'max_days': 0, 'country': 'un'})
+        for reign in all_reigns:
+            champ = reign['champion']
+            if reign['days'] >= max_cons_days[champ]['max_days']:
+                max_cons_days[champ]['max_days'] = reign['days']
+                max_cons_days[champ]['country'] = reign['country']
+        top_cons_days = sorted(max_cons_days.items(), key=lambda x: x[1]['max_days'], reverse=True)[:5]
+        
+        # Build HTML
+        html = '    <!-- World Titles Records -->\n'
+        html += '    <details>\n'
+        html += '    <summary>World Titles Records</summary>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2">No.</th>\n'
+        html += '            <th colspan="2">World Titles Won</th>\n'
+        html += '            <th colspan="2">World Title Defenses</th>\n'
+        html += '            <th colspan="2">Cons. World Title Defenses</th>\n'
+        html += '            <th colspan="2">Days as World Champion</th>\n'
+        html += '            <th colspan="2">Cons. Days as World Champion</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th>Name</th><th>#</th>\n' * 5
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for i in range(5):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            # World Titles Won
+            if i < len(top_reigns):
+                champ, stats = top_reigns[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{stats["total_reigns"]}</td>\n'
+            else:
+                html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+            
+            # World Title Defenses
+            if i < len(top_defenses):
+                champ, stats = top_defenses[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{stats["total_defenses"]}</td>\n'
+            else:
+                html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+            
+            # Consecutive Defenses
+            if i < len(top_cons_defenses):
+                champ, stats = top_cons_defenses[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{stats["max_defenses"]}</td>\n'
+            else:
+                html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+            
+            # Total Days
+            if i < len(top_days):
+                champ, stats = top_days[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{self.format_number(stats["total_days"])}</td>\n'
+            else:
+                html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+            
+            # Consecutive Days
+            if i < len(top_cons_days):
+                champ, stats = top_cons_days[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{self.format_number(stats["max_days"])}</td>\n'
+            else:
+                html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+            
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+        
+        return html
+
+    def generate_event_records_html(self):
+        """Generate event records table"""
+        wrestler_list = list(self.wrestlers.values())
+        
+        top_ppv = sorted(wrestler_list, key=lambda x: x['main_events'], reverse=True)[:5]
+        top_wm = sorted(wrestler_list, key=lambda x: x['wrestlemania_main_events'], reverse=True)[:5]
+        top_lm = sorted(wrestler_list, key=lambda x: x['libremania_main_events'], reverse=True)[:5]
+        top_open = sorted(wrestler_list, key=lambda x: x['open_tournament_wins'], reverse=True)[:5]
+        top_trios = sorted(wrestler_list, key=lambda x: x['trios_tournament_wins'], reverse=True)[:5]
+        
+        html = '    <!-- Event Records -->\n'
+        html += '    <details>\n'
+        html += '    <summary>Event Records</summary>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2">No.</th>\n'
+        html += '            <th colspan="2">PPV Main Events</th>\n'
+        html += '            <th colspan="2">WrestleMania Main Events</th>\n'
+        html += '            <th colspan="2">LibreMania Main Events</th>\n'
+        html += '            <th colspan="2">Open Tournament Wins</th>\n'
+        html += '            <th colspan="2">Trios Tournament Wins</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th>Name</th><th>#</th>\n' * 5
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for i in range(5):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            for top_list, stat_key in [(top_ppv, 'main_events'), (top_wm, 'wrestlemania_main_events'), 
+                                        (top_lm, 'libremania_main_events'), (top_open, 'open_tournament_wins'), 
+                                        (top_trios, 'trios_tournament_wins')]:
+                if i < len(top_list):
+                    w = top_list[i]
+                    stat = w[stat_key]
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                else:
+                    html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+            
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+        
+        return html
+
+    def parse_buys(self, buys_str):
+        """Parse buys string like '650K Buys' or '1.35M Buys' to integer"""
+        if not buys_str:
+            return 0
+        
+        # Remove 'Buys' and whitespace
+        buys_str = buys_str.replace('Buys', '').replace('buys', '').strip()
+        
+        # Handle K (thousands)
+        if 'K' in buys_str or 'k' in buys_str:
+            num = float(buys_str.replace('K', '').replace('k', '').strip())
+            return int(num * 1000)
+        
+        # Handle M (millions)
+        if 'M' in buys_str or 'm' in buys_str:
+            num = float(buys_str.replace('M', '').replace('m', '').strip())
+            return int(num * 1000000)
+        
+        # Plain number
+        try:
+            return int(float(buys_str))
+        except:
+            return 0
+
+    def generate_broadcast_records_html(self):
+        """Generate broadcast records table"""
+        # Sort broadcasts by buys
+        sorted_broadcasts = sorted(self.broadcasts, key=lambda x: self.parse_buys(x['buys']), reverse=True)[:10]
+        
+        html = '    <!-- Broadcast Records -->\n'
+        html += '    <details>\n'
+        html += '    <summary>Broadcast Records</summary>\n'
+        html += '    <table class="match-card">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th>No.</th>\n'
+        html += '            <th>Event</th>\n'
+        html += '            <th>Main Event</th>\n'
+        html += '            <th>Buys</th>\n'
+        html += '            <th>Network</th>\n'
+        html += '            <th>Date</th>\n'
+        html += '            <th>Location</th>\n'
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for idx, broadcast in enumerate(sorted_broadcasts):
+            buys_num = self.parse_buys(broadcast['buys'])
+            html += '        <tr>\n'
+            html += f'            <th>{idx + 1}</th>\n'
+            html += f'            <td>{broadcast["event"]}</td>\n'
+            html += f'            <td>{broadcast.get("main_event", "")}</td>\n'
+            html += f'            <td>{self.format_number(buys_num)}</td>\n'
+            html += f'            <td>{broadcast.get("network", "")}</td>\n'
+            html += f'            <td>{broadcast["date"]}</td>\n'
+            html += f'            <td><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</td>\n'
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n'
+        
+        return html
+
 
     def update_html_files(self):
         """Update all HTML files"""

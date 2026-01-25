@@ -172,6 +172,36 @@ class WrestlingDatabase:
                 if 'weight' in vacancy and 'date' in vacancy:
                     self.vacancies.append(vacancy)
 
+    def parse_tournament_comments(self, html_content):
+        """Parse TOURNAMENT WINNER comments from HTML"""
+        soup = BeautifulSoup(html_content, 'html.parser')
+        comments = soup.find_all(string=lambda text: isinstance(text, Comment))
+        
+        for comment in comments:
+            comment_text = comment.strip()
+            
+            # Parse Open Tournament
+            if 'OPEN TOURNAMENT WINNER' in comment_text.upper():
+                winner_match = re.search(r'Winner:\s*([^.]+)', comment_text, re.IGNORECASE)
+                if winner_match:
+                    winner_name = self.clean_name(winner_match.group(1).strip())
+                    self.tournaments['open'].append(winner_name)
+                    
+                    # Update wrestler stats
+                    wrestler = self.get_wrestler(winner_name)
+                    wrestler['open_tournament_wins'] += 1
+            
+            # Parse Trios Tournament
+            if 'TRIOS TOURNAMENT WINNER' in comment_text.upper():
+                winner_match = re.search(r'Winner:\s*([^.]+)', comment_text, re.IGNORECASE)
+                if winner_match:
+                    winner_name = self.clean_name(winner_match.group(1).strip())
+                    self.tournaments['trios'].append(winner_name)
+                    
+                    # Update wrestler stats
+                    wrestler = self.get_wrestler(winner_name)
+                    wrestler['trios_tournament_wins'] += 1
+
     def parse_events(self, html_file):
         """Parse all events from wrestling/ppv/list.html"""
         with open(html_file, 'r', encoding='utf-8') as f:
@@ -179,6 +209,9 @@ class WrestlingDatabase:
         
         # Parse vacancy comments first
         self.parse_vacancy_comments(html_content)
+
+        # Parse tournament comments
+        self.parse_tournament_comments(html_content)
         
         soup = BeautifulSoup(html_content, 'html.parser')
         details = soup.find_all('details')

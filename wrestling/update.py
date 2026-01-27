@@ -754,10 +754,10 @@ class WrestlingDatabase:
             html += '    <table>\n'
             html += f'    <caption>{weight.capitalize()} {limit}</caption>\n'
             html += '        <tbody><tr>\n'
-            html += '            <th>WWF</th>\n'
-            html += '            <th>WWO</th>\n'
-            html += '            <th>IWB</th>\n'
-            html += '            <th><i>The Ring</i></th>\n'
+            html += '            <th style="width: 25%;">WWF</th>\n'
+            html += '            <th style="width: 25%;">WWO</th>\n'
+            html += '            <th style="width: 25%;">IWB</th>\n'
+            html += '            <th style="width: 25%;"><i>The Ring</i></th>\n'
             html += '        </tr>\n'
             html += '        <tr>\n'
 
@@ -770,9 +770,9 @@ class WrestlingDatabase:
                         record = f"{wrestler['wins']}-{wrestler['losses']}-{wrestler['draws']}"
                     else:
                         record = f"{current['defenses']} Defenses"
-                    html += f'            <td> <span class="fi fi-{current["country"]}"></span> {current["champion"]} <br> {record} <br> {current["date"]}</td>\n'
+                    html += f'            <td style="width: 25%;"> <span class="fi fi-{current["country"]}"></span> {current["champion"]} <br> {record} <br> {current["date"]}</td>\n'
                 else:
-                    html += '            <td> <span class="fi fi-un"></span> Vacant <br> Record <br> Date</td>\n'
+                    html += '            <td style="width: 25%;"> <span class="fi fi-un"></span> Vacant <br> Record <br> Date</td>\n'
 
             html += '        </tr>\n'
             html += '    </tbody></table>\n\n'
@@ -962,11 +962,11 @@ class WrestlingDatabase:
         html += '    <thead>\n'
         html += '        <tr>\n'
         html += '            <th rowspan="2">No.</th>\n'
-        html += '            <th colspan="2">World Titles Won</th>\n'
-        html += '            <th colspan="2">World Title Defenses</th>\n'
-        html += '            <th colspan="2">Cons. World Title Defenses</th>\n'
-        html += '            <th colspan="2">Days as World Champion</th>\n'
-        html += '            <th colspan="2">Cons. Days as World Champion</th>\n'
+        html += '            <th colspan="2">Titles Won</th>\n'
+        html += '            <th colspan="2">Total Defenses</th>\n'
+        html += '            <th colspan="2">Cons. Defenses</th>\n'
+        html += '            <th colspan="2">Days as Champion</th>\n'
+        html += '            <th colspan="2">Cons. Days as Champion</th>\n'
         html += '        </tr>\n'
         html += '        <tr>\n'
         html += '            <th>Name</th><th>#</th>\n' * 5

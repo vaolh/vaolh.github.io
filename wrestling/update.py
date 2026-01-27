@@ -840,54 +840,118 @@ class WrestlingDatabase:
         html += '    </details>\n\n'
 
         return html
+
     def generate_world_titles_records_html(self):
-        """Generate world titles records table"""
-        # Collect all individual reigns across all orgs and weights
-        all_reigns = []
+        """Generate world titles records table - treating overlapping reigns as ONE continuous reign"""
+        # Key insight: If a wrestler holds ANY world title continuously (even if specific belts change),
+        # it's ONE reign. Adding a belt mid-reign doesn't create a new reign.
         
+        wrestler_reigns = defaultdict(list)
+        
+        # Collect all reigns organized by wrestler with start and end dates
         for org in ['wwf', 'wwo', 'iwb', 'ring']:
             for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
-                for reign in self.championships[org][weight]:
-                    all_reigns.append({
-                        'champion': reign['champion'],
-                        'country': reign['country'],
+                for idx, reign in enumerate(self.championships[org][weight]):
+                    start_date = self.parse_date(reign['date'])
+                    if not start_date:
+                        continue
+                    
+                    # Calculate end date
+                    if reign['days']:
+                        end_date = start_date + __import__('datetime').timedelta(days=reign['days'])
+                    else:
+                        # No end date means current champion or missing data - use start date
+                        end_date = start_date
+                    
+                    wrestler_reigns[reign['champion']].append({
                         'org': org,
                         'weight': weight,
+                        'start_date': start_date,
+                        'end_date': end_date,
                         'defenses': reign['defenses'],
-                        'days': reign['days'] if reign['days'] else 0
+                        'days': reign['days'] if reign['days'] else 0,
+                        'country': reign['country']
                     })
         
-        # Calculate totals per wrestler
+        # Calculate totals per wrestler by merging overlapping time periods
         totals = defaultdict(lambda: {'total_reigns': 0, 'total_defenses': 0, 'total_days': 0, 'country': 'un'})
+        max_cons_defenses = defaultdict(lambda: {'max_defenses': 0, 'country': 'un'})
+        max_cons_days = defaultdict(lambda: {'max_days': 0, 'country': 'un'})
         
-        for reign in all_reigns:
-            champ = reign['champion']
-            totals[champ]['total_reigns'] += 1
-            totals[champ]['total_defenses'] += reign['defenses']
-            totals[champ]['total_days'] += reign['days']
-            totals[champ]['country'] = reign['country']
+        for champ, reigns in wrestler_reigns.items():
+            # Sort reigns by start date
+            sorted_reigns = sorted(reigns, key=lambda x: x['start_date'])
+            
+            # Merge overlapping/adjacent reigns into continuous championship periods
+            merged_periods = []
+            
+            for reign in sorted_reigns:
+                if not merged_periods:
+                    # First reign - start a new period
+                    merged_periods.append({
+                        'start': reign['start_date'],
+                        'end': reign['end_date'],
+                        'defenses': reign['defenses'],
+                        'country': reign['country'],
+                        'belts': [{'org': reign['org'], 'weight': reign['weight'], 'defenses': reign['defenses']}]
+                    })
+                else:
+                    last_period = merged_periods[-1]
+                    
+                    # Check if this reign overlaps with or is adjacent to the last period
+                    # Overlap: new reign starts BEFORE or AT the moment the last one ends
+                    if reign['start_date'] <= last_period['end']:
+                        # Overlapping - this is part of the same continuous championship period
+                        
+                        # Extend the end date if this reign goes longer
+                        if reign['end_date'] > last_period['end']:
+                            last_period['end'] = reign['end_date']
+                        
+                        # Add this belt to the period
+                        last_period['belts'].append({'org': reign['org'], 'weight': reign['weight'], 'defenses': reign['defenses']})
+                        
+                        # Defenses = MAX defenses from any belt (since they're defended together)
+                        last_period['defenses'] = max(b['defenses'] for b in last_period['belts'])
+                    else:
+                        # Gap between reigns - this is a NEW championship period
+                        merged_periods.append({
+                            'start': reign['start_date'],
+                            'end': reign['end_date'],
+                            'defenses': reign['defenses'],
+                            'country': reign['country'],
+                            'belts': [{'org': reign['org'], 'weight': reign['weight'], 'defenses': reign['defenses']}]
+                        })
+            
+            # Calculate stats from merged periods
+            total_belts_won = 0
+            for period in merged_periods:
+                period_days = (period['end'] - period['start']).days
+                
+                # Count total belts won in this period
+                total_belts_won += len(period['belts'])
+                
+                # Track totals
+                totals[champ]['total_defenses'] += period['defenses']
+                totals[champ]['total_days'] += period_days
+                totals[champ]['country'] = period['country']
+                
+                # Track max consecutive values
+                if period['defenses'] > max_cons_defenses[champ]['max_defenses']:
+                    max_cons_defenses[champ]['max_defenses'] = period['defenses']
+                    max_cons_defenses[champ]['country'] = period['country']
+                
+                if period_days > max_cons_days[champ]['max_days']:
+                    max_cons_days[champ]['max_days'] = period_days
+                    max_cons_days[champ]['country'] = period['country']
+            
+            # Total reigns = total number of individual belts won across all periods
+            totals[champ]['total_reigns'] = total_belts_won
         
         # Top 5 lists
         top_reigns = sorted(totals.items(), key=lambda x: x[1]['total_reigns'], reverse=True)[:5]
         top_defenses = sorted(totals.items(), key=lambda x: x[1]['total_defenses'], reverse=True)[:5]
         top_days = sorted(totals.items(), key=lambda x: x[1]['total_days'], reverse=True)[:5]
-        
-        # Consecutive defenses - max single reign defenses
-        max_cons_defenses = defaultdict(lambda: {'max_defenses': 0, 'country': 'un'})
-        for reign in all_reigns:
-            champ = reign['champion']
-            if reign['defenses'] >= max_cons_defenses[champ]['max_defenses']:
-                max_cons_defenses[champ]['max_defenses'] = reign['defenses']
-                max_cons_defenses[champ]['country'] = reign['country']
         top_cons_defenses = sorted(max_cons_defenses.items(), key=lambda x: x[1]['max_defenses'], reverse=True)[:5]
-        
-        # Consecutive days - max single reign days
-        max_cons_days = defaultdict(lambda: {'max_days': 0, 'country': 'un'})
-        for reign in all_reigns:
-            champ = reign['champion']
-            if reign['days'] >= max_cons_days[champ]['max_days']:
-                max_cons_days[champ]['max_days'] = reign['days']
-                max_cons_days[champ]['country'] = reign['country']
         top_cons_days = sorted(max_cons_days.items(), key=lambda x: x[1]['max_days'], reverse=True)[:5]
         
         # Build HTML

@@ -225,6 +225,7 @@ class WrestlingDatabase:
             table = detail.find('table', class_='match-card')
             event_name = event_name.split(':')[0].strip()
             event_name = re.sub(r'World Title Series (\d+)', r'WTS \1', event_name)
+            event_name = re.sub(r'World Championship Wrestling (\d+)', r'WCW \1', event_name)
 
             if table:
                 self.parse_match_card(table, event_name)
@@ -236,31 +237,76 @@ class WrestlingDatabase:
         info_row = rows[-1]
         match_rows = rows[1:-1]
         
-        # Extract event info
-        cells = info_row.find_all(['th', 'td'])
+        # Extract event info from last row
+        # New format: <th>TV</th> <th colspan="2">Location</th> <th colspan="2">Venue</th> <th>Attendance</th> <th>Network</th> <th>Audience</th> <th>Date</th>
+        th_cells = info_row.find_all('th')
+        td_cells = info_row.find_all('td')
+        all_cells = info_row.find_all(['th', 'td'])
+        
         event_date = None
         event_location = None
         event_country = 'un'
-        ppv_buys = None
+        event_venue = None
+        audience_metric = None
+        broadcast_type = None
+        attendance = None
         
-        for cell in cells:
-            text = cell.get_text().strip()
-            flag = cell.find('span', class_='fi')
+        # Parse broadcast type from first th
+        if th_cells:
+            first_th = th_cells[0]
+            # Check if there's an anchor tag
+            anchor = first_th.find('a')
+            if anchor:
+                first_th_text = anchor.get_text().strip().upper()
+            else:
+                first_th_text = first_th.get_text().strip().upper()
             
-            if flag and not event_location:
-                event_country = self.get_country(cell)
-                event_location = text
-            elif re.search(r'\d{4}', text) and re.search(r'[A-Za-z]', text):
+            if 'PPV' in first_th_text:
+                broadcast_type = 'PPV'
+            elif 'TV' in first_th_text:
+                broadcast_type = 'TV'
+            elif 'STM' in first_th_text:
+                broadcast_type = 'STM'
+        
+        # Parse each th cell by position
+        for idx, th in enumerate(th_cells):
+            text = th.get_text().strip()
+            
+            if idx == 0:
+                # First th is broadcast type (already handled)
+                continue
+            elif idx == 1:
+                # Second th is location (with flag)
+                flag = th.find('span', class_='fi')
+                if flag:
+                    event_country = self.get_country(th)
+                    event_location = text
+            elif idx == 2:
+                # Third th is venue
+                event_venue = text
+            elif idx == 3:
+                # Fourth th is attendance
+                if 'Attendance' in text or 'attendance' in text:
+                    attendance = text
+            elif idx == 4:
+                # Fifth th is network (skip for our purposes)
+                pass
+            elif idx == 5:
+                # Sixth th is audience metric (Buys/Viewers/Sales)
+                audience_metric = text
+            elif idx == 6:
+                # Seventh th is date
                 event_date = text
-            elif 'Buys' in text or 'buys' in text:
-                ppv_buys = text
 
         event = {
             'name': event_name,
             'date': event_date,
             'location': event_location,
             'country': event_country,
-            'ppv_buys': ppv_buys,
+            'venue': event_venue,
+            'audience_metric': audience_metric,
+            'broadcast_type': broadcast_type,
+            'attendance': attendance,
             'matches': []
         }
 
@@ -279,7 +325,8 @@ class WrestlingDatabase:
             result_cell = cols[4]
             fighter2_cell = cols[5]
             method = cols[6].get_text().strip()
-            notes = cols[7].get_text().strip() if len(cols) > 7 else ''
+            falls = cols[7].get_text().strip() if len(cols) > 7 else ''
+            notes = cols[8].get_text().strip() if len(cols) > 8 else ''
 
             # ONLY PROCESS SINGLES MATCHES
             if match_type.lower() != 'singles':
@@ -330,12 +377,15 @@ class WrestlingDatabase:
 
         self.events.append(event)
         
-        if ppv_buys:
+        # Record broadcast if it has audience metrics
+        if audience_metric and broadcast_type:
             # Get main event info (last singles match)
             main_event_match = event['matches'][-1] if event['matches'] else None
             main_event_text = ""
+            main_event_wrestlers = []
             if main_event_match:
                 main_event_text = f"{main_event_match['fighter1']} vs. {main_event_match['fighter2']}"
+                main_event_wrestlers = [main_event_match['fighter1'], main_event_match['fighter2']]
             
             # Extract network (second to last th cell in info row)
             network = ""
@@ -346,11 +396,15 @@ class WrestlingDatabase:
             self.broadcasts.append({
                 'event': event_name,
                 'date': event_date,
-                'buys': ppv_buys,
-                'network': network,
+                'venue': event_venue,
                 'location': event_location,
                 'country': event_country,
-                'main_event': main_event_text
+                'audience_metric': audience_metric,
+                'broadcast_type': broadcast_type,
+                'network': network,
+                'main_event': main_event_text,
+                'main_event_wrestlers': main_event_wrestlers,
+                'attendance': attendance
             })
 
     def is_title_match(self, notes):
@@ -772,7 +826,7 @@ class WrestlingDatabase:
                         record = f"{current['defenses']} Defenses"
                     html += f'            <td style="width: 25%;"> <span class="fi fi-{current["country"]}"></span> {current["champion"]} <br> {record} <br> {current["date"]}</td>\n'
                 else:
-                    html += '            <td style="width: 25%;"> <span class="fi fi-un"></span> Vacant <br> Record <br> Date</td>\n'
+                    html += '            <td style="width: 25%;"> <span class="fi fi-xx"></span> Vacant <br> Record <br> Date</td>\n'
 
             html += '        </tr>\n'
             html += '    </tbody></table>\n\n'
@@ -782,9 +836,12 @@ class WrestlingDatabase:
     def generate_records_html(self):
         """Generate all records page HTML"""
         html = self.generate_singles_records_html()
+        html += self.generate_statistics_records_html()
         html += self.generate_world_titles_records_html()
         html += self.generate_event_records_html()
+        html += self.generate_drawing_power_html()
         html += self.generate_broadcast_records_html()
+        html += self.generate_attendance_records_html()
         return html
 
     def generate_singles_records_html(self):
@@ -800,19 +857,19 @@ class WrestlingDatabase:
 
         html = '    <!-- Singles Records -->\n'
         html += '    <details>\n'
-        html += '    <summary>Singles Records</summary>\n'
+        html += '    <summary>Singles</summary>\n'
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2">No.</th>\n'
-        html += '            <th colspan="2">Bouts</th>\n'
-        html += '            <th colspan="2">Wins</th>\n'
-        html += '            <th colspan="2">Pinfall Wins</th>\n'
-        html += '            <th colspan="2">Submission Wins</th>\n'
-        html += '            <th colspan="2"><i>Lucha de Apuestas</i> Wins</th>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 19%;">Bouts</th>\n'
+        html += '            <th colspan="2" style="width: 19%;">Wins</th>\n'
+        html += '            <th colspan="2" style="width: 19%;">Pinfall Wins</th>\n'
+        html += '            <th colspan="2" style="width: 19%;">Submission Wins</th>\n'
+        html += '            <th colspan="2" style="width: 19%;"><i>Lucha de Apuestas</i> Wins</th>\n'
         html += '        </tr>\n'
         html += '        <tr>\n'
-        html += '            <th>Name</th><th>#</th>\n' * 5
+        html += '            <th style="width: 14%;">Name</th><th style="width: 5%;">#</th>\n' * 5
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -831,7 +888,7 @@ class WrestlingDatabase:
                         stat = w['wins'] + w['losses'] + w['draws']
                     html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
                 else:
-                    html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             html += '        </tr>\n'
 
@@ -839,6 +896,81 @@ class WrestlingDatabase:
         html += '    </table>\n'
         html += '    </details>\n\n'
 
+        return html
+
+    def generate_statistics_records_html(self):
+        """Generate statistics percentage records table"""
+        wrestler_list = list(self.wrestlers.values())
+        
+        # Calculate percentages for wrestlers with at least 5 bouts
+        wrestlers_with_stats = []
+        for w in wrestler_list:
+            total_bouts = w['wins'] + w['losses'] + w['draws']
+            if total_bouts >= 5:  # Minimum 5 bouts to qualify
+                win_pct = (w['wins'] / total_bouts * 100) if total_bouts > 0 else 0
+                loss_pct = (w['losses'] / total_bouts * 100) if total_bouts > 0 else 0
+                draw_pct = (w['draws'] / total_bouts * 100) if total_bouts > 0 else 0
+                
+                total_wins = w['wins']
+                pin_win_pct = (w['pinfall_wins'] / total_wins * 100) if total_wins > 0 else 0
+                sub_win_pct = (w['submission_wins'] / total_wins * 100) if total_wins > 0 else 0
+                
+                wrestlers_with_stats.append({
+                    'name': w['name'],
+                    'country': w['country'],
+                    'win_pct': win_pct,
+                    'loss_pct': loss_pct,
+                    'draw_pct': draw_pct,
+                    'pin_win_pct': pin_win_pct,
+                    'sub_win_pct': sub_win_pct
+                })
+        
+        # Top 5 lists
+        top_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['win_pct'], reverse=True)[:5]
+        top_loss_pct = sorted(wrestlers_with_stats, key=lambda x: x['loss_pct'], reverse=True)[:5]
+        top_draw_pct = sorted(wrestlers_with_stats, key=lambda x: x['draw_pct'], reverse=True)[:5]
+        top_pin_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['pin_win_pct'], reverse=True)[:5]
+        top_sub_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['sub_win_pct'], reverse=True)[:5]
+        
+        html = '    <!-- Statistics Records -->\n'
+        html += '    <details>\n'
+        html += '    <summary>Percentage </summary>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 19%;">Win %</th>\n'
+        html += '            <th colspan="2" style="width: 19%;">Loss %</th>\n'
+        html += '            <th colspan="2" style="width: 19%;">Draw %</th>\n'
+        html += '            <th colspan="2" style="width: 19%;">Pinfall Win %</th>\n'
+        html += '            <th colspan="2" style="width: 19%;">Submission Win %</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th style="width: 14%;">Name</th><th style="width: 5%;">%</th>\n' * 5
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for i in range(5):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            for top_list, stat_key in [(top_win_pct, 'win_pct'), (top_loss_pct, 'loss_pct'), 
+                                        (top_draw_pct, 'draw_pct'), (top_pin_win_pct, 'pin_win_pct'), 
+                                        (top_sub_win_pct, 'sub_win_pct')]:
+                if i < len(top_list):
+                    w = top_list[i]
+                    stat = f"{w[stat_key]:.1f}%"
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                else:
+                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0.0%</td>\n'
+            
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+        
         return html
 
     def generate_world_titles_records_html(self):
@@ -957,14 +1089,14 @@ class WrestlingDatabase:
         # Build HTML
         html = '    <!-- World Titles Records -->\n'
         html += '    <details>\n'
-        html += '    <summary>World Titles Records</summary>\n'
+        html += '    <summary>World Titles</summary>\n'
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
         html += '            <th rowspan="2">No.</th>\n'
         html += '            <th colspan="2">Titles Won</th>\n'
-        html += '            <th colspan="2">Total Defenses</th>\n'
-        html += '            <th colspan="2">Cons. Defenses</th>\n'
+        html += '            <th colspan="2">Title Defenses</th>\n'
+        html += '            <th colspan="2">Cons. Title Defenses</th>\n'
         html += '            <th colspan="2">Days as Champion</th>\n'
         html += '            <th colspan="2">Cons. Days as Champion</th>\n'
         html += '        </tr>\n'
@@ -983,35 +1115,35 @@ class WrestlingDatabase:
                 champ, stats = top_reigns[i]
                 html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{stats["total_reigns"]}</td>\n'
             else:
-                html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             # World Title Defenses
             if i < len(top_defenses):
                 champ, stats = top_defenses[i]
                 html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{stats["total_defenses"]}</td>\n'
             else:
-                html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             # Consecutive Defenses
             if i < len(top_cons_defenses):
                 champ, stats = top_cons_defenses[i]
                 html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{stats["max_defenses"]}</td>\n'
             else:
-                html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             # Total Days
             if i < len(top_days):
                 champ, stats = top_days[i]
                 html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{self.format_number(stats["total_days"])}</td>\n'
             else:
-                html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             # Consecutive Days
             if i < len(top_cons_days):
                 champ, stats = top_cons_days[i]
                 html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{self.format_number(stats["max_days"])}</td>\n'
             else:
-                html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             html += '        </tr>\n'
         
@@ -1033,7 +1165,7 @@ class WrestlingDatabase:
         
         html = '    <!-- Event Records -->\n'
         html += '    <details>\n'
-        html += '    <summary>Event Records</summary>\n'
+        html += '    <summary>Events</summary>\n'
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
@@ -1062,7 +1194,7 @@ class WrestlingDatabase:
                     stat = w[stat_key]
                     html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
                 else:
-                    html += '            <td><span class="fi fi-un"></span> Vacant </td><td>0</td>\n'
+                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             html += '        </tr>\n'
         
@@ -1072,70 +1204,334 @@ class WrestlingDatabase:
         
         return html
 
-    def parse_buys(self, buys_str):
-        """Parse buys string like '650K Buys' or '1.35M Buys' to integer"""
-        if not buys_str:
+    def parse_audience(self, audience_str):
+        """Parse audience string like '650K Buys', '1.35M Viewers', '2M Sales' to integer"""
+        if not audience_str:
             return 0
         
-        # Remove 'Buys' and whitespace
-        buys_str = buys_str.replace('Buys', '').replace('buys', '').strip()
+        # Remove metric words and whitespace
+        audience_str = audience_str.replace('Buys', '').replace('buys', '').replace('Viewers', '').replace('viewers', '').replace('Sales', '').replace('sales', '').strip()
         
         # Handle K (thousands)
-        if 'K' in buys_str or 'k' in buys_str:
-            num = float(buys_str.replace('K', '').replace('k', '').strip())
+        if 'K' in audience_str or 'k' in audience_str:
+            num = float(audience_str.replace('K', '').replace('k', '').strip())
             return int(num * 1000)
         
         # Handle M (millions)
-        if 'M' in buys_str or 'm' in buys_str:
-            num = float(buys_str.replace('M', '').replace('m', '').strip())
+        if 'M' in audience_str or 'm' in audience_str:
+            num = float(audience_str.replace('M', '').replace('m', '').strip())
             return int(num * 1000000)
         
         # Plain number
         try:
-            return int(float(buys_str))
+            return int(float(audience_str))
         except:
             return 0
 
     def generate_broadcast_records_html(self):
-        """Generate broadcast records table"""
-        # Sort broadcasts by buys
-        sorted_broadcasts = sorted(self.broadcasts, key=lambda x: self.parse_buys(x['buys']), reverse=True)[:10]
+        """Generate broadcast records tables split by type (PPV, TV, STM)"""
+        # Separate broadcasts by type
+        ppv_broadcasts = [b for b in self.broadcasts if b.get('broadcast_type') == 'PPV']
+        tv_broadcasts = [b for b in self.broadcasts if b.get('broadcast_type') == 'TV']
+        stm_broadcasts = [b for b in self.broadcasts if b.get('broadcast_type') == 'STM']
         
-        html = '    <!-- Broadcast Records -->\n'
+        # Sort each by audience metric
+        ppv_sorted = sorted(ppv_broadcasts, key=lambda x: self.parse_audience(x.get('audience_metric', '0')), reverse=True)[:10]
+        tv_sorted = sorted(tv_broadcasts, key=lambda x: self.parse_audience(x.get('audience_metric', '0')), reverse=True)[:10]
+        stm_sorted = sorted(stm_broadcasts, key=lambda x: self.parse_audience(x.get('audience_metric', '0')), reverse=True)[:10]
+        
+        html = ''
+        
+        # PPV Records
+        if ppv_sorted:
+            html += '    <!-- PPV Broadcast Records -->\n'
+            html += '    <details>\n'
+            html += '    <summary>PPV Broadcast</summary>\n'
+            html += '    <table class="match-card">\n'
+            html += '    <thead>\n'
+            html += '        <tr>\n'
+            html += '            <th>No.</th>\n'
+            html += '            <th>Event</th>\n'
+            html += '            <th>Main Event</th>\n'
+            html += '            <th>Sales</th>\n'
+            html += '            <th>Venue</th>\n'
+            html += '            <th>Location</th>\n'
+            html += '            <th>Date</th>\n'
+            html += '        </tr>\n'
+            html += '    </thead>\n'
+            html += '    <tbody>\n'
+            
+            for idx, broadcast in enumerate(ppv_sorted):
+                audience_num = self.parse_audience(broadcast.get('audience_metric', '0'))
+                html += '        <tr>\n'
+                html += f'            <th>{idx + 1}</th>\n'
+                html += f'            <td>{broadcast["event"]}</td>\n'
+                html += f'            <td>{broadcast.get("main_event", "")}</td>\n'
+                html += f'            <td>{self.format_number(audience_num)}</td>\n'
+                html += f'            <td>{broadcast.get("venue", "")}</td>\n'
+                html += f'            <td><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</td>\n'
+                html += f'            <td>{broadcast.get("date", "")}</td>\n'
+                html += '        </tr>\n'
+            
+            html += '    </tbody>\n'
+            html += '    </table>\n'
+            html += '    </details>\n\n'
+        
+        # TV Records
+        if tv_sorted:
+            html += '    <!-- TV Broadcast Records -->\n'
+            html += '    <details>\n'
+            html += '    <summary>TV Broadcast</summary>\n'
+            html += '    <table class="match-card">\n'
+            html += '    <thead>\n'
+            html += '        <tr>\n'
+            html += '            <th>No.</th>\n'
+            html += '            <th>Event</th>\n'
+            html += '            <th>Main Event</th>\n'
+            html += '            <th>Viewers</th>\n'
+            html += '            <th>Venue</th>\n'
+            html += '            <th>Location</th>\n'
+            html += '            <th>Date</th>\n'
+            html += '        </tr>\n'
+            html += '    </thead>\n'
+            html += '    <tbody>\n'
+            
+            for idx, broadcast in enumerate(tv_sorted):
+                audience_num = self.parse_audience(broadcast.get('audience_metric', '0'))
+                html += '        <tr>\n'
+                html += f'            <th>{idx + 1}</th>\n'
+                html += f'            <td>{broadcast["event"]}</td>\n'
+                html += f'            <td>{broadcast.get("main_event", "")}</td>\n'
+                html += f'            <td>{self.format_number(audience_num)}</td>\n'
+                html += f'            <td>{broadcast.get("venue", "")}</td>\n'
+                html += f'            <td><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</td>\n'
+                html += f'            <td>{broadcast.get("date", "")}</td>\n'
+                html += '        </tr>\n'
+            
+            html += '    </tbody>\n'
+            html += '    </table>\n'
+            html += '    </details>\n\n'
+        
+        # STM Records
+        if stm_sorted:
+            html += '    <!-- Streaming Broadcast Records -->\n'
+            html += '    <details>\n'
+            html += '    <summary>Streaming Broadcast</summary>\n'
+            html += '    <table class="match-card">\n'
+            html += '    <thead>\n'
+            html += '        <tr>\n'
+            html += '            <th>No.</th>\n'
+            html += '            <th>Event</th>\n'
+            html += '            <th>Main Event</th>\n'
+            html += '            <th>Viewers</th>\n'
+            html += '            <th>Venue</th>\n'
+            html += '            <th>Location</th>\n'
+            html += '            <th>Date</th>\n'
+            html += '        </tr>\n'
+            html += '    </thead>\n'
+            html += '    <tbody>\n'
+            
+            for idx, broadcast in enumerate(stm_sorted):
+                audience_num = self.parse_audience(broadcast.get('audience_metric', '0'))
+                html += '        <tr>\n'
+                html += f'            <th>{idx + 1}</th>\n'
+                html += f'            <td>{broadcast["event"]}</td>\n'
+                html += f'            <td>{broadcast.get("main_event", "")}</td>\n'
+                html += f'            <td>{self.format_number(audience_num)}</td>\n'
+                html += f'            <td>{broadcast.get("venue", "")}</td>\n'
+                html += f'            <td><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</td>\n'
+                html += f'            <td>{broadcast.get("date", "")}</td>\n'
+                html += '        </tr>\n'
+            
+            html += '    </tbody>\n'
+            html += '    </table>\n'
+            html += '    </details>\n\n'
+        
+        return html
+
+    def parse_attendance(self, attendance_str):
+        """Parse attendance string like 'Attendance: 13,000' to integer"""
+        if not attendance_str:
+            return 0
+        
+        # Remove 'Attendance:' and whitespace
+        attendance_str = attendance_str.replace('Attendance:', '').replace('attendance:', '').strip()
+        
+        # Remove commas
+        attendance_str = attendance_str.replace(',', '')
+        
+        # Handle K (thousands)
+        if 'K' in attendance_str or 'k' in attendance_str:
+            num = float(attendance_str.replace('K', '').replace('k', '').strip())
+            return int(num * 1000)
+        
+        # Plain number
+        try:
+            return int(float(attendance_str))
+        except:
+            return 0
+
+    def generate_attendance_records_html(self):
+        """Generate attendance records table"""
+        # Filter broadcasts with attendance data
+        broadcasts_with_attendance = [b for b in self.broadcasts if b.get('attendance')]
+        
+        # Sort by attendance
+        sorted_attendance = sorted(broadcasts_with_attendance, 
+                                   key=lambda x: self.parse_attendance(x.get('attendance', '0')), 
+                                   reverse=True)[:10]
+        
+        if not sorted_attendance:
+            return ''
+        
+        html = '    <!-- Attendance Records -->\n'
         html += '    <details>\n'
-        html += '    <summary>Broadcast Records</summary>\n'
+        html += '    <summary>Attendance</summary>\n'
         html += '    <table class="match-card">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
         html += '            <th>No.</th>\n'
         html += '            <th>Event</th>\n'
         html += '            <th>Main Event</th>\n'
-        html += '            <th>Buys</th>\n'
-        html += '            <th>Network</th>\n'
-        html += '            <th>Date</th>\n'
+        html += '            <th>Attendance</th>\n'
+        html += '            <th>Venue</th>\n'
         html += '            <th>Location</th>\n'
+        html += '            <th>Date</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
         
-        for idx, broadcast in enumerate(sorted_broadcasts):
-            buys_num = self.parse_buys(broadcast['buys'])
+        for idx, broadcast in enumerate(sorted_attendance):
+            attendance_num = self.parse_attendance(broadcast.get('attendance', '0'))
             html += '        <tr>\n'
             html += f'            <th>{idx + 1}</th>\n'
             html += f'            <td>{broadcast["event"]}</td>\n'
             html += f'            <td>{broadcast.get("main_event", "")}</td>\n'
-            html += f'            <td>{self.format_number(buys_num)}</td>\n'
-            html += f'            <td>{broadcast.get("network", "")}</td>\n'
-            html += f'            <td>{broadcast["date"]}</td>\n'
+            html += f'            <td>{self.format_number(attendance_num)}</td>\n'
+            html += f'            <td>{broadcast.get("venue", "")}</td>\n'
             html += f'            <td><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</td>\n'
+            html += f'            <td>{broadcast.get("date", "")}</td>\n'
             html += '        </tr>\n'
         
         html += '    </tbody>\n'
         html += '    </table>\n'
-        html += '    </details>\n'
+        html += '    </details>\n\n'
         
         return html
 
+    def generate_drawing_power_html(self):
+        """Generate top 10 drawing wrestlers table"""
+        # Calculate drawing stats for each wrestler who main evented
+        wrestler_stats = defaultdict(lambda: {
+            'name': '',
+            'country': 'un',
+            'total_attendance': 0,
+            'attendance_count': 0,
+            'total_ppv': 0,
+            'ppv_count': 0,
+            'total_tv': 0,
+            'tv_count': 0,
+            'total_stm': 0,
+            'stm_count': 0
+        })
+        
+        for broadcast in self.broadcasts:
+            if not broadcast.get('main_event_wrestlers'):
+                continue
+            
+            attendance = self.parse_attendance(broadcast.get('attendance', '0'))
+            audience = self.parse_audience(broadcast.get('audience_metric', '0'))
+            broadcast_type = broadcast.get('broadcast_type')
+            
+            for wrestler_name in broadcast.get('main_event_wrestlers', []):
+                stats = wrestler_stats[wrestler_name]
+                stats['name'] = wrestler_name
+                
+                # Get country from wrestler database
+                if wrestler_name in self.wrestlers:
+                    stats['country'] = self.wrestlers[wrestler_name]['country']
+                
+                # Track attendance
+                if attendance > 0:
+                    stats['total_attendance'] += attendance
+                    stats['attendance_count'] += 1
+                
+                # Track by broadcast type
+                if broadcast_type == 'PPV' and audience > 0:
+                    stats['total_ppv'] += audience
+                    stats['ppv_count'] += 1
+                elif broadcast_type == 'TV' and audience > 0:
+                    stats['total_tv'] += audience
+                    stats['tv_count'] += 1
+                elif broadcast_type == 'STM' and audience > 0:
+                    stats['total_stm'] += audience
+                    stats['stm_count'] += 1
+        
+        # Calculate averages
+        wrestler_list = []
+        for name, stats in wrestler_stats.items():
+            avg_attendance = stats['total_attendance'] / stats['attendance_count'] if stats['attendance_count'] > 0 else 0
+            avg_ppv = stats['total_ppv'] / stats['ppv_count'] if stats['ppv_count'] > 0 else 0
+            avg_tv = stats['total_tv'] / stats['tv_count'] if stats['tv_count'] > 0 else 0
+            avg_stm = stats['total_stm'] / stats['stm_count'] if stats['stm_count'] > 0 else 0
+            
+            wrestler_list.append({
+                'name': name,
+                'country': stats['country'],
+                'avg_attendance': avg_attendance,
+                'total_ppv': stats['total_ppv'],
+                'avg_ppv': avg_ppv,
+                'avg_tv': avg_tv,
+                'avg_stm': avg_stm
+            })
+        
+        # Ensure we have at least 1 of each category in top 10
+        # Sort by combined score (weighted average)
+        for w in wrestler_list:
+            w['score'] = (w['avg_attendance'] * 0.25 + 
+                         w['total_ppv'] * 0.25 + 
+                         w['avg_ppv'] * 0.25 + 
+                         w['avg_tv'] * 0.125 + 
+                         w['avg_stm'] * 0.125)
+        
+        top_10 = sorted(wrestler_list, key=lambda x: x['score'], reverse=True)[:10]
+        
+        if not top_10:
+            return ''
+        
+        html = '    <!-- Drawing Power Records -->\n'
+        html += '    <details>\n'
+        html += '    <summary>Drawing Power</summary>\n'
+        html += '    <table class="match-card">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th>No.</th>\n'
+        html += '            <th>Wrestler</th>\n'
+        html += '            <th>Avg Attendance</th>\n'
+        html += '            <th>Total PPV Sales</th>\n'
+        html += '            <th>Avg PPV Sales</th>\n'
+        html += '            <th>Avg TV Viewers</th>\n'
+        html += '            <th>Avg Streaming Viewers</th>\n'
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for idx, wrestler in enumerate(top_10):
+            html += '        <tr>\n'
+            html += f'            <th>{idx + 1}</th>\n'
+            html += f'            <td><span class="fi fi-{wrestler["country"]}"></span> {wrestler["name"]}</td>\n'
+            html += f'            <td>{self.format_number(int(wrestler["avg_attendance"]))}</td>\n'
+            html += f'            <td>{self.format_number(int(wrestler["total_ppv"]))}</td>\n'
+            html += f'            <td>{self.format_number(int(wrestler["avg_ppv"]))}</td>\n'
+            html += f'            <td>{self.format_number(int(wrestler["avg_tv"]))}</td>\n'
+            html += f'            <td>{self.format_number(int(wrestler["avg_stm"]))}</td>\n'
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+        
+        return html
 
     def update_html_files(self):
         """Update all HTML files"""

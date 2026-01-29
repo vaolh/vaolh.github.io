@@ -202,16 +202,18 @@ class WrestlingDatabase:
                     wrestler = self.get_wrestler(winner_name)
                     wrestler['trios_tournament_wins'] += 1
 
-    def parse_events(self, html_file):
-        """Parse all events from wrestling/ppv/list.html"""
+    def parse_events(self, html_file, is_weekly=False):
+        """Parse all events from HTML file"""
         with open(html_file, 'r', encoding='utf-8') as f:
             html_content = f.read()
         
-        # Parse vacancy comments first
-        self.parse_vacancy_comments(html_content)
+        # Parse vacancy comments first (only for PPV)
+        if not is_weekly:
+            self.parse_vacancy_comments(html_content)
 
-        # Parse tournament comments
-        self.parse_tournament_comments(html_content)
+        # Parse tournament comments (only for PPV)
+        if not is_weekly:
+            self.parse_tournament_comments(html_content)
         
         soup = BeautifulSoup(html_content, 'html.parser')
         details = soup.find_all('details')
@@ -223,26 +225,28 @@ class WrestlingDatabase:
                 
             event_name = summary.get_text().strip()
             table = detail.find('table', class_='match-card')
-            event_name = event_name.split(':')[0].strip()
-            event_name = re.sub(r'World Title Series (\d+)', r'WTS \1', event_name)
-            event_name = re.sub(r'World Championship Wrestling (\d+)', r'WCW \1', event_name)
+            
+            # For weekly shows, always use "Live TV" as event name
+            if is_weekly:
+                event_name = "Live TV"
+            else:
+                event_name = event_name.split(':')[0].strip()
+                event_name = re.sub(r'World Title Series (\d+)', r'WTS \1', event_name)
+                event_name = re.sub(r'World Championship Wrestling (\d+)', r'WCW \1', event_name)
+                # Remove " - Day X" portion for multi-day events
+                event_name = re.sub(r'\s*-\s*Day\s+\d+', '', event_name, flags=re.IGNORECASE)
 
             if table:
-                self.parse_match_card(table, event_name)
+                self.parse_match_card(table, event_name, is_weekly=is_weekly)
             
 
-    def parse_match_card(self, table, event_name):
+    def parse_match_card(self, table, event_name, is_weekly=False):
         """Parse individual match card - SINGLES MATCHES ONLY"""
         rows = table.find('tbody').find_all('tr')
         info_row = rows[-1]
         match_rows = rows[1:-1]
         
         # Extract event info from last row
-        # New format: <th>TV</th> <th colspan="2">Location</th> <th colspan="2">Venue</th> <th>Attendance</th> <th>Network</th> <th>Audience</th> <th>Date</th>
-        th_cells = info_row.find_all('th')
-        td_cells = info_row.find_all('td')
-        all_cells = info_row.find_all(['th', 'td'])
-        
         event_date = None
         event_location = None
         event_country = 'un'
@@ -251,52 +255,72 @@ class WrestlingDatabase:
         broadcast_type = None
         attendance = None
         
-        # Parse broadcast type from first th
-        if th_cells:
-            first_th = th_cells[0]
-            # Check if there's an anchor tag
-            anchor = first_th.find('a')
-            if anchor:
-                first_th_text = anchor.get_text().strip().upper()
-            else:
-                first_th_text = first_th.get_text().strip().upper()
-            
-            if 'PPV' in first_th_text:
-                broadcast_type = 'PPV'
-            elif 'TV' in first_th_text:
-                broadcast_type = 'TV'
-            elif 'STM' in first_th_text:
-                broadcast_type = 'STM'
+        # Parse th cells for both PPV and weekly shows
+        th_cells = info_row.find_all('th')
         
-        # Parse each th cell by position
-        for idx, th in enumerate(th_cells):
-            text = th.get_text().strip()
+        if is_weekly:
+            # Weekly shows format: <th>TV</th> <th colspan="2">Location</th> <th colspan="3">Venue</th> <th>Attendance</th> <th>Network</th> <th>Audience</th> <th>Date</th>
+            # We only need date and location for wrestler records
+            for idx, th in enumerate(th_cells):
+                text = th.get_text().strip()
+                
+                if idx == 1:
+                    # Second th is location (with flag)
+                    flag = th.find('span', class_='fi')
+                    if flag:
+                        event_country = self.get_country(th)
+                        event_location = text
+                elif idx == len(th_cells) - 1:
+                    # Last th is date
+                    event_date = text
+        else:
+            # PPV format - full parsing for broadcast records
+            # Parse broadcast type from first th
+            if th_cells:
+                first_th = th_cells[0]
+                # Check if there's an anchor tag
+                anchor = first_th.find('a')
+                if anchor:
+                    first_th_text = anchor.get_text().strip().upper()
+                else:
+                    first_th_text = first_th.get_text().strip().upper()
+                
+                if 'PPV' in first_th_text:
+                    broadcast_type = 'PPV'
+                elif 'TV' in first_th_text:
+                    broadcast_type = 'TV'
+                elif 'STM' in first_th_text:
+                    broadcast_type = 'STM'
             
-            if idx == 0:
-                # First th is broadcast type (already handled)
-                continue
-            elif idx == 1:
-                # Second th is location (with flag)
-                flag = th.find('span', class_='fi')
-                if flag:
-                    event_country = self.get_country(th)
-                    event_location = text
-            elif idx == 2:
-                # Third th is venue
-                event_venue = text
-            elif idx == 3:
-                # Fourth th is attendance
-                if 'Attendance' in text or 'attendance' in text:
-                    attendance = text
-            elif idx == 4:
-                # Fifth th is network (skip for our purposes)
-                pass
-            elif idx == 5:
-                # Sixth th is audience metric (Buys/Viewers/Sales)
-                audience_metric = text
-            elif idx == 6:
-                # Seventh th is date
-                event_date = text
+            # Parse each th cell by position
+            for idx, th in enumerate(th_cells):
+                text = th.get_text().strip()
+                
+                if idx == 0:
+                    # First th is broadcast type (already handled)
+                    continue
+                elif idx == 1:
+                    # Second th is location (with flag)
+                    flag = th.find('span', class_='fi')
+                    if flag:
+                        event_country = self.get_country(th)
+                        event_location = text
+                elif idx == 2:
+                    # Third th is venue
+                    event_venue = text
+                elif idx == 3:
+                    # Fourth th is attendance
+                    if 'Attendance' in text or 'attendance' in text:
+                        attendance = text
+                elif idx == 4:
+                    # Fifth th is network (skip for our purposes)
+                    pass
+                elif idx == 5:
+                    # Sixth th is audience metric (Buys/Viewers/Sales)
+                    audience_metric = text
+                elif idx == 6:
+                    # Seventh th is date
+                    event_date = text
 
         event = {
             'name': event_name,
@@ -377,8 +401,8 @@ class WrestlingDatabase:
 
         self.events.append(event)
         
-        # Record broadcast if it has audience metrics
-        if audience_metric and broadcast_type:
+        # Record broadcast if it has audience metrics (skip for weekly shows)
+        if not is_weekly and audience_metric and broadcast_type:
             # Get main event info (last singles match)
             main_event_match = event['matches'][-1] if event['matches'] else None
             main_event_text = ""
@@ -446,7 +470,6 @@ class WrestlingDatabase:
                 w2['libremania_main_events'] += 1
 
         # Build enhanced notes for wrestler bio
-        # Build enhanced notes for wrestler bio
         is_title, orgs = self.is_title_match(match['notes'])
 
         if is_title and match['winner']:
@@ -459,27 +482,49 @@ class WrestlingDatabase:
                     break
             
             if weight:
+                # Check if title can actually change (same logic as check_championship_change)
+                method_lower = match['method'].lower()
+                can_change_title = 'pinfall' in method_lower or 'submission' in method_lower or ('dq' not in method_lower and 'countout' not in method_lower and 'count out' not in method_lower and 'disqualification' not in method_lower)
+                
                 retained_orgs = []
                 won_orgs = []
+                for_orgs = []  # Titles that were defended but didn't change (DQ/countout)
                 
                 for org in orgs:
                     current_reigns = self.championships[org][weight]
                     last_reign = current_reigns[-1] if current_reigns else None
                     
-                    # Check if this is a new championship win or retention
+                    # Check if winner is current champion of this org
                     if last_reign and last_reign['champion'] == match['winner']:
-                        retained_orgs.append('The Ring' if org == 'ring' else org.upper())
+                        # Winner is already champ
+                        if can_change_title:
+                            retained_orgs.append('The Ring' if org == 'ring' else org.upper())
+                        else:
+                            # Can't change title (DQ/countout) but winner is champ, so retained
+                            retained_orgs.append('The Ring' if org == 'ring' else org.upper())
                     else:
-                        won_orgs.append('The Ring' if org == 'ring' else org.upper())
+                        # Winner is NOT current champion
+                        if can_change_title:
+                            # Normal title change
+                            won_orgs.append('The Ring' if org == 'ring' else org.upper())
+                        else:
+                            # Won by DQ/countout - title doesn't change, show as "For"
+                            for_orgs.append('The Ring' if org == 'ring' else org.upper())
                 
-                # Build bio notes - championships only, ignore original notes
+                # Build bio notes
                 bio_notes_parts = []
                 if retained_orgs:
-                    bio_notes_parts.append(f"Retained {', '.join(retained_orgs)} {weight.capitalize()} Championship")
+                    bio_notes_parts.append(f"Retained {', '.join(retained_orgs)}")
                 if won_orgs:
-                    bio_notes_parts.append(f"Won {', '.join(won_orgs)} {weight.capitalize()} Championship")
+                    bio_notes_parts.append(f"Won {', '.join(won_orgs)}")
+                if for_orgs:
+                    bio_notes_parts.append(f"For {', '.join(for_orgs)}")
                 
-                bio_notes = '<br>'.join(bio_notes_parts)
+                # Add weight class at the end
+                if bio_notes_parts:
+                    bio_notes = ' '.join(bio_notes_parts) + f" {weight.capitalize()} Championship"
+                else:
+                    bio_notes = match['notes']
             else:
                 # Title match but no weight found - keep original notes
                 bio_notes = match['notes']
@@ -579,10 +624,7 @@ class WrestlingDatabase:
                 # If champion didn't lose, it's a successful defense
                 if not champion_lost:
                     last_reign['defenses'] += 1
-                    
-                    # Update days held up to this match
-                    if last_reign['date'] and match['date']:
-                        last_reign['days'] = self.days_between(last_reign['date'], match['date'])
+                    # Days will be updated in reprocess_championships_chronologically()
 
     def add_championship_reign(self, org, weight, match):
         """Add new championship reign"""
@@ -621,29 +663,125 @@ class WrestlingDatabase:
                         reign['vacancy_message'] = vacancy.get('message', 'Title vacated')
                         break
 
+    def reprocess_championships_chronologically(self):
+        """Reprocess all championship changes in chronological order to fix days calculation"""
+        # Clear all championship data
+        for org in self.championships:
+            for weight in self.championships[org]:
+                self.championships[org][weight] = []
+        
+        # Go through all events in chronological order
+        for event in self.events:
+            for match in event['matches']:
+                # Reprocess this match's championship implications
+                is_title, orgs = self.is_title_match(match['notes'])
+                if not is_title or not match['winner']:
+                    continue
+                
+                weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
+                notes_lower = match['notes'].lower()
+                weight = None
+                for w in weights:
+                    if w in notes_lower or w in match['weight_class'].lower():
+                        weight = w
+                        break
+                if not weight:
+                    continue
+                
+                for org in orgs:
+                    current_reigns = self.championships[org][weight]
+                    last_reign = current_reigns[-1] if current_reigns else None
+                    
+                    method_lower = match['method'].lower()
+                    can_change_title = 'pinfall' in method_lower or 'submission' in method_lower or ('dq' not in method_lower and 'countout' not in method_lower and 'count out' not in method_lower and 'disqualification' not in method_lower)
+                    
+                    if match['winner'] and (not last_reign or last_reign['champion'] != match['winner']) and can_change_title:
+                        # Start new reign
+                        winner_country = match['fighter1_country'] if match['winner'] == match['fighter1'] else match['fighter2_country']
+                        champ = {
+                            'champion': match['winner'],
+                            'country': winner_country,
+                            'date': match['date'],
+                            'event': match['event'],
+                            'defenses': 0,
+                            'days': None,
+                            'notes': f"Def. {match['fighter2'] if match['winner']==match['fighter1'] else match['fighter1']}"
+                        }
+                        self.championships[org][weight].append(champ)
+                    elif last_reign:
+                        # Existing reign - check if it's a defense
+                        champion_lost = False
+                        if match['winner'] and match['winner'] != last_reign['champion']:
+                            if 'pinfall' in method_lower or 'submission' in method_lower:
+                                champion_lost = True
+                        
+                        if not champion_lost:
+                            last_reign['defenses'] += 1
+                            # Update days progressively (this is now in chronological order!)
+                            if last_reign['date'] and match['date']:
+                                last_reign['days'] = self.days_between(last_reign['date'], match['date'])
+
     def calculate_championship_days(self):
         """Calculate days held for each championship reign"""
+        # Find the most recent event date across all events
+        most_recent_date = None
+        for event in self.events:
+            if event.get('date'):
+                event_date = self.parse_date(event['date'])
+                if event_date:
+                    if not most_recent_date or event_date > most_recent_date:
+                        most_recent_date = event_date
+        
         for org in self.championships:
             for weight in self.championships[org]:
                 reigns = self.championships[org][weight]
                 
                 for i in range(len(reigns)):
                     if reigns[i]['days'] is not None:
-                        # Days already set (from vacancy comment)
+                        # Days already set (from reprocessing or vacancy)
                         continue
                     
-                    # Calculate days to next reign
+                    # Calculate days to next reign OR to most recent event if current champ
                     if i < len(reigns) - 1:
+                        # Not current champ - calculate to next reign
                         reigns[i]['days'] = self.days_between(reigns[i]['date'], reigns[i + 1]['date'])
+                    else:
+                        # Current champ - calculate to most recent event date
+                        if most_recent_date and reigns[i]['date']:
+                            start_date = self.parse_date(reigns[i]['date'])
+                            if start_date:
+                                reigns[i]['days'] = (most_recent_date - start_date).days
 
     def generate_wrestler_page(self, wrestler_name):
         """Generate wrestler page HTML"""
         w = self.wrestlers[wrestler_name]
         total_bouts = w['wins'] + w['losses'] + w['draws']
         
-        # Sort matches in reverse chronological order
-        sorted_matches = sorted(w['matches'], key=lambda x: self.events.index(
-            next(e for e in self.events if e['name'] == x['event'])), reverse=True)
+        # Sort matches in chronological order (oldest first) to calculate running record
+        chronological_matches = sorted(
+            w['matches'], 
+            key=lambda x: self.parse_date(x['date']) if x.get('date') else datetime.min,
+            reverse=False  # Oldest first
+        )
+        
+        # Recalculate running record in chronological order
+        running_wins = 0
+        running_losses = 0
+        running_draws = 0
+        
+        for match in chronological_matches:
+            if match['result'] == 'Win':
+                running_wins += 1
+            elif match['result'] == 'Loss':
+                running_losses += 1
+            elif match['result'] == 'Draw':
+                running_draws += 1
+            
+            # Update the match with the correct chronological record
+            match['record'] = f"{running_wins}-{running_losses}-{running_draws}"
+        
+        # Now reverse for display (newest first)
+        sorted_matches = list(reversed(chronological_matches))
 
         html = "<h3>Professional wrestling record</h3>\n\n"
         
@@ -934,7 +1072,7 @@ class WrestlingDatabase:
         
         html = '    <!-- Statistics Records -->\n'
         html += '    <details>\n'
-        html += '    <summary>Percentage </summary>\n'
+        html += '    <summary>Percentage</summary>\n'
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
@@ -1094,11 +1232,11 @@ class WrestlingDatabase:
         html += '    <thead>\n'
         html += '        <tr>\n'
         html += '            <th rowspan="2">No.</th>\n'
-        html += '            <th colspan="2">Titles Won</th>\n'
-        html += '            <th colspan="2">Title Defenses</th>\n'
-        html += '            <th colspan="2">Cons. Title Defenses</th>\n'
-        html += '            <th colspan="2">Days as Champion</th>\n'
-        html += '            <th colspan="2">Cons. Days as Champion</th>\n'
+        html += '            <th colspan="2">World Titles Won</th>\n'
+        html += '            <th colspan="2">World Title Defenses</th>\n'
+        html += '            <th colspan="2">Cons. World Title Defenses</th>\n'
+        html += '            <th colspan="2">Days as World Champion</th>\n'
+        html += '            <th colspan="2">Cons. Days as World Champion</th>\n'
         html += '        </tr>\n'
         html += '        <tr>\n'
         html += '            <th>Name</th><th>#</th>\n' * 5
@@ -2037,7 +2175,9 @@ class WrestlingDatabase:
 
         for wrestler_name in sorted_wrestlers:
             filename = wrestler_name.lower().replace(' ', '-').replace('.', '')
-            index_html += f'    <li style="margin-bottom: 8px;"><a href="{filename}.html">{wrestler_name}</a></li>\n'
+            wrestler = self.wrestlers[wrestler_name]
+            record = f"{wrestler['wins']}-{wrestler['losses']}-{wrestler['draws']}"
+            index_html += f'    <li style="margin-bottom: 8px;"><a href="{filename}.html">{wrestler_name}</a> ({record})</li>\n'
 
         index_html += '</ul>\n'
         index_html += HTML_FOOTER
@@ -2050,11 +2190,25 @@ def main():
     db = WrestlingDatabase()
     
     print("Parsing wrestling/ppv/list.html...")
-    db.parse_events('wrestling/ppv/list.html')
+    db.parse_events('wrestling/ppv/list.html', is_weekly=False)
+    
+    # Parse weekly shows if file exists
+    weekly_path = 'wrestling/weekly/list.html'
+    if os.path.exists(weekly_path):
+        print("Parsing wrestling/weekly/list.html...")
+        db.parse_events(weekly_path, is_weekly=True)
     
     print(f"Found {len(db.events)} events")
     print(f"Found {len(db.wrestlers)} wrestlers")
     print(f"Found {len(db.vacancies)} vacancy comments")
+    
+    # Sort all events chronologically
+    print("Sorting events chronologically...")
+    db.events.sort(key=lambda e: db.parse_date(e['date']) if e.get('date') else datetime.min)
+    
+    # Now reprocess all championship changes in chronological order
+    print("Reprocessing championship reigns in chronological order...")
+    db.reprocess_championships_chronologically()
     
     # Process vacancies and calculate championship days
     db.process_vacancies()

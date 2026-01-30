@@ -508,7 +508,7 @@ class WrestlingDatabase:
         w1['country'] = match['fighter1_country']
         w2['country'] = match['fighter2_country']
 
-        if is_main_event:
+        if is_main_event and not is_weekly:  # Only count PPV main events
             w1['main_events'] += 1
             w2['main_events'] += 1
             
@@ -1221,7 +1221,7 @@ class WrestlingDatabase:
         html = '    <!-- Apuestas Records -->\n'
         html += '    <details>\n'
         html += '    <summary>Lucha de Apuestas</summary>\n'
-        html += '    <table class="match-card">\n'
+        html += '    <table class="apuestas-card">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
         html += '            <th>No.</th>\n'

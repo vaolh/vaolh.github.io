@@ -215,6 +215,10 @@ caption {
     text-align: left;
 }
 
+.apuestas-card td {
+    text-align: left;
+}
+
 .match-card td:nth-child(9) {
     font-size: 0.75em;
 }

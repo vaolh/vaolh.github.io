@@ -38,6 +38,7 @@ import re
 class WrestlingDatabase:
     def __init__(self):
         self.wrestlers = {}
+        self.ppv_wrestlers = set()  # Track wrestlers who appeared in PPV events
         self.championships = {
             'wwf': {'heavyweight': [], 'bridgerweight': [], 'middleweight': [], 
                    'welterweight': [], 'lightweight': [], 'featherweight': []},
@@ -52,6 +53,7 @@ class WrestlingDatabase:
         self.broadcasts = []
         self.tournaments = {'open': [], 'trios': []}
         self.vacancies = []
+        self.apuestas = []  # Track Lucha de Apuestas matches
 
     def parse_date(self, date_str):
         """Parse date from various formats"""
@@ -270,6 +272,9 @@ class WrestlingDatabase:
                     if flag:
                         event_country = self.get_country(th)
                         event_location = text
+                elif idx == 2:
+                    # Fourth th is venue
+                    event_venue = text
                 elif idx == len(th_cells) - 1:
                     # Last th is date
                     event_date = text
@@ -389,6 +394,7 @@ class WrestlingDatabase:
                 'notes': notes,
                 'event': event_name,
                 'date': event_date,
+                'venue': event_venue,
                 'location': event_location,
                 'location_country': event_country
             }
@@ -397,7 +403,7 @@ class WrestlingDatabase:
             
             # Check if this is the main event (last singles match)
             is_main_event = (idx == len(match_rows) - 1)
-            self.record_match(match, is_main_event)
+            self.record_match(match, is_main_event, is_weekly=is_weekly)
 
         self.events.append(event)
         
@@ -450,10 +456,15 @@ class WrestlingDatabase:
 
         return (len(matched_orgs) > 0), matched_orgs
 
-    def record_match(self, match, is_main_event):
+    def record_match(self, match, is_main_event, is_weekly=False):
         """Record match in wrestler stats"""
         w1 = self.get_wrestler(match['fighter1'])
         w2 = self.get_wrestler(match['fighter2'])
+        
+        # Track PPV wrestlers (exclude weekly-only talent)
+        if not is_weekly:
+            self.ppv_wrestlers.add(match['fighter1'])
+            self.ppv_wrestlers.add(match['fighter2'])
         
         w1['country'] = match['fighter1_country']
         w2['country'] = match['fighter2_country']
@@ -522,7 +533,7 @@ class WrestlingDatabase:
                 
                 # Add weight class at the end
                 if bio_notes_parts:
-                    bio_notes = ' '.join(bio_notes_parts) + f" {weight.capitalize()} Championship"
+                    bio_notes = '<br>'.join(bio_notes_parts) + f" {weight.capitalize()} Championship"
                 else:
                     bio_notes = match['notes']
             else:
@@ -564,6 +575,24 @@ class WrestlingDatabase:
             # Check for Lucha de Apuestas in notes
             if 'lucha de apuestas' in match['notes'].lower() or 'apuesta' in match['notes'].lower():
                 winner['lucha_wins'] += 1
+                
+                # Parse wagers from notes (format: "X vs. Y")
+                wager_match = re.search(r'(\w+(?:\s+\w+)?)\s+vs\.?\s+(\w+(?:\s+\w+)?)', match['notes'], re.IGNORECASE)
+                if wager_match:
+                    winner_wager = wager_match.group(1).strip()
+                    loser_wager = wager_match.group(2).strip()
+                    
+                    self.apuestas.append({
+                        'event': match['event'],
+                        'winner': match['winner'],
+                        'winner_wager': winner_wager,
+                        'loser': match['loser'],
+                        'loser_wager': loser_wager,
+                        'venue': match.get('venue', ''),
+                        'location': match['location'],
+                        'location_country': match['location_country'],
+                        'date': match['date']
+                    })
 
             # Build loser notes if it was a title match
             if is_title and weight:
@@ -976,10 +1005,177 @@ class WrestlingDatabase:
         html = self.generate_singles_records_html()
         html += self.generate_statistics_records_html()
         html += self.generate_world_titles_records_html()
+        html += self.generate_streaks_records_html()
         html += self.generate_event_records_html()
         html += self.generate_drawing_power_html()
         html += self.generate_broadcast_records_html()
         html += self.generate_attendance_records_html()
+        return html
+
+    def generate_apuestas_html(self):
+        """Generate Lucha de Apuestas table"""
+        if not self.apuestas:
+            return ''
+        
+        # Sort by date (most recent first)
+        sorted_apuestas = sorted(
+            self.apuestas,
+            key=lambda x: self.parse_date(x['date']) if x.get('date') else datetime.min,
+            reverse=True
+        )
+        
+        html = '    <!-- Apuestas Records -->\n'
+        html += '    <table class="match-card">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th>No.</th>\n'
+        html += '            <th>Event</th>\n'
+        html += '            <th>Winner</th>\n'
+        html += '            <th>Wager</th>\n'
+        html += '            <th>Loser</th>\n'
+        html += '            <th>Wager</th>\n'
+        html += '            <th>Venue</th>\n'
+        html += '            <th>Location</th>\n'
+        html += '            <th>Date</th>\n'
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for idx, apuesta in enumerate(sorted_apuestas):
+            html += '        <tr>\n'
+            html += f'            <th>{idx + 1}</th>\n'
+            html += f'            <td>{apuesta["event"]}</td>\n'
+            html += f'            <td>{apuesta["winner"]}</td>\n'
+            html += f'            <td>{apuesta["winner_wager"]}</td>\n'
+            html += f'            <td>{apuesta["loser"]}</td>\n'
+            html += f'            <td>{apuesta["loser_wager"]}</td>\n'
+            html += f'            <td>{apuesta.get("venue", "")}</td>\n'
+            html += f'            <td><span class="fi fi-{apuesta["location_country"]}"></span> {apuesta["location"]}</td>\n'
+            html += f'            <td>{apuesta["date"]}</td>\n'
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        
+        return html
+
+    def generate_streaks_records_html(self):
+        """Generate streaks records table - consecutive wins, losses, defenses, days"""
+        wrestler_list = list(self.wrestlers.values())
+        
+        # Calculate consecutive streaks for each wrestler
+        max_consecutive_wins = defaultdict(lambda: {'max_wins': 0, 'country': 'xx'})
+        max_consecutive_losses = defaultdict(lambda: {'max_losses': 0, 'country': 'xx'})
+        
+        for w in wrestler_list:
+            name = w['name']
+            max_consecutive_wins[name]['country'] = w['country']
+            max_consecutive_losses[name]['country'] = w['country']
+            
+            # Calculate consecutive wins and losses from match history
+            current_win_streak = 0
+            current_loss_streak = 0
+            
+            # Sort chronologically
+            chronological_matches = sorted(
+                w['matches'],
+                key=lambda x: self.parse_date(x['date']) if x.get('date') else datetime.min,
+                reverse=False
+            )
+            
+            for match in chronological_matches:
+                if match['result'] == 'Win':
+                    current_win_streak += 1
+                    current_loss_streak = 0
+                    if current_win_streak > max_consecutive_wins[name]['max_wins']:
+                        max_consecutive_wins[name]['max_wins'] = current_win_streak
+                elif match['result'] == 'Loss':
+                    current_loss_streak += 1
+                    current_win_streak = 0
+                    if current_loss_streak > max_consecutive_losses[name]['max_losses']:
+                        max_consecutive_losses[name]['max_losses'] = current_loss_streak
+                else:  # Draw
+                    current_win_streak = 0
+                    current_loss_streak = 0
+        
+        # Get consecutive title stats from world titles function
+        max_cons_defenses = defaultdict(lambda: {'max_defenses': 0, 'country': 'xx'})
+        max_cons_days = defaultdict(lambda: {'max_days': 0, 'country': 'xx'})
+        
+        for org in ['wwf', 'wwo', 'iwb', 'ring']:
+            for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
+                for reign in self.championships[org][weight]:
+                    champ = reign['champion']
+                    if champ in self.wrestlers:
+                        if reign['defenses'] > max_cons_defenses[champ]['max_defenses']:
+                            max_cons_defenses[champ]['max_defenses'] = reign['defenses']
+                            max_cons_defenses[champ]['country'] = reign['country']
+                        if reign.get('days', 0) > max_cons_days[champ]['max_days']:
+                            max_cons_days[champ]['max_days'] = reign.get('days', 0)
+                            max_cons_days[champ]['country'] = reign['country']
+        
+        # Top 5 lists
+        top_cons_wins = sorted(max_consecutive_wins.items(), key=lambda x: x[1]['max_wins'], reverse=True)[:5]
+        top_cons_losses = sorted(max_consecutive_losses.items(), key=lambda x: x[1]['max_losses'], reverse=True)[:5]
+        top_cons_defenses = sorted(max_cons_defenses.items(), key=lambda x: x[1]['max_defenses'], reverse=True)[:5]
+        top_cons_days = sorted(max_cons_days.items(), key=lambda x: x[1]['max_days'], reverse=True)[:5]
+        
+        html = '    <!-- Streaks Records -->\n'
+        html += '    <details>\n'
+        html += '    <summary>Streaks</summary>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2">No.</th>\n'
+        html += '            <th colspan="2">Consecutive Wins</th>\n'
+        html += '            <th colspan="2">Consecutive Losses</th>\n'
+        html += '            <th colspan="2">Consecutive Title Defenses</th>\n'
+        html += '            <th colspan="2">Consecutive Days as Champion</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th>Name</th><th>#</th>\n' * 4
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for i in range(5):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            # Consecutive Wins
+            if i < len(top_cons_wins):
+                name, stats = top_cons_wins[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{stats["max_wins"]}</td>\n'
+            else:
+                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            # Consecutive Losses
+            if i < len(top_cons_losses):
+                name, stats = top_cons_losses[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{stats["max_losses"]}</td>\n'
+            else:
+                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            # Consecutive Defenses
+            if i < len(top_cons_defenses):
+                name, stats = top_cons_defenses[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{stats["max_defenses"]}</td>\n'
+            else:
+                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            # Consecutive Days
+            if i < len(top_cons_days):
+                name, stats = top_cons_days[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{self.format_number(stats["max_days"])}</td>\n'
+            else:
+                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+        
         return html
 
     def generate_singles_records_html(self):
@@ -1144,9 +1340,28 @@ class WrestlingDatabase:
                     })
         
         # Calculate totals per wrestler by merging overlapping time periods
-        totals = defaultdict(lambda: {'total_reigns': 0, 'total_defenses': 0, 'total_days': 0, 'country': 'un'})
+        totals = defaultdict(lambda: {'total_reigns': 0, 'total_defenses': 0, 'total_days': 0, 'country': 'un', 'unique_opponents': set(), 'title_bouts': 0})
         max_cons_defenses = defaultdict(lambda: {'max_defenses': 0, 'country': 'un'})
         max_cons_days = defaultdict(lambda: {'max_days': 0, 'country': 'un'})
+        
+        # Also track all title matches for each wrestler
+        for event in self.events:
+            for match in event['matches']:
+                is_title, orgs = self.is_title_match(match['notes'])
+                if is_title and match['winner']:
+                    # Check if this is a world title (one of our tracked orgs)
+                    if any(org in ['wwf', 'wwo', 'iwb', 'ring'] for org in orgs):
+                        fighter1 = match['fighter1']
+                        fighter2 = match['fighter2']
+                        
+                        # Track title bouts and unique opponents for both fighters
+                        if fighter1 in wrestler_reigns or fighter2 in wrestler_reigns:
+                            if fighter1 in wrestler_reigns:
+                                totals[fighter1]['title_bouts'] += 1
+                                totals[fighter1]['unique_opponents'].add(fighter2)
+                            if fighter2 in wrestler_reigns:
+                                totals[fighter2]['title_bouts'] += 1
+                                totals[fighter2]['unique_opponents'].add(fighter1)
         
         for champ, reigns in wrestler_reigns.items():
             # Sort reigns by start date
@@ -1221,8 +1436,8 @@ class WrestlingDatabase:
         top_reigns = sorted(totals.items(), key=lambda x: x[1]['total_reigns'], reverse=True)[:5]
         top_defenses = sorted(totals.items(), key=lambda x: x[1]['total_defenses'], reverse=True)[:5]
         top_days = sorted(totals.items(), key=lambda x: x[1]['total_days'], reverse=True)[:5]
-        top_cons_defenses = sorted(max_cons_defenses.items(), key=lambda x: x[1]['max_defenses'], reverse=True)[:5]
-        top_cons_days = sorted(max_cons_days.items(), key=lambda x: x[1]['max_days'], reverse=True)[:5]
+        top_unique_opponents = sorted(totals.items(), key=lambda x: len(x[1]['unique_opponents']), reverse=True)[:5]
+        top_title_bouts = sorted(totals.items(), key=lambda x: x[1]['title_bouts'], reverse=True)[:5]
         
         # Build HTML
         html = '    <!-- World Titles Records -->\n'
@@ -1232,11 +1447,11 @@ class WrestlingDatabase:
         html += '    <thead>\n'
         html += '        <tr>\n'
         html += '            <th rowspan="2">No.</th>\n'
-        html += '            <th colspan="2">World Titles Won</th>\n'
-        html += '            <th colspan="2">World Title Defenses</th>\n'
-        html += '            <th colspan="2">Cons. World Title Defenses</th>\n'
-        html += '            <th colspan="2">Days as World Champion</th>\n'
-        html += '            <th colspan="2">Cons. Days as World Champion</th>\n'
+        html += '            <th colspan="2">Titles Won</th>\n'
+        html += '            <th colspan="2">Title Defenses</th>\n'
+        html += '            <th colspan="2">Days as Champion</th>\n'
+        html += '            <th colspan="2">Unique Opponents</th>\n'
+        html += '            <th colspan="2">Title Bouts</th>\n'
         html += '        </tr>\n'
         html += '        <tr>\n'
         html += '            <th>Name</th><th>#</th>\n' * 5
@@ -1262,13 +1477,6 @@ class WrestlingDatabase:
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
-            # Consecutive Defenses
-            if i < len(top_cons_defenses):
-                champ, stats = top_cons_defenses[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{stats["max_defenses"]}</td>\n'
-            else:
-                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
-            
             # Total Days
             if i < len(top_days):
                 champ, stats = top_days[i]
@@ -1276,10 +1484,17 @@ class WrestlingDatabase:
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
-            # Consecutive Days
-            if i < len(top_cons_days):
-                champ, stats = top_cons_days[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{self.format_number(stats["max_days"])}</td>\n'
+            # Unique Opponents
+            if i < len(top_unique_opponents):
+                champ, stats = top_unique_opponents[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{len(stats["unique_opponents"])}</td>\n'
+            else:
+                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            # Title Bouts
+            if i < len(top_title_bouts):
+                champ, stats = top_title_bouts[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{stats["title_bouts"]}</td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -1694,6 +1909,13 @@ class WrestlingDatabase:
                 before = content.split('<!-- RECORDS_START -->')[0]
                 after = content.split('<!-- RECORDS_END -->')[1]
                 content = before + '<!-- RECORDS_START -->\n' + records_html + '<!-- RECORDS_END -->' + after
+
+            # Update apuestas
+            apuestas_html = self.generate_apuestas_html()
+            if '<!-- APUESTAS_START -->' in content and '<!-- APUESTAS_END -->' in content:
+                before = content.split('<!-- APUESTAS_START -->')[0]
+                after = content.split('<!-- APUESTAS_END -->')[1]
+                content = before + '<!-- APUESTAS_START -->\n' + apuestas_html + '<!-- APUESTAS_END -->' + after
             
             with open(wiki_path, 'w', encoding='utf-8') as f:
                 f.write(content)
@@ -2113,10 +2335,13 @@ class WrestlingDatabase:
         </html>
         """
         
-        # 3. Create/update wrestler pages
+        # 3. Create/update wrestler pages (ONLY for PPV wrestlers)
         wrestlers_dir = 'wrestling/wrestlers'
         os.makedirs(wrestlers_dir, exist_ok=True)
-        for wrestler_name in self.wrestlers.keys():
+        for wrestler_name in self.ppv_wrestlers:
+            if wrestler_name not in self.wrestlers:
+                continue
+                
             filename = wrestler_name.lower().replace(' ', '-').replace('.', '')
             filepath = f'{wrestlers_dir}/{filename}.html'
             
@@ -2131,6 +2356,17 @@ class WrestlingDatabase:
                     before = content.split('<!-- MATCHES_START -->')[0]
                     after = content.split('<!-- MATCHES_END -->')[1]
                     content = before + '<!-- MATCHES_START -->\n' + wrestler_html + '<!-- MATCHES_END -->' + after
+                    
+                    # Update infobox record if it exists
+                    wrestler = self.wrestlers[wrestler_name]
+                    record = f"{wrestler['wins']}-{wrestler['losses']}-{wrestler['draws']}"
+                    # Look for the Record row in infobox and update it
+                    import re
+                    content = re.sub(
+                        r'(<th>Record</th>\s*<td>)[^<]*(</td>)',
+                        r'\g<1>' + record + r'\g<2>',
+                        content
+                    )
                     
                     with open(filepath, 'w', encoding='utf-8') as f:
                         f.write(content)
@@ -2165,9 +2401,9 @@ class WrestlingDatabase:
                     f.write(HTML_FOOTER)
                 print(f"✓ Created {filepath}")
 
-        # 4. Create/update wrestlers index page
+        # 4. Create/update wrestlers index page (ONLY PPV wrestlers)
         index_path = 'wrestling/wrestlers/index.html'
-        sorted_wrestlers = sorted(self.wrestlers.keys())
+        sorted_wrestlers = sorted([name for name in self.wrestlers.keys() if name in self.ppv_wrestlers])
 
         index_html = HTML_HEADER
         index_html += '<h1>Wrestler Directory</h1>\n\n'

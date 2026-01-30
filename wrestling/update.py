@@ -315,8 +315,8 @@ class WrestlingDatabase:
                     if 'Attendance' in text or 'attendance' in text:
                         attendance = text
                 elif idx == 4:
-                    # Fifth th is network (skip for our purposes)
-                    pass
+                    # Fifth th is network 
+                    network = text
                 elif idx == 5:
                     # Sixth th is audience metric (Buys/Viewers/Sales)
                     audience_metric = text
@@ -413,12 +413,6 @@ class WrestlingDatabase:
             if main_event_match:
                 main_event_text = f"{main_event_match['fighter1']} vs. {main_event_match['fighter2']}"
                 main_event_wrestlers = [main_event_match['fighter1'], main_event_match['fighter2']]
-            
-            # Extract network (second to last th cell in info row)
-            network = ""
-            th_cells = info_row.find_all('th')
-            if len(th_cells) >= 2:
-                network = th_cells[-2].get_text().strip()
             
             self.broadcasts.append({
                 'event': event_name,
@@ -673,53 +667,6 @@ class WrestlingDatabase:
                                     'record': f"{loser['wins']}-{loser['losses']}-{loser['draws']}",
                                     'bio_notes': loser_bio_notes})
 
-            # Check for championship
-            self.check_championship_change(match)
-
-    def check_championship_change(self, match):
-        """Check if match involved a championship and update reigns properly."""
-        is_title, orgs = self.is_title_match(match['notes'])
-        if not is_title:
-            return
-
-        weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
-        notes_lower = match['notes'].lower()
-        weight = None
-        for w in weights:
-            if w in notes_lower or w in match['weight_class'].lower():
-                weight = w
-                break
-        if not weight:
-            return
-
-        for org in orgs:
-            current_reigns = self.championships[org][weight]
-            last_reign = current_reigns[-1] if current_reigns else None
-
-            # Determine if this is a new reign
-            # Titles only change on pinfall, submission, or decision (not DQ/countout)
-            method_lower = match['method'].lower()
-            can_change_title = 'pinfall' in method_lower or 'submission' in method_lower or ('dq' not in method_lower and 'countout' not in method_lower and 'count out' not in method_lower and 'disqualification' not in method_lower)
-
-            if match['winner'] and (not last_reign or last_reign['champion'] != match['winner']) and can_change_title:
-                # Start new reign
-                self.add_championship_reign(org, weight, match)
-                # Set notes to opponent for the first match of reign
-                current_reigns[-1]['notes'] = f"Def. {match['fighter2'] if match['winner']==match['fighter1'] else match['fighter1']}"
-            elif last_reign:
-                # Existing reign - check if champion retained (any result except pinfall/submission loss)
-                method_lower = match['method'].lower()
-                
-                # Determine if champion lost the title (pinfall or submission loss)
-                champion_lost = False
-                if match['winner'] and match['winner'] != last_reign['champion']:
-                    if 'pinfall' in method_lower or 'submission' in method_lower:
-                        champion_lost = True
-                
-                # If champion didn't lose, it's a successful defense
-                if not champion_lost:
-                    last_reign['defenses'] += 1
-                    # Days will be updated in reprocess_championships_chronologically()
 
     def add_championship_reign(self, org, weight, match):
         """Add new championship reign"""
@@ -770,7 +717,7 @@ class WrestlingDatabase:
             for match in event['matches']:
                 # Reprocess this match's championship implications
                 is_title, orgs = self.is_title_match(match['notes'])
-                if not is_title or not match['winner']:
+                if not is_title:
                     continue
                 
                 weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
@@ -786,9 +733,10 @@ class WrestlingDatabase:
                 for org in orgs:
                     current_reigns = self.championships[org][weight]
                     last_reign = current_reigns[-1] if current_reigns else None
-                    
+                    current_champ_in_match = last_reign and (last_reign['champion'] == match['fighter1'] or last_reign['champion'] == match['fighter2'])
+
                     method_lower = match['method'].lower()
-                    can_change_title = 'pinfall' in method_lower or 'submission' in method_lower or ('dq' not in method_lower and 'countout' not in method_lower and 'count out' not in method_lower and 'disqualification' not in method_lower)
+                    can_change_title = 'pinfall' in method_lower or 'submission' in method_lower
                     
                     if match['winner'] and (not last_reign or last_reign['champion'] != match['winner']) and can_change_title:
                         # Start new reign
@@ -803,12 +751,12 @@ class WrestlingDatabase:
                             'notes': f"Def. {match['fighter2'] if match['winner']==match['fighter1'] else match['fighter1']}"
                         }
                         self.championships[org][weight].append(champ)
-                    elif last_reign:
-                        # Existing reign - check if it's a defense
+                    elif current_champ_in_match:
+                        # Current champion is in this title match
+                        # Champion retains on: win, draw, or DQ/countout loss
                         champion_lost = False
-                        if match['winner'] and match['winner'] != last_reign['champion']:
-                            if 'pinfall' in method_lower or 'submission' in method_lower:
-                                champion_lost = True
+                        if match['winner'] and match['winner'] != last_reign['champion'] and can_change_title:
+                            champion_lost = True
                         
                         if not champion_lost:
                             last_reign['defenses'] += 1

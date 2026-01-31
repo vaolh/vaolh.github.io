@@ -315,8 +315,8 @@ class WrestlingDatabase:
                     if 'Attendance' in text or 'attendance' in text:
                         attendance = text
                 elif idx == 4:
-                    # Fifth th is network 
-                    network = text
+                    # Fifth th is network (skip for our purposes)
+                    pass
                 elif idx == 5:
                     # Sixth th is audience metric (Buys/Viewers/Sales)
                     audience_metric = text
@@ -413,6 +413,12 @@ class WrestlingDatabase:
             if main_event_match:
                 main_event_text = f"{main_event_match['fighter1']} vs. {main_event_match['fighter2']}"
                 main_event_wrestlers = [main_event_match['fighter1'], main_event_match['fighter2']]
+            
+            # Extract network (second to last th cell in info row)
+            network = ""
+            th_cells = info_row.find_all('th')
+            if len(th_cells) >= 2:
+                network = th_cells[-2].get_text().strip()
             
             self.broadcasts.append({
                 'event': event_name,
@@ -667,6 +673,53 @@ class WrestlingDatabase:
                                     'record': f"{loser['wins']}-{loser['losses']}-{loser['draws']}",
                                     'bio_notes': loser_bio_notes})
 
+            # Check for championship
+            self.check_championship_change(match)
+
+    def check_championship_change(self, match):
+        """Check if match involved a championship and update reigns properly."""
+        is_title, orgs = self.is_title_match(match['notes'])
+        if not is_title:
+            return
+
+        weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
+        notes_lower = match['notes'].lower()
+        weight = None
+        for w in weights:
+            if w in notes_lower or w in match['weight_class'].lower():
+                weight = w
+                break
+        if not weight:
+            return
+
+        for org in orgs:
+            current_reigns = self.championships[org][weight]
+            last_reign = current_reigns[-1] if current_reigns else None
+
+            # Determine if this is a new reign
+            # Titles only change on pinfall, submission, or decision (not DQ/countout)
+            method_lower = match['method'].lower()
+            can_change_title = 'pinfall' in method_lower or 'submission' in method_lower or ('dq' not in method_lower and 'countout' not in method_lower and 'count out' not in method_lower and 'disqualification' not in method_lower)
+
+            if match['winner'] and (not last_reign or last_reign['champion'] != match['winner']) and can_change_title:
+                # Start new reign
+                self.add_championship_reign(org, weight, match)
+                # Set notes to opponent for the first match of reign
+                current_reigns[-1]['notes'] = f"Def. {match['fighter2'] if match['winner']==match['fighter1'] else match['fighter1']}"
+            elif last_reign:
+                # Existing reign - check if champion retained (any result except pinfall/submission loss)
+                method_lower = match['method'].lower()
+                
+                # Determine if champion lost the title (pinfall or submission loss)
+                champion_lost = False
+                if match['winner'] and match['winner'] != last_reign['champion']:
+                    if 'pinfall' in method_lower or 'submission' in method_lower:
+                        champion_lost = True
+                
+                # If champion didn't lose, it's a successful defense
+                if not champion_lost:
+                    last_reign['defenses'] += 1
+                    # Days will be updated in reprocess_championships_chronologically()
 
     def add_championship_reign(self, org, weight, match):
         """Add new championship reign"""
@@ -712,12 +765,21 @@ class WrestlingDatabase:
             for weight in self.championships[org]:
                 self.championships[org][weight] = []
         
+        # Find the most recent event date across ALL events (PPV and weekly)
+        most_recent_date = None
+        for event in self.events:
+            if event.get('date'):
+                event_date = self.parse_date(event['date'])
+                if event_date:
+                    if not most_recent_date or event_date > most_recent_date:
+                        most_recent_date = event_date
+        
         # Go through all events in chronological order
         for event in self.events:
             for match in event['matches']:
                 # Reprocess this match's championship implications
                 is_title, orgs = self.is_title_match(match['notes'])
-                if not is_title:
+                if not is_title or not match['winner']:
                     continue
                 
                 weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
@@ -733,10 +795,9 @@ class WrestlingDatabase:
                 for org in orgs:
                     current_reigns = self.championships[org][weight]
                     last_reign = current_reigns[-1] if current_reigns else None
-                    current_champ_in_match = last_reign and (last_reign['champion'] == match['fighter1'] or last_reign['champion'] == match['fighter2'])
-
+                    
                     method_lower = match['method'].lower()
-                    can_change_title = 'pinfall' in method_lower or 'submission' in method_lower
+                    can_change_title = 'pinfall' in method_lower or 'submission' in method_lower or ('dq' not in method_lower and 'countout' not in method_lower and 'count out' not in method_lower and 'disqualification' not in method_lower)
                     
                     if match['winner'] and (not last_reign or last_reign['champion'] != match['winner']) and can_change_title:
                         # Start new reign
@@ -751,162 +812,159 @@ class WrestlingDatabase:
                             'notes': f"Def. {match['fighter2'] if match['winner']==match['fighter1'] else match['fighter1']}"
                         }
                         self.championships[org][weight].append(champ)
-                    elif current_champ_in_match:
-                        # Current champion is in this title match
-                        # Champion retains on: win, draw, or DQ/countout loss
+                    elif last_reign:
+                        # Existing reign - check if it's a defense
                         champion_lost = False
-                        if match['winner'] and match['winner'] != last_reign['champion'] and can_change_title:
-                            champion_lost = True
+                        if match['winner'] and match['winner'] != last_reign['champion']:
+                            if 'pinfall' in method_lower or 'submission' in method_lower:
+                                champion_lost = True
                         
                         if not champion_lost:
                             last_reign['defenses'] += 1
-                            # Update days progressively (this is now in chronological order!)
+                            # Calculate days to THIS MATCH (not to most recent event yet)
+                            # This will be the "last defense" for non-current champs
                             if last_reign['date'] and match['date']:
                                 last_reign['days'] = self.days_between(last_reign['date'], match['date'])
+        
+        # Now update current champions' days to most recent event
+        if most_recent_date:
+            for org in self.championships:
+                for weight in self.championships[org]:
+                    reigns = self.championships[org][weight]
+                    if reigns:
+                        last_reign = reigns[-1]  # Current champion
+                        if last_reign['date']:
+                            start_date = self.parse_date(last_reign['date'])
+                            if start_date:
+                                # Calculate to most recent event (the "present")
+                                last_reign['days'] = (most_recent_date - start_date).days
 
     def recalculate_bio_notes(self):
         """Recalculate bio_notes for all matches after championship reprocessing"""
         print("Recalculating bio notes in chronological order...")
-
+        
+        # Track current champion for each org/weight AS WE GO CHRONOLOGICALLY
         current_champions = {
-            'wwf': {'heavyweight': None, 'bridgerweight': None, 'middleweight': None,
-                    'welterweight': None, 'lightweight': None, 'featherweight': None},
-            'wwo': {'heavyweight': None, 'bridgerweight': None, 'middleweight': None,
-                    'welterweight': None, 'lightweight': None, 'featherweight': None},
-            'iwb': {'heavyweight': None, 'bridgerweight': None, 'middleweight': None,
-                    'welterweight': None, 'lightweight': None, 'featherweight': None},
-            'ring': {'heavyweight': None, 'bridgerweight': None, 'middleweight': None,
+            'wwf': {'heavyweight': None, 'bridgerweight': None, 'middleweight': None, 
+                   'welterweight': None, 'lightweight': None, 'featherweight': None},
+            'wwo': {'heavyweight': None, 'bridgerweight': None, 'middleweight': None, 
+                   'welterweight': None, 'lightweight': None, 'featherweight': None},
+            'iwb': {'heavyweight': None, 'bridgerweight': None, 'middleweight': None, 
+                   'welterweight': None, 'lightweight': None, 'featherweight': None},
+            'ring': {'heavyweight': None, 'bridgerweight': None, 'middleweight': None, 
                     'welterweight': None, 'lightweight': None, 'featherweight': None}
         }
-
-        weights = ['heavyweight', 'bridgerweight', 'middleweight',
-                'welterweight', 'lightweight', 'featherweight']
-
+        
+        # Go through all events in chronological order
         for event in self.events:
             for match in event['matches']:
+                # Check if this is a title match
                 is_title, orgs = self.is_title_match(match['notes'])
-                if not is_title:
+                
+                if not is_title or (not match['winner'] and not match['is_draw']):
                     continue
-
+                
+                # Find weight class
+                weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
                 notes_lower = match['notes'].lower()
                 weight = None
                 for w in weights:
                     if w in notes_lower or w in match['weight_class'].lower():
                         weight = w
                         break
+                
                 if not weight:
                     continue
-
+                
                 method_lower = match['method'].lower()
-                can_change_title = (
-                    'pinfall' in method_lower or
-                    'submission' in method_lower or
-                    ('dq' not in method_lower and
-                    'countout' not in method_lower and
-                    'count out' not in method_lower and
-                    'disqualification' not in method_lower)
-                )
-
-                # ------------------------
-                # DRAWS
-                # ------------------------
+                can_change_title = 'pinfall' in method_lower or 'submission' in method_lower or ('dq' not in method_lower and 'countout' not in method_lower and 'count out' not in method_lower and 'disqualification' not in method_lower)
+                
                 if match['is_draw']:
-                    for fighter in [match['fighter1'], match['fighter2']]:
-                        retained = []
-                        for_titles = []
-
-                        for org in orgs:
-                            champ = current_champions[org][weight]
-                            label = 'The Ring' if org == 'ring' else org.upper()
-                            if champ == fighter:
-                                retained.append(label)
+                    # Handle draw - each fighter gets separate notes based on CURRENT state
+                    fighter1_retained = []
+                    fighter2_retained = []
+                    
+                    for org in orgs:
+                        current_champ = current_champions[org][weight]
+                        
+                        if current_champ == match['fighter1']:
+                            fighter1_retained.append('The Ring' if org == 'ring' else org.upper())
+                        elif current_champ == match['fighter2']:
+                            fighter2_retained.append('The Ring' if org == 'ring' else org.upper())
+                    
+                    fighter1_notes = self.format_title_notes(fighter1_retained, [], [], weight) if fighter1_retained else match['notes']
+                    fighter2_notes = self.format_title_notes(fighter2_retained, [], [], weight) if fighter2_retained else match['notes']
+                    
+                    # Update notes in wrestler records
+                    w1 = self.wrestlers.get(match['fighter1'])
+                    w2 = self.wrestlers.get(match['fighter2'])
+                    
+                    if w1:
+                        for m in w1['matches']:
+                            if (m['event'] == match['event'] and 
+                                m['date'] == match['date'] and 
+                                m['fighter1'] == match['fighter1'] and 
+                                m['fighter2'] == match['fighter2']):
+                                m['bio_notes'] = fighter1_notes
+                    
+                    if w2:
+                        for m in w2['matches']:
+                            if (m['event'] == match['event'] and 
+                                m['date'] == match['date'] and 
+                                m['fighter1'] == match['fighter1'] and 
+                                m['fighter2'] == match['fighter2']):
+                                m['bio_notes'] = fighter2_notes
+                
+                else:
+                    # Non-draw title match - check CURRENT championship state
+                    retained_orgs = []
+                    won_orgs = []
+                    for_orgs = []
+                    
+                    for org in orgs:
+                        current_champ = current_champions[org][weight]
+                        
+                        # Is the winner ALREADY the champion?
+                        if current_champ == match['winner']:
+                            # Already champ = retained
+                            retained_orgs.append('The Ring' if org == 'ring' else org.upper())
+                        else:
+                            # Not champ = won (or for if can't change title)
+                            if can_change_title:
+                                won_orgs.append('The Ring' if org == 'ring' else org.upper())
+                                # UPDATE championship state since title changed!
+                                current_champions[org][weight] = match['winner']
                             else:
-                                for_titles.append(label)
-
-                        notes = self.format_title_notes(retained, [], for_titles, weight)
-
-                        w = self.wrestlers.get(fighter)
-                        if w:
-                            for m in w['matches']:
-                                if (m['event'] == match['event'] and
-                                    m['date'] == match['date'] and
-                                    m['fighter1'] == match['fighter1'] and
-                                    m['fighter2'] == match['fighter2']):
-                                    m['bio_notes'] = notes
-                    continue
-
-                # ------------------------
-                # NON-DECISIVE FINISHES
-                # ------------------------
-                if not can_change_title:
-                    for fighter, result in [
-                        (match['winner'], 'Win'),
-                        (match['loser'], 'Loss')
-                    ]:
-                        retained = []
-                        for_titles = []
-
-                        for org in orgs:
-                            champ = current_champions[org][weight]
-                            label = 'The Ring' if org == 'ring' else org.upper()
-                            if champ == fighter:
-                                retained.append(label)
-                            else:
-                                for_titles.append(label)
-
-                        notes = self.format_title_notes(retained, [], for_titles, weight)
-
-                        w = self.wrestlers.get(fighter)
-                        if w:
-                            for m in w['matches']:
-                                if (m['event'] == match['event'] and
-                                    m['date'] == match['date'] and
-                                    m['fighter1'] == match['fighter1'] and
-                                    m['fighter2'] == match['fighter2'] and
-                                    m['result'] == result):
-                                    m['bio_notes'] = notes
-                    continue
-
-                # ------------------------
-                # DECISIVE FINISHES
-                # ------------------------
-                retained_orgs = []
-                won_orgs = []
-                for_orgs = []
-
-                for org in orgs:
-                    champ = current_champions[org][weight]
-                    label = 'The Ring' if org == 'ring' else org.upper()
-
-                    if champ == match['winner']:
-                        retained_orgs.append(label)
-                    else:
-                        won_orgs.append(label)
-                        current_champions[org][weight] = match['winner']
-
-                winner_notes = self.format_title_notes(retained_orgs, won_orgs, [], weight)
-                loser_notes = self.format_title_notes([], [], retained_orgs + won_orgs, weight)
-
-                winner = self.wrestlers.get(match['winner'])
-                loser = self.wrestlers.get(match['loser'])
-
-                if winner:
-                    for m in winner['matches']:
-                        if (m['event'] == match['event'] and
-                            m['date'] == match['date'] and
-                            m['fighter1'] == match['fighter1'] and
-                            m['fighter2'] == match['fighter2'] and
-                            m['result'] == 'Win'):
-                            m['bio_notes'] = winner_notes
-
-                if loser:
-                    for m in loser['matches']:
-                        if (m['event'] == match['event'] and
-                            m['date'] == match['date'] and
-                            m['fighter1'] == match['fighter1'] and
-                            m['fighter2'] == match['fighter2'] and
-                            m['result'] == 'Loss'):
-                            m['bio_notes'] = loser_notes
+                                for_orgs.append('The Ring' if org == 'ring' else org.upper())
+                    
+                    bio_notes = self.format_title_notes(retained_orgs, won_orgs, for_orgs, weight)
+                    
+                    # Update notes in wrestler records
+                    winner_name = match['winner']
+                    loser_name = match['loser']
+                    
+                    winner = self.wrestlers.get(winner_name)
+                    loser = self.wrestlers.get(loser_name)
+                    
+                    if winner:
+                        for m in winner['matches']:
+                            if (m['event'] == match['event'] and 
+                                m['date'] == match['date'] and 
+                                m['fighter1'] == match['fighter1'] and 
+                                m['fighter2'] == match['fighter2'] and
+                                m['result'] == 'Win'):
+                                m['bio_notes'] = bio_notes
+                    
+                    if loser:
+                        # Loser sees "For" version
+                        loser_notes = self.format_title_notes([], [], retained_orgs + won_orgs, weight) if (retained_orgs or won_orgs) else bio_notes
+                        for m in loser['matches']:
+                            if (m['event'] == match['event'] and 
+                                m['date'] == match['date'] and 
+                                m['fighter1'] == match['fighter1'] and 
+                                m['fighter2'] == match['fighter2'] and
+                                m['result'] == 'Loss'):
+                                m['bio_notes'] = loser_notes
 
     def calculate_championship_days(self):
         """Calculate days held for each championship reign"""
@@ -1186,7 +1244,7 @@ class WrestlingDatabase:
         html = '    <!-- Apuestas Records -->\n'
         html += '    <details>\n'
         html += '    <summary>Lucha de Apuestas</summary>\n'
-        html += '    <table class="apuestas-card">\n'
+        html += '    <table class="match-card">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
         html += '            <th>No.</th>\n'

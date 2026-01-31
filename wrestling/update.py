@@ -1223,7 +1223,6 @@ class WrestlingDatabase:
         html += self.generate_world_titles_records_html()
         html += self.generate_streaks_records_html()
         html += self.generate_event_records_html()
-        html += self.generate_apuestas_html()
         html += self.generate_drawing_power_html()
         html += self.generate_broadcast_records_html()
         html += self.generate_attendance_records_html()

@@ -474,7 +474,7 @@ class WrestlingDatabase:
             # 3 or more: "A, B, and C"
             return ', '.join(formatted_orgs[:-1]) + f", and {formatted_orgs[-1]}"
     
-    def format_title_notes(self, retained_orgs, won_orgs, for_orgs, weight):
+    def format_title_notes(self, retained_orgs, won_orgs, for_orgs, weight, lost_orgs=None):
         """Format title notes with proper grammar"""
         bio_notes_parts = []
         
@@ -487,6 +487,11 @@ class WrestlingDatabase:
             formatted_orgs = self.format_orgs_list(won_orgs)
             title_word = "titles" if len(won_orgs) > 1 else "title"
             bio_notes_parts.append(f"Won {formatted_orgs} {weight.capitalize()} {title_word}")
+        
+        if lost_orgs:
+            formatted_orgs = self.format_orgs_list(lost_orgs)
+            title_word = "titles" if len(lost_orgs) > 1 else "title"
+            bio_notes_parts.append(f"Lost {formatted_orgs} {weight.capitalize()} {title_word}")
         
         if for_orgs:
             formatted_orgs = self.format_orgs_list(for_orgs)
@@ -800,6 +805,9 @@ class WrestlingDatabase:
                     can_change_title = 'pinfall' in method_lower or 'submission' in method_lower or ('dq' not in method_lower and 'countout' not in method_lower and 'count out' not in method_lower and 'disqualification' not in method_lower)
                     
                     if match['winner'] and (not last_reign or last_reign['champion'] != match['winner']) and can_change_title:
+                        # Update previous champion's days to the date they lost
+                        if last_reign and last_reign['date'] and match['date']:
+                            last_reign['days'] = self.days_between(last_reign['date'], match['date'])
                         # Start new reign
                         winner_country = match['fighter1_country'] if match['winner'] == match['fighter1'] else match['fighter2_country']
                         champ = {
@@ -921,14 +929,23 @@ class WrestlingDatabase:
                     for fighter, result in [(match['winner'], 'Win'), (match['loser'], 'Loss')]:
                         retained = []
                         won = []
+                        lost = []
                         for_titles = []
                         
                         for org in orgs:
                             champ_at_date = self.get_champion_at_date(org, weight, match['date'], match['event'], match.get('winner'))
                             label = 'The Ring' if org == 'ring' else org.upper()
                             
-                            if champ_at_date == fighter:
-                                # This fighter IS the champ of this org → Retained
+                            if fighter == match['loser'] and can_change_title:
+                                # Decisive loser - did they hold this title?
+                                if champ_at_date == fighter:
+                                    # Was champ, lost it → Lost
+                                    lost.append(label)
+                                else:
+                                    # Wasn't champ → For
+                                    for_titles.append(label)
+                            elif champ_at_date == fighter:
+                                # This fighter IS the champ and didn't lose decisively → Retained
                                 retained.append(label)
                             else:
                                 # This fighter is NOT champ of this org
@@ -936,10 +953,10 @@ class WrestlingDatabase:
                                     # Decisive win and this is the winner → Won
                                     won.append(label)
                                 else:
-                                    # Either non-decisive, or this is the loser → For
+                                    # Non-decisive finish, not champ → For
                                     for_titles.append(label)
                         
-                        notes = self.format_title_notes(retained, won, for_titles, weight)
+                        notes = self.format_title_notes(retained, won, for_titles, weight, lost)
                         
                         w = self.wrestlers.get(fighter)
                         if w:

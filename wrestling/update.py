@@ -750,18 +750,22 @@ class WrestlingDatabase:
         for vacancy in self.vacancies:
             org = vacancy['org']
             weight = vacancy['weight']
+            vacancy_date = self.parse_date(vacancy['date'])
             
-            # Add vacancy note to championship history
             current_reigns = self.championships[org][weight]
-            if current_reigns:
-                # Find the last reign that matches the vacating champion
-                for reign in reversed(current_reigns):
-                    if reign['champion'] == vacancy.get('champion', ''):
-                        # Calculate days if we have both dates
-                        if reign['date'] and vacancy['date']:
-                            reign['days'] = self.days_between(reign['date'], vacancy['date'])
-                        reign['vacancy_message'] = vacancy.get('message', 'Title vacated')
-                        break
+            if current_reigns and vacancy_date:
+                # Find the reign that was active on the vacancy date:
+                # the last reign whose start date is on or before the vacancy date
+                target_reign = None
+                for reign in current_reigns:
+                    reign_start = self.parse_date(reign['date'])
+                    if reign_start and reign_start <= vacancy_date:
+                        if reign['champion'] == vacancy.get('champion', ''):
+                            target_reign = reign
+                
+                if target_reign:
+                    target_reign['days'] = self.days_between(target_reign['date'], vacancy['date'])
+                    target_reign['vacancy_message'] = vacancy.get('message', 'Title vacated')
 
     def reprocess_championships_chronologically(self):
         """Reprocess all championship changes in chronological order to fix days calculation"""
@@ -1225,7 +1229,6 @@ class WrestlingDatabase:
         html += self.generate_world_titles_records_html()
         html += self.generate_streaks_records_html()
         html += self.generate_event_records_html()
-        html += self.generate_apuestas_html()
         html += self.generate_drawing_power_html()
         html += self.generate_broadcast_records_html()
         html += self.generate_attendance_records_html()

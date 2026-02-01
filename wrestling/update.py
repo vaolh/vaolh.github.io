@@ -127,52 +127,63 @@ class WrestlingDatabase:
 
     def parse_vacancy_comments(self, html_content):
         """Parse VACATED comments from HTML"""
-        # Find all comments
         soup = BeautifulSoup(html_content, 'html.parser')
         comments = soup.find_all(string=lambda text: isinstance(text, Comment))
-        
+
         for comment in comments:
             comment_text = comment.strip()
-            if 'VACATED TITLE' in comment_text.upper():
-                # Parse: <!-- VACATED TITLE: WWF Heavyweight. Champion: The Rock. Message: ... Date: 3 December 2028. -->
-                vacancy = {}
-                
-                # Extract org and weight
-                if 'WWF' in comment_text.upper():
-                    vacancy['org'] = 'wwf'
-                elif 'WWO' in comment_text.upper():
-                    vacancy['org'] = 'wwo'
-                elif 'IWB' in comment_text.upper():
-                    vacancy['org'] = 'iwb'
-                elif 'RING' in comment_text.upper():
-                    vacancy['org'] = 'ring'
-                else:
-                    continue
-                
-                # Extract weight class
-                weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
-                for weight in weights:
-                    if weight in comment_text.lower():
-                        vacancy['weight'] = weight
-                        break
-                
-                # Extract champion name
-                champion_match = re.search(r'Champion:\s*([^.]+)', comment_text, re.IGNORECASE)
-                if champion_match:
-                    vacancy['champion'] = champion_match.group(1).strip()
-                
-                # Extract date
-                date_match = re.search(r'Date:\s*([^.]+)', comment_text, re.IGNORECASE)
-                if date_match:
-                    vacancy['date'] = date_match.group(1).strip()
-                
-                # Extract message
-                message_match = re.search(r'Message:\s*([^.]+(?:\.[^D])*)', comment_text, re.IGNORECASE)
-                if message_match:
-                    vacancy['message'] = message_match.group(1).strip()
-                
-                if 'weight' in vacancy and 'date' in vacancy:
-                    self.vacancies.append(vacancy)
+
+            if 'VACATED TITLE' not in comment_text.upper():
+                continue
+
+            vacancy = {}
+
+            # --- Extract org + weight STRICTLY from header ---
+            header_match = re.search(r'VACATED TITLE:\s*([^.]+)', comment_text, re.IGNORECASE)
+            if not header_match:
+                continue
+
+            header_tokens = header_match.group(1).strip().lower().split()
+            if len(header_tokens) < 2:
+                continue
+
+            org_map = {
+                'wwf': 'wwf',
+                'wwo': 'wwo',
+                'iwb': 'iwb',
+                'ring': 'ring'
+            }
+
+            org_token = header_tokens[0]
+            weight_token = header_tokens[1]
+
+            if org_token not in org_map:
+                continue
+
+            vacancy['org'] = org_map[org_token]
+            vacancy['weight'] = weight_token
+
+            # --- Extract champion ---
+            champion_match = re.search(r'Champion:\s*([^.]+)', comment_text, re.IGNORECASE)
+            if champion_match:
+                vacancy['champion'] = champion_match.group(1).strip()
+
+            # --- Extract date ---
+            date_match = re.search(r'Date:\s*([^.]+)', comment_text, re.IGNORECASE)
+            if date_match:
+                vacancy['date'] = date_match.group(1).strip()
+
+            # --- Extract full message safely ---
+            message_match = re.search(
+                r'Message:\s*(.*?)(?:\s*-->|$)',
+                comment_text,
+                re.IGNORECASE | re.DOTALL
+            )
+            if message_match:
+                vacancy['message'] = message_match.group(1).strip()
+
+            if 'weight' in vacancy and 'date' in vacancy:
+                self.vacancies.append(vacancy)
 
     def parse_tournament_comments(self, html_content):
         """Parse TOURNAMENT WINNER comments from HTML"""
@@ -1003,6 +1014,37 @@ class WrestlingDatabase:
                             if start_date:
                                 reigns[i]['days'] = (most_recent_date - start_date).days
 
+    def get_wrestler_titles(self, wrestler_name):
+        """Returns (current_titles, all_time_titles) for a wrestler.
+        current_titles: list of 'ORG Weight' strings for titles currently held (not vacated)
+        all_time_titles: list of (label, count) tuples for every title ever held"""
+        current_titles = []
+        # Track all-time: key = (org, weight), value = number of reigns
+        all_time = {}
+        
+        for org in ['wwf', 'wwo', 'iwb', 'ring']:
+            for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
+                reigns = self.championships[org][weight]
+                reign_count = 0
+                for reign in reigns:
+                    if reign['champion'] == wrestler_name:
+                        reign_count += 1
+                
+                if reign_count == 0:
+                    continue
+                
+                # Build label
+                org_label = '<i>The Ring</i>' if org == 'ring' else org.upper()
+                weight_label = weight.capitalize()
+                
+                all_time[(org, weight)] = (f"{org_label} {weight_label}", reign_count)
+                
+                # Check if currently held: last reign is this wrestler and not vacated
+                if reigns and reigns[-1]['champion'] == wrestler_name and 'vacancy_message' not in reigns[-1]:
+                    current_titles.append(f"{org_label} {weight_label}")
+        
+        return current_titles, all_time
+
     def generate_wrestler_page(self, wrestler_name):
         """Generate wrestler page HTML"""
         w = self.wrestlers[wrestler_name]
@@ -1034,7 +1076,21 @@ class WrestlingDatabase:
         # Now reverse for display (newest first)
         sorted_matches = list(reversed(chronological_matches))
 
-        html = "<h3>Professional wrestling record</h3>\n\n"
+        # Titles in Wrestling section (only if they've ever held a title)
+        current_titles, all_time_titles = self.get_wrestler_titles(wrestler_name)
+        if all_time_titles:
+            html = "<h3>Titles in Wrestling</h3>\n\n"
+            title_parts = []
+            for (org, weight), (label, count) in all_time_titles.items():
+                if count > 1:
+                    title_parts.append(f"{label} Championship ({count}x)")
+                else:
+                    title_parts.append(f"{label} Championship")
+            html += '<p>' + ' <br>\n'.join(title_parts) + ' </p>\n\n'
+        else:
+            html = ""
+
+        html += "<h3>Professional wrestling record</h3>\n\n"
         
         # Summary table
         html += '<table class="matchesum">\n'
@@ -1206,7 +1262,7 @@ class WrestlingDatabase:
 
             for org in ['wwf', 'wwo', 'iwb', 'ring']:
                 reigns = self.championships[org][weight]
-                if reigns:
+                if reigns and 'vacancy_message' not in reigns[-1]:
                     current = reigns[-1]
                     wrestler = self.wrestlers.get(current['champion'])
                     if wrestler:
@@ -2215,6 +2271,36 @@ class WrestlingDatabase:
                         r'\g<1>' + record + r'\g<2>',
                         content
                     )
+                    
+                    # Update or add/remove Titles row — only if infobox exists
+                    has_infobox = '<th>Record</th>' in content
+                    if has_infobox:
+                        current_titles, _ = self.get_wrestler_titles(wrestler_name)
+                        titles_row_exists = '<th>Titles</th>' in content
+                        
+                        if current_titles:
+                            titles_content = ' <br> '.join(current_titles)
+                            if titles_row_exists:
+                                content = re.sub(
+                                    r'(<th>Titles</th>\s*<td>).*?(</td>)',
+                                    r'\g<1>' + titles_content + r'\g<2>',
+                                    content,
+                                    flags=re.DOTALL
+                                )
+                            else:
+                                content = re.sub(
+                                    r'(<th>Record</th>\s*<td>[^<]*</td>\s*</tr>)',
+                                    r'\g<1>\n                <tr>\n                    <th>Titles</th>\n                    <td>' + titles_content + '</td>\n                </tr>',
+                                    content
+                                )
+                        else:
+                            if titles_row_exists:
+                                content = re.sub(
+                                    r'\s*<tr>\s*<th>Titles</th>\s*<td>.*?</td>\s*</tr>',
+                                    '',
+                                    content,
+                                    flags=re.DOTALL
+                                )
                     
                     with open(filepath, 'w', encoding='utf-8') as f:
                         f.write(content)

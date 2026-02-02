@@ -327,7 +327,7 @@ class WrestlingDatabase:
                         attendance = text
                 elif idx == 4:
                     # Fifth th is network (skip for our purposes)
-                    pass
+                    network = text
                 elif idx == 5:
                     # Sixth th is audience metric (Buys/Viewers/Sales)
                     audience_metric = text
@@ -423,13 +423,6 @@ class WrestlingDatabase:
             main_event_wrestlers = []
             if main_event_match:
                 main_event_text = f"{main_event_match['fighter1']} vs. {main_event_match['fighter2']}"
-                main_event_wrestlers = [main_event_match['fighter1'], main_event_match['fighter2']]
-            
-            # Extract network (second to last th cell in info row)
-            network = ""
-            th_cells = info_row.find_all('th')
-            if len(th_cells) >= 2:
-                network = th_cells[-2].get_text().strip()
             
             self.broadcasts.append({
                 'event': event_name,

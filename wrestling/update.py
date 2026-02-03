@@ -267,8 +267,7 @@ class WrestlingDatabase:
         audience_metric = None
         broadcast_type = None
         attendance = None
-        
-        # Parse th cells for both PPV and weekly shows
+        network = None
         th_cells = info_row.find_all('th')
         
         if is_weekly:
@@ -326,7 +325,7 @@ class WrestlingDatabase:
                     if 'Attendance' in text or 'attendance' in text:
                         attendance = text
                 elif idx == 4:
-                    # Fifth th is network (skip for our purposes)
+                    # Fifth th is network
                     network = text
                 elif idx == 5:
                     # Sixth th is audience metric (Buys/Viewers/Sales)
@@ -423,6 +422,7 @@ class WrestlingDatabase:
             main_event_wrestlers = []
             if main_event_match:
                 main_event_text = f"{main_event_match['fighter1']} vs. {main_event_match['fighter2']}"
+                main_event_wrestlers = [main_event_match['fighter1'], main_event_match['fighter2']]
             
             self.broadcasts.append({
                 'event': event_name,
@@ -770,6 +770,7 @@ class WrestlingDatabase:
                 if target_reign:
                     target_reign['days'] = self.days_between(target_reign['date'], vacancy['date'])
                     target_reign['vacancy_message'] = vacancy.get('message', 'Title vacated')
+                    target_reign['vacancy_date'] = vacancy['date']
 
     def reprocess_championships_chronologically(self):
         """Reprocess all championship changes in chronological order to fix days calculation"""
@@ -812,7 +813,22 @@ class WrestlingDatabase:
                     method_lower = match['method'].lower()
                     can_change_title = 'pinfall' in method_lower or 'submission' in method_lower or ('dq' not in method_lower and 'countout' not in method_lower and 'count out' not in method_lower and 'disqualification' not in method_lower)
                     
-                    if match['winner'] and (not last_reign or last_reign['champion'] != match['winner']) and can_change_title:
+                    # Check if title was vacated between last reign and this match
+                    was_vacated = False
+                    if last_reign and last_reign['champion'] == match['winner']:
+                        match_date_parsed = self.parse_date(match['date'])
+                        last_reign_date_parsed = self.parse_date(last_reign['date'])
+                        for vacancy in self.vacancies:
+                            if (vacancy['org'] == org and 
+                                vacancy['weight'] == weight and
+                                vacancy.get('champion') == last_reign['champion']):
+                                vac_date = self.parse_date(vacancy['date'])
+                                if vac_date and last_reign_date_parsed and match_date_parsed:
+                                    if last_reign_date_parsed <= vac_date <= match_date_parsed:
+                                        was_vacated = True
+                                        break
+                    
+                    if match['winner'] and (not last_reign or last_reign['champion'] != match['winner'] or was_vacated) and can_change_title:
                         # Update previous champion's days to the date they lost
                         if last_reign and last_reign['date'] and match['date']:
                             last_reign['days'] = self.days_between(last_reign['date'], match['date'])
@@ -876,6 +892,15 @@ class WrestlingDatabase:
                     match_winner and reign['champion'] == match_winner):
                     continue
                 active_champ = reign['champion']
+                # Check if this reign was vacated before the match date
+                for vacancy in self.vacancies:
+                    if (vacancy['org'] == org and
+                        vacancy['weight'] == weight and
+                        vacancy.get('champion') == active_champ):
+                        vac_date = self.parse_date(vacancy['date'])
+                        if vac_date and reign_start <= vac_date <= match_date_parsed:
+                            active_champ = None
+                            break
             else:
                 break  # reigns are in chronological order, so stop once we pass match_date
         
@@ -1153,6 +1178,14 @@ class WrestlingDatabase:
         if not reigns:
             return ''
         
+        # Build event lookup: name -> {location, country}
+        event_lookup = {}
+        for event in self.events:
+            event_lookup[event['name']] = {
+                'location': event.get('location', ''),
+                'country': event.get('country', 'un')
+            }
+        
         # Calculate totals per wrestler
         totals = defaultdict(lambda: {'reigns': 0, 'days': 0, 'defenses': 0, 'country': 'un'})
         
@@ -1176,28 +1209,50 @@ class WrestlingDatabase:
         html += '            <th>No.</th>\n'
         html += '            <th>Champion</th>\n'
         html += '            <th>Date</th>\n'
+        html += '            <th>Date End</th>\n'
         html += '            <th>Event</th>\n'
+        html += '            <th>Location</th>\n'
         html += '            <th>Days</th>\n'
         html += '            <th>Defenses</th>\n'
         html += '            <th>Notes</th>\n'
         html += '        </tr>\n'
         
+        max_defenses = max((reign['defenses'] for reign in reigns), default=0)
+        
         for idx, reign in enumerate(reigns):
+            # Determine end date
+            if 'vacancy_date' in reign:
+                end_date_str = reign['vacancy_date']
+            elif idx < len(reigns) - 1:
+                # Not last reign — next reign's start date is the end
+                end_date_str = reigns[idx + 1]['date']
+            else:
+                # Last reign, no vacancy — currently active
+                end_date_str = 'Present'
+            
+            # Look up location from event
+            evt = event_lookup.get(reign['event'], {})
+            location = evt.get('location', '')
+            location_country = evt.get('country', 'un')
+            
             html += '        <tr>\n'
             html += f'            <th>{idx + 1}</th>\n'
             html += f'            <td><span class="fi fi-{reign["country"]}"></span> {reign["champion"]}</td>\n'
             html += f'            <td>{reign["date"]}</td>\n'
+            html += f'            <td>{end_date_str}</td>\n'
             html += f'            <td>{reign["event"]}</td>\n'
+            html += f'            <td><span class="fi fi-{location_country}"></span> {location}</td>\n'
             days_display = self.format_number(reign["days"]) if reign["days"] else "0"
             html += f'            <td>{days_display}</td>\n'
-            html += f'            <td>{reign["defenses"]}</td>\n'
+            def_tag = 'th' if reign['defenses'] == max_defenses and max_defenses > 0 else 'td'
+            html += f'            <{def_tag}>{reign["defenses"]}</{def_tag}>\n'
             html += f'            <td>{reign["notes"]}</td>\n'
             html += '        </tr>\n'
             
             # Add vacancy message if exists
             if 'vacancy_message' in reign:
                 html += '        <tr>\n'
-                html += f'            <th colspan="7" style="font-size:0.8em; line-height:1.3; text-align:center;">\n'
+                html += f'            <th colspan="9" style="font-size:0.8em; line-height:1.3; text-align:center;">\n'
                 html += f'                {reign["vacancy_message"]}\n'
                 html += '            </th>\n'
                 html += '        </tr>\n'
@@ -1389,10 +1444,10 @@ class WrestlingDatabase:
                             max_cons_days[champ]['country'] = reign['country']
         
         # Top 5 lists
-        top_cons_wins = sorted(max_consecutive_wins.items(), key=lambda x: x[1]['max_wins'], reverse=True)[:5]
-        top_cons_losses = sorted(max_consecutive_losses.items(), key=lambda x: x[1]['max_losses'], reverse=True)[:5]
-        top_cons_defenses = sorted(max_cons_defenses.items(), key=lambda x: x[1]['max_defenses'], reverse=True)[:5]
-        top_cons_days = sorted(max_cons_days.items(), key=lambda x: x[1]['max_days'], reverse=True)[:5]
+        top_cons_wins = sorted(max_consecutive_wins.items(), key=lambda x: x[1]['max_wins'], reverse=True)[:10]
+        top_cons_losses = sorted(max_consecutive_losses.items(), key=lambda x: x[1]['max_losses'], reverse=True)[:10]
+        top_cons_defenses = sorted(max_cons_defenses.items(), key=lambda x: x[1]['max_defenses'], reverse=True)[:10]
+        top_cons_days = sorted(max_cons_days.items(), key=lambda x: x[1]['max_days'], reverse=True)[:10]
         
         html = '    <!-- Streaks Records -->\n'
         html += '    <details>\n'
@@ -1412,7 +1467,7 @@ class WrestlingDatabase:
         html += '    </thead>\n'
         html += '    <tbody>\n'
         
-        for i in range(5):
+        for i in range(10):
             html += '        <tr>\n'
             html += f'            <th>{i+1}</th>\n'
             
@@ -1457,11 +1512,11 @@ class WrestlingDatabase:
         wrestler_list = list(self.wrestlers.values())
 
         # Singles Records
-        top_bouts = sorted(wrestler_list, key=lambda x: x['wins'] + x['losses'] + x['draws'], reverse=True)[:5]
-        top_wins = sorted(wrestler_list, key=lambda x: x['wins'], reverse=True)[:5]
-        top_pinfall = sorted(wrestler_list, key=lambda x: x['pinfall_wins'], reverse=True)[:5]
-        top_submission = sorted(wrestler_list, key=lambda x: x['submission_wins'], reverse=True)[:5]
-        top_lucha = sorted(wrestler_list, key=lambda x: x['lucha_wins'], reverse=True)[:5]
+        top_bouts = sorted(wrestler_list, key=lambda x: x['wins'] + x['losses'] + x['draws'], reverse=True)[:10]
+        top_wins = sorted(wrestler_list, key=lambda x: x['wins'], reverse=True)[:10]
+        top_pinfall = sorted(wrestler_list, key=lambda x: x['pinfall_wins'], reverse=True)[:10]
+        top_submission = sorted(wrestler_list, key=lambda x: x['submission_wins'], reverse=True)[:10]
+        top_lucha = sorted(wrestler_list, key=lambda x: x['lucha_wins'], reverse=True)[:10]
 
         html = '    <!-- Singles Records -->\n'
         html += '    <details>\n'
@@ -1482,7 +1537,7 @@ class WrestlingDatabase:
         html += '    </thead>\n'
         html += '    <tbody>\n'
 
-        for i in range(5):
+        for i in range(10):
             html += '        <tr>\n'
             html += f'            <th>{i+1}</th>\n'
             
@@ -1534,11 +1589,11 @@ class WrestlingDatabase:
                 })
         
         # Top 5 lists
-        top_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['win_pct'], reverse=True)[:5]
-        top_loss_pct = sorted(wrestlers_with_stats, key=lambda x: x['loss_pct'], reverse=True)[:5]
-        top_draw_pct = sorted(wrestlers_with_stats, key=lambda x: x['draw_pct'], reverse=True)[:5]
-        top_pin_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['pin_win_pct'], reverse=True)[:5]
-        top_sub_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['sub_win_pct'], reverse=True)[:5]
+        top_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['win_pct'], reverse=True)[:10]
+        top_loss_pct = sorted(wrestlers_with_stats, key=lambda x: x['loss_pct'], reverse=True)[:10]
+        top_draw_pct = sorted(wrestlers_with_stats, key=lambda x: x['draw_pct'], reverse=True)[:10]
+        top_pin_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['pin_win_pct'], reverse=True)[:10]
+        top_sub_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['sub_win_pct'], reverse=True)[:10]
         
         html = '    <!-- Statistics Records -->\n'
         html += '    <details>\n'
@@ -1559,7 +1614,7 @@ class WrestlingDatabase:
         html += '    </thead>\n'
         html += '    <tbody>\n'
         
-        for i in range(5):
+        for i in range(10):
             html += '        <tr>\n'
             html += f'            <th>{i+1}</th>\n'
             
@@ -1707,11 +1762,11 @@ class WrestlingDatabase:
             totals[champ]['total_reigns'] = total_belts_won
         
         # Top 5 lists
-        top_reigns = sorted(totals.items(), key=lambda x: x[1]['total_reigns'], reverse=True)[:5]
-        top_defenses = sorted(totals.items(), key=lambda x: x[1]['total_defenses'], reverse=True)[:5]
-        top_days = sorted(totals.items(), key=lambda x: x[1]['total_days'], reverse=True)[:5]
-        top_unique_opponents = sorted(totals.items(), key=lambda x: len(x[1]['unique_opponents']), reverse=True)[:5]
-        top_title_bouts = sorted(totals.items(), key=lambda x: x[1]['title_bouts'], reverse=True)[:5]
+        top_reigns = sorted(totals.items(), key=lambda x: x[1]['total_reigns'], reverse=True)[:10]
+        top_defenses = sorted(totals.items(), key=lambda x: x[1]['total_defenses'], reverse=True)[:10]
+        top_days = sorted(totals.items(), key=lambda x: x[1]['total_days'], reverse=True)[:10]
+        top_unique_opponents = sorted(totals.items(), key=lambda x: len(x[1]['unique_opponents']), reverse=True)[:10]
+        top_title_bouts = sorted(totals.items(), key=lambda x: x[1]['title_bouts'], reverse=True)[:10]
         
         # Build HTML
         html = '    <!-- World Titles Records -->\n'
@@ -1733,7 +1788,7 @@ class WrestlingDatabase:
         html += '    </thead>\n'
         html += '    <tbody>\n'
         
-        for i in range(5):
+        for i in range(10):
             html += '        <tr>\n'
             html += f'            <th>{i+1}</th>\n'
             
@@ -1784,11 +1839,11 @@ class WrestlingDatabase:
         """Generate event records table"""
         wrestler_list = list(self.wrestlers.values())
         
-        top_ppv = sorted(wrestler_list, key=lambda x: x['main_events'], reverse=True)[:5]
-        top_wm = sorted(wrestler_list, key=lambda x: x['wrestlemania_main_events'], reverse=True)[:5]
-        top_lm = sorted(wrestler_list, key=lambda x: x['libremania_main_events'], reverse=True)[:5]
-        top_open = sorted(wrestler_list, key=lambda x: x['open_tournament_wins'], reverse=True)[:5]
-        top_trios = sorted(wrestler_list, key=lambda x: x['trios_tournament_wins'], reverse=True)[:5]
+        top_ppv = sorted(wrestler_list, key=lambda x: x['main_events'], reverse=True)[:10]
+        top_wm = sorted(wrestler_list, key=lambda x: x['wrestlemania_main_events'], reverse=True)[:10]
+        top_lm = sorted(wrestler_list, key=lambda x: x['libremania_main_events'], reverse=True)[:10]
+        top_open = sorted(wrestler_list, key=lambda x: x['open_tournament_wins'], reverse=True)[:10]
+        top_trios = sorted(wrestler_list, key=lambda x: x['trios_tournament_wins'], reverse=True)[:10]
         
         html = '    <!-- Event Records -->\n'
         html += '    <details>\n'
@@ -1809,7 +1864,7 @@ class WrestlingDatabase:
         html += '    </thead>\n'
         html += '    <tbody>\n'
         
-        for i in range(5):
+        for i in range(10):
             html += '        <tr>\n'
             html += f'            <th>{i+1}</th>\n'
             

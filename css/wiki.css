@@ -230,14 +230,14 @@ caption {
     text-align: left;
 }
 
-.champ-history td:nth-child(7) {
+.champ-history td:nth-child(9) {
     font-size: 0.8em;
     overflow-wrap: break-word;
     word-break: break-word; 
 }
 
-.champ-history td:nth-child(6),
-.champ-history td:nth-child(5) {
+.champ-history td:nth-child(7),
+.champ-history td:nth-child(8) {
     text-align: center;
 
 }

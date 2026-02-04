@@ -267,7 +267,7 @@ class WrestlingDatabase:
         audience_metric = None
         broadcast_type = None
         attendance = None
-        network = None
+        network = ""
         th_cells = info_row.find_all('th')
         
         if is_weekly:
@@ -748,6 +748,160 @@ class WrestlingDatabase:
         
         wrestler = self.get_wrestler(match['winner'])
         wrestler['championships'].append({'org': org, 'weight': weight, 'date': match['date']})
+
+    def calculate_undisputed_champions(self):
+        """Calculate undisputed championship reigns (holding WWF, WWO, and IWB simultaneously)"""
+        self.undisputed_reigns = {
+            'heavyweight': [], 'bridgerweight': [], 'middleweight': [],
+            'welterweight': [], 'lightweight': [], 'featherweight': []
+        }
+        
+        for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
+            # For each WWF reign, check if WO and IWB overlapped for same champion
+            wwf_reigns = self.championships['wwf'][weight]
+            wwo_reigns = self.championships['wwo'][weight]
+            iwb_reigns = self.championships['iwb'][weight]
+            
+            for wwf_reign in wwf_reigns:
+                champ = wwf_reign['champion']
+                wwf_start = self.parse_date(wwf_reign['date'])
+                if not wwf_start:
+                    continue
+                
+                # Calculate WWF end
+                if wwf_reign.get('vacancy_date'):
+                    wwf_end = self.parse_date(wwf_reign['vacancy_date'])
+                elif wwf_reign == wwf_reigns[-1]:
+                    # Last reign = current champ (even if days is set)
+                    wwf_end = None
+                elif wwf_reign.get('days'):
+                    from datetime import timedelta
+                    wwf_end = wwf_start + timedelta(days=wwf_reign['days'])
+                else:
+                    wwf_end = None
+                
+                # Find overlapping WO + IWB reigns by same champ
+                for wwo_reign in wwo_reigns:
+                    if wwo_reign['champion'] != champ:
+                        continue
+                    
+                    wwo_start = self.parse_date(wwo_reign['date'])
+                    if not wwo_start:
+                        continue
+                    
+                    if wwo_reign.get('vacancy_date'):
+                        wwo_end = self.parse_date(wwo_reign['vacancy_date'])
+                    elif wwo_reign == wwo_reigns[-1]:
+                        wwo_end = None
+                    elif wwo_reign.get('days'):
+                        from datetime import timedelta
+                        wwo_end = wwo_start + timedelta(days=wwo_reign['days'])
+                    else:
+                        wwo_end = None
+                    
+                    for iwb_reign in iwb_reigns:
+                        if iwb_reign['champion'] != champ:
+                            continue
+                        
+                        iwb_start = self.parse_date(iwb_reign['date'])
+                        if not iwb_start:
+                            continue
+                        
+                        if iwb_reign.get('vacancy_date'):
+                            iwb_end = self.parse_date(iwb_reign['vacancy_date'])
+                        elif iwb_reign == iwb_reigns[-1]:
+                            iwb_end = None
+                        elif iwb_reign.get('days'):
+                            from datetime import timedelta
+                            iwb_end = iwb_start + timedelta(days=iwb_reign['days'])
+                        else:
+                            iwb_end = None
+                        
+                        # Find overlap
+                        overlap_start = max(wwf_start, wwo_start, iwb_start)
+                        ends = [e for e in [wwf_end, wwo_end, iwb_end] if e]
+                        overlap_end = min(ends) if ends else None
+                        
+                        # Valid if start before/at end (or no end)
+                        if not overlap_end or overlap_start <= overlap_end:
+                            # Check for duplicates - must match champ, start, AND end
+                            exists = any(r['champion'] == champ and 
+                                        r['start_date'] == overlap_start and
+                                        r.get('end_date') == overlap_end
+                                        for r in self.undisputed_reigns[weight])
+                            if not exists:
+                                # Determine loss_message (for colspan row) - only if didn't lose all 3
+                                loss_message = ""
+                                if overlap_end:
+                                    lost = []
+                                    if wwf_end == overlap_end:
+                                        lost.append('WWF')
+                                    if wwo_end == overlap_end:
+                                        lost.append('WWO')
+                                    if iwb_end == overlap_end:
+                                        lost.append('IWB')
+                                    
+                                    # Only add message if they didn't lose all 3
+                                    if len(lost) < 3:
+                                        if len(lost) == 2:
+                                            loss_message = f"Lost undisputed status after losing {' and '.join(lost)} titles"
+                                        else:
+                                            loss_message = f"Lost undisputed status after losing {lost[0]} title"
+                                
+                                # Notes = "Def. Opponent" - find match where they became undisputed
+                                notes = ""
+                                defenses = 0
+                                
+                                # Count all title defenses during the undisputed overlap period
+                                for event in self.events:
+                                    event_date = self.parse_date(event['date'])
+                                    if not event_date:
+                                        continue
+                                    
+                                    # Check if event is within undisputed reign period
+                                    if overlap_end:
+                                        if not (overlap_start <= event_date <= overlap_end):
+                                            continue
+                                    else:
+                                        if event_date < overlap_start:
+                                            continue
+                                    
+                                    for match in event['matches']:
+                                        is_title, orgs = self.is_title_match(match['notes'])
+                                        if not is_title:
+                                            continue
+                                        
+                                        # Check if this is a world title match for this weight
+                                        match_weight = None
+                                        for w in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
+                                            if w in match['notes'].lower() or w in match.get('weight_class', '').lower():
+                                                match_weight = w
+                                                break
+                                        
+                                        if match_weight != weight:
+                                            continue
+                                        
+                                        if any(org in ['wwf', 'wwo', 'iwb'] for org in orgs):
+                                            if event_date == overlap_start and match.get('winner') == champ:
+                                                # This is the match where they became undisputed
+                                                opponent = match['fighter2'] if match['fighter1'] == champ else match['fighter1']
+                                                notes = f"Def. {opponent}"
+                                            elif event_date > overlap_start and match.get('winner') == champ:
+                                                # This is a defense
+                                                defenses += 1
+                                
+                                self.undisputed_reigns[weight].append({
+                                    'champion': champ,
+                                    'start_date': overlap_start,
+                                    'end_date': overlap_end,
+                                    'loss_message': loss_message,
+                                    'notes': notes,
+                                    'defenses': defenses,
+                                    'country': wwf_reign['country']
+                                })
+            
+            # Sort by start date
+            self.undisputed_reigns[weight].sort(key=lambda x: x['start_date'])
 
     def process_vacancies(self):
         """Process vacancy comments and add them to championship history"""
@@ -1338,6 +1492,88 @@ class WrestlingDatabase:
         html += self.generate_attendance_records_html()
         return html
 
+    def generate_undisputed_champions_html(self):
+        """Generate undisputed champions section"""
+        html = '<h2>List of Undisputed Champions</h2>\n\n'
+        
+        weights = {
+            'heavyweight': '(224+ lb / 102+ kg)',
+            'bridgerweight': '(224 lb / 102 kg)',
+            'middleweight': '(202 lb / 92 kg)',
+            'welterweight': '(180 lb / 82 kg)',
+            'lightweight': '(+140 lb / +64 kg)',
+            'featherweight': '(140 lb / 64 kg)'
+        }
+        
+        for weight, limit in weights.items():
+            reigns = self.undisputed_reigns.get(weight, [])
+            if not reigns:
+                continue
+            
+            html += f'    <!-- Undisputed {weight.capitalize()} Championship -->\n'
+            html += '    <details>\n'
+            html += f'    <summary>Undisputed World {weight.capitalize()} Champion {limit}</summary>\n'
+            html += '        <table class="champ-history">\n'
+            html += '        <tr>\n'
+            html += '            <th>No.</th>\n'
+            html += '            <th>Champion</th>\n'
+            html += '            <th>Date Start</th>\n'
+            html += '            <th>Date End</th>\n'
+            html += '            <th>Days</th>\n'
+            html += '            <th>Defenses</th>\n'
+            html += '            <th>Notes</th>\n'
+            html += '        </tr>\n'
+            
+            # Find most recent event date for current champs and max defenses
+            most_recent_date = None
+            for event in self.events:
+                event_date = self.parse_date(event['date'])
+                if event_date and (not most_recent_date or event_date > most_recent_date):
+                    most_recent_date = event_date
+            
+            max_defenses = max((reign.get('defenses', 0) for reign in reigns), default=0)
+            
+            for idx, reign in enumerate(reigns):
+                country = reign.get('country', 'un')
+                
+                start_str = reign['start_date'].strftime('%B %d, %Y').replace(' 0', ' ')
+                
+                if reign['end_date']:
+                    end_str = reign['end_date'].strftime('%B %d, %Y').replace(' 0', ' ')
+                    days = (reign['end_date'] - reign['start_date']).days
+                else:
+                    end_str = 'Present'
+                    if most_recent_date:
+                        days = (most_recent_date - reign['start_date']).days
+                    else:
+                        days = 0
+                
+                def_count = reign.get('defenses', 0)
+                def_tag = 'th' if def_count == max_defenses and max_defenses > 0 else 'td'
+                
+                html += '        <tr>\n'
+                html += f'            <th>{idx + 1}</th>\n'
+                html += f'            <td><span class="fi fi-{country}"></span> {reign["champion"]}</td>\n'
+                html += f'            <td>{start_str}</td>\n'
+                html += f'            <td>{end_str}</td>\n'
+                html += f'            <td>{self.format_number(days)}</td>\n'
+                html += f'            <{def_tag}>{def_count}</{def_tag}>\n'
+                html += f'            <td>{reign.get("notes", "")}</td>\n'
+                html += '        </tr>\n'
+                
+                # Add loss message row if exists (like vacancy messages)
+                if reign.get('loss_message'):
+                    html += '        <tr>\n'
+                    html += f'            <th colspan="7" style="font-size:0.8em; line-height:1.3; text-align:center;">\n'
+                    html += f'                {reign["loss_message"]}\n'
+                    html += '            </th>\n'
+                    html += '        </tr>\n'
+            
+            html += '    </table>\n'
+            html += '    </details>\n\n'
+        
+        return html
+
     def generate_apuestas_html(self):
         """Generate Lucha de Apuestas table"""
         if not self.apuestas:
@@ -1431,7 +1667,7 @@ class WrestlingDatabase:
         max_cons_defenses = defaultdict(lambda: {'max_defenses': 0, 'country': 'xx'})
         max_cons_days = defaultdict(lambda: {'max_days': 0, 'country': 'xx'})
         
-        for org in ['wwf', 'wwo', 'iwb', 'ring']:
+        for org in ['wwf', 'wwo', 'iwb']:
             for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
                 for reign in self.championships[org][weight]:
                     champ = reign['champion']
@@ -1644,7 +1880,7 @@ class WrestlingDatabase:
         wrestler_reigns = defaultdict(list)
         
         # Collect all reigns organized by wrestler with start and end dates
-        for org in ['wwf', 'wwo', 'iwb', 'ring']:
+        for org in ['wwf', 'wwo', 'iwb']:
             for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
                 for idx, reign in enumerate(self.championships[org][weight]):
                     start_date = self.parse_date(reign['date'])
@@ -1679,7 +1915,7 @@ class WrestlingDatabase:
                 is_title, orgs = self.is_title_match(match['notes'])
                 if is_title and match['winner']:
                     # Check if this is a world title (one of our tracked orgs)
-                    if any(org in ['wwf', 'wwo', 'iwb', 'ring'] for org in orgs):
+                    if any(org in ['wwf', 'wwo', 'iwb'] for org in orgs):
                         fighter1 = match['fighter1']
                         fighter2 = match['fighter2']
                         
@@ -2238,6 +2474,13 @@ class WrestlingDatabase:
                 after = content.split('<!-- SUMMARYCHAMPS_END -->')[1]
                 content = before + '<!-- SUMMARYCHAMPS_START -->\n' + current_champs_html + '<!-- SUMMARYCHAMPS_END -->' + after
             
+            # Update undisputed champions
+            undisputed_html = self.generate_undisputed_champions_html()
+            if '<!-- UNDISPUTED_START -->' in content and '<!-- UNDISPUTED_END -->' in content:
+                before = content.split('<!-- UNDISPUTED_START -->')[0]
+                after = content.split('<!-- UNDISPUTED_END -->')[1]
+                content = before + '<!-- UNDISPUTED_START -->\n' + undisputed_html + '<!-- UNDISPUTED_END -->' + after
+            
             # Update records
             records_html = self.generate_records_html()
             if '<!-- RECORDS_START -->' in content and '<!-- RECORDS_END -->' in content:
@@ -2434,6 +2677,7 @@ def main():
     # Process vacancies and calculate championship days
     db.process_vacancies()
     db.calculate_championship_days()
+    db.calculate_undisputed_champions()
     
     db.update_html_files()
     

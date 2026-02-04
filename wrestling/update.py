@@ -1362,7 +1362,7 @@ class WrestlingDatabase:
         html += '        <tr>\n'
         html += '            <th>No.</th>\n'
         html += '            <th>Champion</th>\n'
-        html += '            <th>Date</th>\n'
+        html += '            <th>Date Start</th>\n'
         html += '            <th>Date End</th>\n'
         html += '            <th>Event</th>\n'
         html += '            <th>Location</th>\n'
@@ -1504,6 +1504,23 @@ class WrestlingDatabase:
             'lightweight': '(+140 lb / +64 kg)',
             'featherweight': '(140 lb / 64 kg)'
         }
+
+        # Build event lookup once
+        event_lookup = {
+            e['name']: {
+                'location': e.get('location', ''),
+                'country': e.get('country', 'un'),
+                'date': self.parse_date(e.get('date'))
+            }
+            for e in self.events
+        }
+        
+        # Find most recent event date
+        most_recent_date = None
+        for e in self.events:
+            d = self.parse_date(e.get('date'))
+            if d and (not most_recent_date or d > most_recent_date):
+                most_recent_date = d
         
         for weight, limit in weights.items():
             reigns = self.undisputed_reigns.get(weight, [])
@@ -1519,52 +1536,72 @@ class WrestlingDatabase:
             html += '            <th>Champion</th>\n'
             html += '            <th>Date Start</th>\n'
             html += '            <th>Date End</th>\n'
+            html += '            <th>Event</th>\n'
+            html += '            <th>Location</th>\n'
             html += '            <th>Days</th>\n'
             html += '            <th>Defenses</th>\n'
             html += '            <th>Notes</th>\n'
             html += '        </tr>\n'
             
-            # Find most recent event date for current champs and max defenses
-            most_recent_date = None
-            for event in self.events:
-                event_date = self.parse_date(event['date'])
-                if event_date and (not most_recent_date or event_date > most_recent_date):
-                    most_recent_date = event_date
-            
-            max_defenses = max((reign.get('defenses', 0) for reign in reigns), default=0)
+            max_defenses = max((r.get('defenses', 0) for r in reigns), default=0)
             
             for idx, reign in enumerate(reigns):
                 country = reign.get('country', 'un')
+                start_date = reign['start_date']
+                start_str = start_date.strftime('%B %d, %Y').replace(' 0', ' ')
                 
-                start_str = reign['start_date'].strftime('%B %d, %Y').replace(' 0', ' ')
-                
-                if reign['end_date']:
-                    end_str = reign['end_date'].strftime('%B %d, %Y').replace(' 0', ' ')
-                    days = (reign['end_date'] - reign['start_date']).days
+                if reign.get('end_date'):
+                    end_date = reign['end_date']
+                    end_str = end_date.strftime('%B %d, %Y').replace(' 0', ' ')
+                    days = (end_date - start_date).days
                 else:
                     end_str = 'Present'
-                    if most_recent_date:
-                        days = (most_recent_date - reign['start_date']).days
-                    else:
-                        days = 0
+                    days = (most_recent_date - start_date).days if most_recent_date else 0
                 
                 def_count = reign.get('defenses', 0)
                 def_tag = 'th' if def_count == max_defenses and max_defenses > 0 else 'td'
+                
+                # Resolve event + location
+                event_name = reign.get('event', '').strip()
+                evt = None
+                
+                if event_name and event_name in event_lookup:
+                    evt = event_lookup[event_name]
+                else:
+                    # Infer by matching start date
+                    for e in event_lookup.values():
+                        if e['date'] and e['date'] == start_date:
+                            evt = e
+                            event_name = next(
+                                name for name, data in event_lookup.items() if data is e
+                            )
+                            break
+                
+                if evt:
+                    location = evt['location']
+                    location_country = evt['country']
+                else:
+                    location = ''
+                    location_country = 'un'
                 
                 html += '        <tr>\n'
                 html += f'            <th>{idx + 1}</th>\n'
                 html += f'            <td><span class="fi fi-{country}"></span> {reign["champion"]}</td>\n'
                 html += f'            <td>{start_str}</td>\n'
                 html += f'            <td>{end_str}</td>\n'
+                html += f'            <td>{event_name}</td>\n'
+                html += f'            <td><span class="fi fi-{location_country}"></span> {location}</td>\n'
                 html += f'            <td>{self.format_number(days)}</td>\n'
                 html += f'            <{def_tag}>{def_count}</{def_tag}>\n'
                 html += f'            <td>{reign.get("notes", "")}</td>\n'
                 html += '        </tr>\n'
                 
-                # Add loss message row if exists (like vacancy messages)
                 if reign.get('loss_message'):
                     html += '        <tr>\n'
-                    html += f'            <th colspan="7" style="font-size:0.8em; line-height:1.3; text-align:center;">\n'
+                    html += (
+                        '            <th colspan="9" '
+                        'style="font-size:0.8em; line-height:1.3; text-align:center;">\n'
+                    )
                     html += f'                {reign["loss_message"]}\n'
                     html += '            </th>\n'
                     html += '        </tr>\n'
@@ -1573,6 +1610,7 @@ class WrestlingDatabase:
             html += '    </details>\n\n'
         
         return html
+
 
     def generate_apuestas_html(self):
         """Generate Lucha de Apuestas table"""

@@ -1335,10 +1335,11 @@ class WrestlingDatabase:
         if not reigns:
             return ''
         
-        # Build event lookup: name -> {location, country}
+        # Build event lookup: (name, date) -> {location, country}
         event_lookup = {}
         for event in self.events:
-            event_lookup[event['name']] = {
+            key = (event['name'], event.get('date', ''))
+            event_lookup[key] = {
                 'location': event.get('location', ''),
                 'country': event.get('country', 'un')
             }
@@ -1388,7 +1389,7 @@ class WrestlingDatabase:
                 end_date_str = 'Present'
             
             # Look up location from event
-            evt = event_lookup.get(reign['event'], {})
+            evt = event_lookup.get((reign['event'], reign['date']), {})
             location = evt.get('location', '')
             location_country = evt.get('country', 'un')
             
@@ -1499,10 +1500,11 @@ class WrestlingDatabase:
         """Generate undisputed champions section"""
         html = '<h2>List of Undisputed Champions</h2>\n\n'
         
-        # Build event lookup: name -> {location, country}
+        # Build event lookup: (name, date) -> {location, country}
         event_lookup = {}
         for event in self.events:
-            event_lookup[event['name']] = {
+            key = (event['name'], event.get('date', ''))
+            event_lookup[key] = {
                 'location': event.get('location', ''),
                 'country': event.get('country', 'un')
             }
@@ -1566,7 +1568,8 @@ class WrestlingDatabase:
                 
                 # Get event and location
                 event_name = reign.get('event', '')
-                evt = event_lookup.get(event_name, {})
+                event_date_str = reign['start_date'].strftime('%B %d, %Y').replace(' 0', ' ')
+                evt = event_lookup.get((event_name, event_date_str), {})
                 location = evt.get('location', '')
                 location_country = evt.get('country', 'un')
                 

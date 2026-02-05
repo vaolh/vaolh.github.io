@@ -851,6 +851,7 @@ class WrestlingDatabase:
                                 # Notes = "Def. Opponent" - find match where they became undisputed
                                 notes = ""
                                 defenses = 0
+                                event_name = ""
                                 
                                 # Count all title defenses during the undisputed overlap period
                                 for event in self.events:
@@ -886,6 +887,7 @@ class WrestlingDatabase:
                                                 # This is the match where they became undisputed
                                                 opponent = match['fighter2'] if match['fighter1'] == champ else match['fighter1']
                                                 notes = f"Def. {opponent}"
+                                                event_name = event['name']
                                             elif event_date > overlap_start and match.get('winner') == champ:
                                                 # This is a defense
                                                 defenses += 1
@@ -894,6 +896,7 @@ class WrestlingDatabase:
                                     'champion': champ,
                                     'start_date': overlap_start,
                                     'end_date': overlap_end,
+                                    'event': event_name,
                                     'loss_message': loss_message,
                                     'notes': notes,
                                     'defenses': defenses,
@@ -1496,6 +1499,21 @@ class WrestlingDatabase:
         """Generate undisputed champions section"""
         html = '<h2>List of Undisputed Champions</h2>\n\n'
         
+        # Build event lookup: name -> {location, country}
+        event_lookup = {}
+        for event in self.events:
+            event_lookup[event['name']] = {
+                'location': event.get('location', ''),
+                'country': event.get('country', 'un')
+            }
+        
+        # Find most recent event date
+        most_recent_date = None
+        for event in self.events:
+            event_date = self.parse_date(event.get('date'))
+            if event_date and (not most_recent_date or event_date > most_recent_date):
+                most_recent_date = event_date
+        
         weights = {
             'heavyweight': '(224+ lb / 102+ kg)',
             'bridgerweight': '(224 lb / 102 kg)',
@@ -1504,23 +1522,6 @@ class WrestlingDatabase:
             'lightweight': '(+140 lb / +64 kg)',
             'featherweight': '(140 lb / 64 kg)'
         }
-
-        # Build event lookup once
-        event_lookup = {
-            e['name']: {
-                'location': e.get('location', ''),
-                'country': e.get('country', 'un'),
-                'date': self.parse_date(e.get('date'))
-            }
-            for e in self.events
-        }
-        
-        # Find most recent event date
-        most_recent_date = None
-        for e in self.events:
-            d = self.parse_date(e.get('date'))
-            if d and (not most_recent_date or d > most_recent_date):
-                most_recent_date = d
         
         for weight, limit in weights.items():
             reigns = self.undisputed_reigns.get(weight, [])
@@ -1543,46 +1544,31 @@ class WrestlingDatabase:
             html += '            <th>Notes</th>\n'
             html += '        </tr>\n'
             
-            max_defenses = max((r.get('defenses', 0) for r in reigns), default=0)
+            max_defenses = max((reign.get('defenses', 0) for reign in reigns), default=0)
             
             for idx, reign in enumerate(reigns):
                 country = reign.get('country', 'un')
-                start_date = reign['start_date']
-                start_str = start_date.strftime('%B %d, %Y').replace(' 0', ' ')
                 
-                if reign.get('end_date'):
-                    end_date = reign['end_date']
-                    end_str = end_date.strftime('%B %d, %Y').replace(' 0', ' ')
-                    days = (end_date - start_date).days
+                start_str = reign['start_date'].strftime('%B %d, %Y').replace(' 0', ' ')
+                
+                if reign['end_date']:
+                    end_str = reign['end_date'].strftime('%B %d, %Y').replace(' 0', ' ')
+                    days = (reign['end_date'] - reign['start_date']).days
                 else:
                     end_str = 'Present'
-                    days = (most_recent_date - start_date).days if most_recent_date else 0
+                    if most_recent_date:
+                        days = (most_recent_date - reign['start_date']).days
+                    else:
+                        days = 0
                 
                 def_count = reign.get('defenses', 0)
                 def_tag = 'th' if def_count == max_defenses and max_defenses > 0 else 'td'
                 
-                # Resolve event + location
-                event_name = reign.get('event', '').strip()
-                evt = None
-                
-                if event_name and event_name in event_lookup:
-                    evt = event_lookup[event_name]
-                else:
-                    # Infer by matching start date
-                    for e in event_lookup.values():
-                        if e['date'] and e['date'] == start_date:
-                            evt = e
-                            event_name = next(
-                                name for name, data in event_lookup.items() if data is e
-                            )
-                            break
-                
-                if evt:
-                    location = evt['location']
-                    location_country = evt['country']
-                else:
-                    location = ''
-                    location_country = 'un'
+                # Get event and location
+                event_name = reign.get('event', '')
+                evt = event_lookup.get(event_name, {})
+                location = evt.get('location', '')
+                location_country = evt.get('country', 'un')
                 
                 html += '        <tr>\n'
                 html += f'            <th>{idx + 1}</th>\n'
@@ -1596,12 +1582,10 @@ class WrestlingDatabase:
                 html += f'            <td>{reign.get("notes", "")}</td>\n'
                 html += '        </tr>\n'
                 
+                # Add loss message row if exists (like vacancy messages)
                 if reign.get('loss_message'):
                     html += '        <tr>\n'
-                    html += (
-                        '            <th colspan="9" '
-                        'style="font-size:0.8em; line-height:1.3; text-align:center;">\n'
-                    )
+                    html += f'            <th colspan="9" style="font-size:0.8em; line-height:1.3; text-align:center;">\n'
                     html += f'                {reign["loss_message"]}\n'
                     html += '            </th>\n'
                     html += '        </tr>\n'
@@ -1610,7 +1594,6 @@ class WrestlingDatabase:
             html += '    </details>\n\n'
         
         return html
-
 
     def generate_apuestas_html(self):
         """Generate Lucha de Apuestas table"""

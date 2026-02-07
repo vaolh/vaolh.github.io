@@ -651,8 +651,9 @@ class WrestlingDatabase:
             if 'lucha de apuestas' in match['notes'].lower() or 'apuesta' in match['notes'].lower():
                 winner['lucha_wins'] += 1
                 
-                # Parse wagers from notes (format: "X vs. Y")
-                wager_match = re.search(r'(\w+(?:\s+\w+)?)\s+vs\.?\s+(\w+(?:\s+\w+)?)', match['notes'], re.IGNORECASE)
+                # Parse wagers from notes - look for "X vs. Y" pattern, typically after the "Lucha de Apuestas" phrase
+                # Match anything that isn't a period before "vs", to avoid matching "de Apuestas"
+                wager_match = re.search(r'(?:^|\.\s*)([A-Za-z\s]+?)\s+vs\.?\s+([A-Za-z\s]+?)(?:\s|\.|\[|$)', match['notes'], re.IGNORECASE)
                 if wager_match:
                     winner_wager = wager_match.group(1).strip()
                     loser_wager = wager_match.group(2).strip()
@@ -1630,12 +1631,16 @@ class WrestlingDatabase:
         html += '    <tbody>\n'
         
         for idx, apuesta in enumerate(sorted_apuestas):
+            # Get wrestler countries
+            winner_country = self.wrestlers.get(apuesta['winner'], {}).get('country', 'un')
+            loser_country = self.wrestlers.get(apuesta['loser'], {}).get('country', 'un')
+            
             html += '        <tr>\n'
             html += f'            <th>{idx + 1}</th>\n'
             html += f'            <td>{apuesta["event"]}</td>\n'
-            html += f'            <td>{apuesta["winner"]}</td>\n'
+            html += f'            <td><span class="fi fi-{winner_country}"></span> {apuesta["winner"]}</td>\n'
             html += f'            <td>{apuesta["winner_wager"]}</td>\n'
-            html += f'            <td>{apuesta["loser"]}</td>\n'
+            html += f'            <td><span class="fi fi-{loser_country}"></span> {apuesta["loser"]}</td>\n'
             html += f'            <td>{apuesta["loser_wager"]}</td>\n'
             html += f'            <td>{apuesta.get("venue", "")}</td>\n'
             html += f'            <td><span class="fi fi-{apuesta["location_country"]}"></span> {apuesta["location"]}</td>\n'
@@ -2504,6 +2509,13 @@ class WrestlingDatabase:
                 before = content.split('<!-- UNDISPUTED_START -->')[0]
                 after = content.split('<!-- UNDISPUTED_END -->')[1]
                 content = before + '<!-- UNDISPUTED_START -->\n' + undisputed_html + '<!-- UNDISPUTED_END -->' + after
+            
+            # Update apuestas
+            apuestas_html = self.generate_apuestas_html()
+            if '<!-- APUESTAS_START -->' in content and '<!-- APUESTAS_END -->' in content:
+                before = content.split('<!-- APUESTAS_START -->')[0]
+                after = content.split('<!-- APUESTAS_END -->')[1]
+                content = before + '<!-- APUESTAS_START -->\n' + apuestas_html + '<!-- APUESTAS_END -->' + after
             
             # Update records
             records_html = self.generate_records_html()

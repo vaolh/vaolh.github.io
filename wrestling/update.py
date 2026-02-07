@@ -653,19 +653,19 @@ class WrestlingDatabase:
             if 'lucha de apuestas' in match['notes'].lower() or 'apuesta' in match['notes'].lower():
                 winner['lucha_wins'] += 1
                 
-                # Parse wagers from notes - look for "X vs. Y" pattern, typically after the "Lucha de Apuestas" phrase
-                # Match anything that isn't a period before "vs", to avoid matching "de Apuestas"
-                wager_match = re.search(r'(?:^|\.\s*)([A-Za-z\s]+?)\s+vs\.?\s+([A-Za-z\s]+?)(?:\s|\.|\[|$)', match['notes'], re.IGNORECASE)
+                # Extract wager text - everything after "Lucha de Apuestas" (remove the period and leading/trailing spaces)
+                wager_text = ''
+                # Match "Lucha de Apuestas" followed by optional period and then capture the rest
+                wager_match = re.search(r'lucha\s+de\s+apuestas\.?\s*(.+)', match['notes'], re.IGNORECASE)
                 if wager_match:
-                    winner_wager = wager_match.group(1).strip()
-                    loser_wager = wager_match.group(2).strip()
-                    
+                    wager_text = wager_match.group(1).strip()
+                
+                if wager_text:
                     self.apuestas.append({
                         'event': match['event'],
                         'winner': match['winner'],
-                        'winner_wager': winner_wager,
                         'loser': match['loser'],
-                        'loser_wager': loser_wager,
+                        'wager': wager_text,
                         'venue': match.get('venue', ''),
                         'location': match['location'],
                         'location_country': match['location_country'],
@@ -1620,7 +1620,6 @@ class WrestlingDatabase:
         html += '            <th>No.</th>\n'
         html += '            <th>Event</th>\n'
         html += '            <th>Winner</th>\n'
-        html += '            <th>Wager</th>\n'
         html += '            <th>Loser</th>\n'
         html += '            <th>Wager</th>\n'
         html += '            <th>Venue</th>\n'
@@ -1639,9 +1638,8 @@ class WrestlingDatabase:
             html += f'            <th>{idx + 1}</th>\n'
             html += f'            <td>{apuesta["event"]}</td>\n'
             html += f'            <td><span class="fi fi-{winner_country}"></span> {apuesta["winner"]}</td>\n'
-            html += f'            <td>{apuesta["winner_wager"]}</td>\n'
             html += f'            <td><span class="fi fi-{loser_country}"></span> {apuesta["loser"]}</td>\n'
-            html += f'            <td>{apuesta["loser_wager"]}</td>\n'
+            html += f'            <td>{apuesta["wager"]}</td>\n'
             html += f'            <td>{apuesta.get("venue", "")}</td>\n'
             html += f'            <td><span class="fi fi-{apuesta["location_country"]}"></span> {apuesta["location"]}</td>\n'
             html += f'            <td style="font-size: 1em; text-align: left;">{apuesta["date"]}</td>\n'

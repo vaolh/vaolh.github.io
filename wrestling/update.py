@@ -272,7 +272,6 @@ class WrestlingDatabase:
         
         if is_weekly:
             # Weekly shows format: <th>TV</th> <th colspan="2">Location</th> <th colspan="3">Venue</th> <th>Attendance</th> <th>Network</th> <th>Audience</th> <th>Date</th>
-            # We only need date and location for wrestler records
             for idx, th in enumerate(th_cells):
                 text = th.get_text().strip()
                 
@@ -282,6 +281,9 @@ class WrestlingDatabase:
                     if flag:
                         event_country = self.get_country(th)
                         event_location = text
+                elif idx == 2:
+                    # Third th is venue
+                    event_venue = text
                 elif idx == len(th_cells) - 1:
                     # Last th is date
                     event_date = text
@@ -1612,8 +1614,6 @@ class WrestlingDatabase:
         )
         
         html = '    <!-- Apuestas Records -->\n'
-        html += '    <details>\n'
-        html += '    <summary>Lucha de Apuestas</summary>\n'
         html += '    <table class="match-card">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
@@ -1644,12 +1644,11 @@ class WrestlingDatabase:
             html += f'            <td>{apuesta["loser_wager"]}</td>\n'
             html += f'            <td>{apuesta.get("venue", "")}</td>\n'
             html += f'            <td><span class="fi fi-{apuesta["location_country"]}"></span> {apuesta["location"]}</td>\n'
-            html += f'            <td>{apuesta["date"]}</td>\n'
+            html += f'            <td style="font-size: 1em; text-align: left;">{apuesta["date"]}</td>\n'
             html += '        </tr>\n'
         
         html += '    </tbody>\n'
-        html += '    </table>\n'
-        html += '    </details>\n\n'
+        html += '    </table>\n\n'
         
         return html
 

@@ -1496,6 +1496,8 @@ class WrestlingDatabase:
         html += self.generate_streaks_records_html()
         html += self.generate_event_records_html()
         html += self.generate_misc_records_html()
+        html += self.generate_broadcast_records_html()
+        html += self.generate_attendance_records_html()
         return html
 
     def generate_percentage_records_table(self):
@@ -1861,7 +1863,7 @@ class WrestlingDatabase:
         html += '    <thead>\n'
         html += '        <tr>\n'
         html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;"><i>Lucha de Apuestas</i> Wins</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;"><i>Lucha de Apuestas</i></th>\n'
         html += '            <th colspan="2" style="width: 23.75%;">Open Tournament Wins</th>\n'
         html += '            <th colspan="2" style="width: 23.75%;">Trios Tournament Wins</th>\n'
         html += '            <th colspan="2" style="width: 23.75%;">PPV Wins</th>\n'

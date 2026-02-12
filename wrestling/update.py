@@ -1489,14 +1489,406 @@ class WrestlingDatabase:
 
     def generate_records_html(self):
         """Generate all records page HTML"""
-        html = self.generate_singles_records_html()
+        html = '<h2>All-Time Records</h2>\n\n'
+        html += self.generate_singles_records_html()
         html += self.generate_statistics_records_html()
         html += self.generate_world_titles_records_html()
         html += self.generate_streaks_records_html()
         html += self.generate_event_records_html()
-        html += self.generate_drawing_power_html()
-        html += self.generate_broadcast_records_html()
-        html += self.generate_attendance_records_html()
+        html += self.generate_misc_records_html()
+        return html
+
+    def generate_percentage_records_table(self):
+        """Percentage: Win%, Pinfall per Win%, Submission per Win%, Decision per Win%"""
+        wrestler_list = list(self.wrestlers.values())
+        
+        # Calculate percentages for wrestlers with at least 5 bouts
+        wrestlers_with_stats = []
+        for w in wrestler_list:
+            total_bouts = w['wins'] + w['losses'] + w['draws']
+            if total_bouts >= 5:
+                win_pct = (w['wins'] / total_bouts * 100) if total_bouts > 0 else 0
+                total_wins = w['wins']
+                pin_win_pct = (w['pinfall_wins'] / total_wins * 100) if total_wins > 0 else 0
+                sub_win_pct = (w['submission_wins'] / total_wins * 100) if total_wins > 0 else 0
+                dec_win_pct = (w['decision_wins'] / total_wins * 100) if total_wins > 0 else 0
+                
+                wrestlers_with_stats.append({
+                    'name': w['name'],
+                    'country': w['country'],
+                    'win_pct': win_pct,
+                    'pin_win_pct': pin_win_pct,
+                    'sub_win_pct': sub_win_pct,
+                    'dec_win_pct': dec_win_pct
+                })
+        
+        top_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['win_pct'], reverse=True)[:10]
+        top_pin_pct = sorted(wrestlers_with_stats, key=lambda x: x['pin_win_pct'], reverse=True)[:10]
+        top_sub_pct = sorted(wrestlers_with_stats, key=lambda x: x['sub_win_pct'], reverse=True)[:10]
+        top_dec_pct = sorted(wrestlers_with_stats, key=lambda x: x['dec_win_pct'], reverse=True)[:10]
+        
+        html = '    <!-- Percentage -->\n'
+        html += '    <details>\n'
+        html += '    <summary>Percentage</summary>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Win%</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Pinfall per Win%</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Submission per Win%</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Decision per Win%</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">%</th>\n' * 4
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for i in range(10):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            for top_list, stat_key in [(top_win_pct, 'win_pct'), (top_pin_pct, 'pin_win_pct'), (top_sub_pct, 'sub_win_pct'), (top_dec_pct, 'dec_win_pct')]:
+                if i < len(top_list):
+                    w = top_list[i]
+                    pct = w[stat_key]
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{pct:.1f}%</td>\n'
+                else:
+                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0.0%</td>\n'
+            
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+        return html
+
+    def generate_world_titles_records_table(self):
+        """World Titles: Titles Won, Title Defenses, Days as Champion, Title Bouts"""
+        wrestler_list = list(self.wrestlers.values())
+        
+        # Calculate title stats (exclude Ring org)
+        wrestler_title_stats = []
+        for w in wrestler_list:
+            reigns_count = 0
+            total_defenses = 0
+            total_days = 0
+            title_bouts = 0
+            
+            for org in ['wwf', 'wwo', 'iwb']:
+                for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
+                    for reign in self.championships[org][weight]:
+                        if reign['champion'] == w['name']:
+                            reigns_count += 1
+                            total_defenses += reign.get('defenses', 0)
+                            total_days += reign.get('days', 0)
+            
+            # Count title bouts from matches
+            for match in w['matches']:
+                if any(org in match.get('bio_notes', '').lower() for org in ['wwf', 'wwo', 'iwb']):
+                    title_bouts += 1
+            
+            if reigns_count > 0 or total_defenses > 0 or total_days > 0 or title_bouts > 0:
+                wrestler_title_stats.append({
+                    'name': w['name'],
+                    'country': w['country'],
+                    'reigns': reigns_count,
+                    'defenses': total_defenses,
+                    'days': total_days,
+                    'title_bouts': title_bouts
+                })
+        
+        top_reigns = sorted(wrestler_title_stats, key=lambda x: x['reigns'], reverse=True)[:10]
+        top_defenses = sorted(wrestler_title_stats, key=lambda x: x['defenses'], reverse=True)[:10]
+        top_days = sorted(wrestler_title_stats, key=lambda x: x['days'], reverse=True)[:10]
+        top_bouts = sorted(wrestler_title_stats, key=lambda x: x['title_bouts'], reverse=True)[:10]
+        
+        html = '    <!-- World Titles -->\n'
+        html += '    <details>\n'
+        html += '    <summary>World Titles</summary>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Titles Won</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Title Defenses</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Days as Champion</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Title Bouts</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for i in range(10):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            for top_list, stat_key in [(top_reigns, 'reigns'), (top_defenses, 'defenses'), (top_days, 'days'), (top_bouts, 'title_bouts')]:
+                if i < len(top_list):
+                    w = top_list[i]
+                    stat = w[stat_key]
+                    if stat_key == 'days':
+                        html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{self.format_number(stat)}</td>\n'
+                    else:
+                        html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                else:
+                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+        return html
+
+    def generate_streaks_records_table(self):
+        """Streaks: Consecutive Wins, Consecutive Title Defenses, Consecutive Days as Champion, Unique Opponents"""
+        wrestler_list = list(self.wrestlers.values())
+        
+        # Consecutive wins
+        max_consecutive_wins = {}
+        for w in wrestler_list:
+            current_streak = 0
+            max_streak = 0
+            for match in w['matches']:
+                if match['result'] == 'Win':
+                    current_streak += 1
+                    max_streak = max(max_streak, current_streak)
+                else:
+                    current_streak = 0
+            if max_streak > 0:
+                max_consecutive_wins[w['name']] = {'max_wins': max_streak, 'country': w['country']}
+        
+        # Consecutive title defenses
+        max_consecutive_defenses = {}
+        for org in ['wwf', 'wwo', 'iwb']:
+            for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
+                for reign in self.championships[org][weight]:
+                    champ = reign['champion']
+                    defenses = reign.get('defenses', 0)
+                    if champ not in max_consecutive_defenses or defenses > max_consecutive_defenses[champ]['max_defenses']:
+                        max_consecutive_defenses[champ] = {
+                            'max_defenses': defenses,
+                            'country': reign.get('country', 'un')
+                        }
+        
+        # Consecutive days as champion
+        max_consecutive_days = {}
+        for org in ['wwf', 'wwo', 'iwb']:
+            for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
+                for reign in self.championships[org][weight]:
+                    champ = reign['champion']
+                    days = reign.get('days', 0)
+                    if champ not in max_consecutive_days or days > max_consecutive_days[champ]['max_days']:
+                        max_consecutive_days[champ] = {
+                            'max_days': days,
+                            'country': reign.get('country', 'un')
+                        }
+        
+        # Unique opponents
+        unique_opponents = {}
+        for w in wrestler_list:
+            opponents = set()
+            for match in w['matches']:
+                if match['result'] in ['Win', 'Loss']:
+                    opponent = match.get('opponent', '')
+                    if opponent:
+                        opponents.add(opponent)
+            if len(opponents) > 0:
+                unique_opponents[w['name']] = {'count': len(opponents), 'country': w['country']}
+        
+        top_wins = sorted(max_consecutive_wins.items(), key=lambda x: x[1]['max_wins'], reverse=True)[:10]
+        top_defenses = sorted(max_consecutive_defenses.items(), key=lambda x: x[1]['max_defenses'], reverse=True)[:10]
+        top_days = sorted(max_consecutive_days.items(), key=lambda x: x[1]['max_days'], reverse=True)[:10]
+        top_opponents = sorted(unique_opponents.items(), key=lambda x: x[1]['count'], reverse=True)[:10]
+        
+        html = '    <!-- Streaks -->\n'
+        html += '    <details>\n'
+        html += '    <summary>Streaks</summary>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Wins</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Title Defenses</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Days as Champion</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Unique Opponents</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for i in range(10):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            for top_list, stat_key in [(top_wins, 'max_wins'), (top_defenses, 'max_defenses'), (top_days, 'max_days'), (top_opponents, 'count')]:
+                if i < len(top_list):
+                    name, data = top_list[i]
+                    stat = data[stat_key]
+                    if stat_key == 'max_days':
+                        html += f'            <td><span class="fi fi-{data["country"]}"></span> {name} </td><td>{self.format_number(stat)}</td>\n'
+                    else:
+                        html += f'            <td><span class="fi fi-{data["country"]}"></span> {name} </td><td>{stat}</td>\n'
+                else:
+                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+        return html
+
+    def generate_events_records_table(self):
+        """Events: PPV Bouts, PPV Main Events, WrestleMania Main Events, LibreMania Main Events"""
+        wrestler_list = list(self.wrestlers.values())
+        
+        # Calculate event stats
+        wrestler_event_stats = []
+        for w in wrestler_list:
+            ppv_bouts = 0
+            ppv_main_events = 0
+            wrestlemania_main = 0
+            libremania_main = 0
+            
+            for match in w['matches']:
+                event = match.get('event', '')
+                is_main = match.get('bio_notes', '').startswith('Main Event')
+                
+                # Check if PPV (not weekly)
+                if event != 'Live TV':
+                    ppv_bouts += 1
+                    if is_main:
+                        ppv_main_events += 1
+                        if 'WrestleMania' in event:
+                            wrestlemania_main += 1
+                        elif 'LibreMania' in event:
+                            libremania_main += 1
+            
+            if ppv_bouts > 0:
+                wrestler_event_stats.append({
+                    'name': w['name'],
+                    'country': w['country'],
+                    'ppv_bouts': ppv_bouts,
+                    'ppv_main': ppv_main_events,
+                    'wrestlemania': wrestlemania_main,
+                    'libremania': libremania_main
+                })
+        
+        top_ppv_bouts = sorted(wrestler_event_stats, key=lambda x: x['ppv_bouts'], reverse=True)[:10]
+        top_ppv_main = sorted(wrestler_event_stats, key=lambda x: x['ppv_main'], reverse=True)[:10]
+        top_wrestlemania = sorted(wrestler_event_stats, key=lambda x: x['wrestlemania'], reverse=True)[:10]
+        top_libremania = sorted(wrestler_event_stats, key=lambda x: x['libremania'], reverse=True)[:10]
+        
+        html = '    <!-- Events -->\n'
+        html += '    <details>\n'
+        html += '    <summary>Events</summary>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">PPV Bouts</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">PPV Main Events</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">WrestleMania Main Events</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">LibreMania Main Events</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for i in range(10):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            for top_list, stat_key in [(top_ppv_bouts, 'ppv_bouts'), (top_ppv_main, 'ppv_main'), (top_wrestlemania, 'wrestlemania'), (top_libremania, 'libremania')]:
+                if i < len(top_list):
+                    w = top_list[i]
+                    stat = w[stat_key]
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                else:
+                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+        return html
+
+    def generate_misc_records_table(self):
+        """Misc: Lucha de Apuestas, Open Tournament Wins, Trios Tournament Wins, PPV Wins"""
+        wrestler_list = list(self.wrestlers.values())
+        
+        # Calculate misc stats
+        wrestler_misc_stats = []
+        for w in wrestler_list:
+            lucha_wins = w.get('lucha_wins', 0)
+            open_tournament = 0  # TODO: track this if tournaments are added
+            trios_tournament = 0  # TODO: track this if tournaments are added
+            ppv_wins = 0
+            
+            for match in w['matches']:
+                if match['result'] == 'Win' and match.get('event', '') != 'Live TV':
+                    ppv_wins += 1
+            
+            if lucha_wins > 0 or ppv_wins > 0:
+                wrestler_misc_stats.append({
+                    'name': w['name'],
+                    'country': w['country'],
+                    'lucha': lucha_wins,
+                    'open': open_tournament,
+                    'trios': trios_tournament,
+                    'ppv_wins': ppv_wins
+                })
+        
+        top_lucha = sorted(wrestler_misc_stats, key=lambda x: x['lucha'], reverse=True)[:10]
+        top_open = sorted(wrestler_misc_stats, key=lambda x: x['open'], reverse=True)[:10]
+        top_trios = sorted(wrestler_misc_stats, key=lambda x: x['trios'], reverse=True)[:10]
+        top_ppv_wins = sorted(wrestler_misc_stats, key=lambda x: x['ppv_wins'], reverse=True)[:10]
+        
+        html = '    <!-- Misc -->\n'
+        html += '    <details>\n'
+        html += '    <summary>Misc</summary>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;"><i>Lucha de Apuestas</i> Wins</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Open Tournament Wins</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Trios Tournament Wins</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">PPV Wins</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for i in range(10):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            for top_list, stat_key in [(top_lucha, 'lucha'), (top_open, 'open'), (top_trios, 'trios'), (top_ppv_wins, 'ppv_wins')]:
+                if i < len(top_list):
+                    w = top_list[i]
+                    stat = w[stat_key]
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                else:
+                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
         return html
 
     def generate_undisputed_champions_html(self):
@@ -1717,17 +2109,45 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2">No.</th>\n'
-        html += '            <th colspan="2">Consecutive Wins</th>\n'
-        html += '            <th colspan="2">Consecutive Losses</th>\n'
-        html += '            <th colspan="2">Consecutive Title Defenses</th>\n'
-        html += '            <th colspan="2">Consecutive Days as Champion</th>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Wins</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Title Defenses</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Days as Champion</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Unique Opponents</th>\n'
         html += '        </tr>\n'
         html += '        <tr>\n'
-        html += '            <th>Name</th><th>#</th>\n' * 4
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
+        
+        # Need to get unique opponents from world titles logic
+        wrestler_reigns = defaultdict(list)
+        for org in ['wwf', 'wwo', 'iwb']:
+            for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
+                for idx, reign in enumerate(self.championships[org][weight]):
+                    wrestler_reigns[reign['champion']].append(reign)
+        
+        totals_unique = defaultdict(lambda: {'unique_opponents': set(), 'country': 'un'})
+        for event in self.events:
+            for match in event['matches']:
+                is_title, orgs = self.is_title_match(match['notes'])
+                if is_title and match['winner']:
+                    if any(org in ['wwf', 'wwo', 'iwb'] for org in orgs):
+                        fighter1 = match['fighter1']
+                        fighter2 = match['fighter2']
+                        
+                        if fighter1 in wrestler_reigns or fighter2 in wrestler_reigns:
+                            if fighter1 in wrestler_reigns:
+                                totals_unique[fighter1]['unique_opponents'].add(fighter2)
+                                if fighter1 in self.wrestlers:
+                                    totals_unique[fighter1]['country'] = self.wrestlers[fighter1]['country']
+                            if fighter2 in wrestler_reigns:
+                                totals_unique[fighter2]['unique_opponents'].add(fighter1)
+                                if fighter2 in self.wrestlers:
+                                    totals_unique[fighter2]['country'] = self.wrestlers[fighter2]['country']
+        
+        top_unique_opponents = sorted(totals_unique.items(), key=lambda x: len(x[1]['unique_opponents']), reverse=True)[:10]
         
         for i in range(10):
             html += '        <tr>\n'
@@ -1740,14 +2160,7 @@ class WrestlingDatabase:
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
-            # Consecutive Losses
-            if i < len(top_cons_losses):
-                name, stats = top_cons_losses[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{stats["max_losses"]}</td>\n'
-            else:
-                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
-            
-            # Consecutive Defenses
+            # Consecutive Title Defenses
             if i < len(top_cons_defenses):
                 name, stats = top_cons_defenses[i]
                 html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{stats["max_defenses"]}</td>\n'
@@ -1758,6 +2171,13 @@ class WrestlingDatabase:
             if i < len(top_cons_days):
                 name, stats = top_cons_days[i]
                 html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{self.format_number(stats["max_days"])}</td>\n'
+            else:
+                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            # Unique Opponents
+            if i < len(top_unique_opponents):
+                name, stats = top_unique_opponents[i]
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{len(stats["unique_opponents"])}</td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -1773,12 +2193,11 @@ class WrestlingDatabase:
         """Generate singles records table"""
         wrestler_list = list(self.wrestlers.values())
 
-        # Singles Records
+        # Singles Records - 4 columns
         top_bouts = sorted(wrestler_list, key=lambda x: x['wins'] + x['losses'] + x['draws'], reverse=True)[:10]
         top_wins = sorted(wrestler_list, key=lambda x: x['wins'], reverse=True)[:10]
         top_pinfall = sorted(wrestler_list, key=lambda x: x['pinfall_wins'], reverse=True)[:10]
         top_submission = sorted(wrestler_list, key=lambda x: x['submission_wins'], reverse=True)[:10]
-        top_lucha = sorted(wrestler_list, key=lambda x: x['lucha_wins'], reverse=True)[:10]
 
         html = '    <!-- Singles Records -->\n'
         html += '    <details>\n'
@@ -1787,14 +2206,13 @@ class WrestlingDatabase:
         html += '    <thead>\n'
         html += '        <tr>\n'
         html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 19%;">Bouts</th>\n'
-        html += '            <th colspan="2" style="width: 19%;">Wins</th>\n'
-        html += '            <th colspan="2" style="width: 19%;">Pinfall Wins</th>\n'
-        html += '            <th colspan="2" style="width: 19%;">Submission Wins</th>\n'
-        html += '            <th colspan="2" style="width: 19%;"><i>Lucha de Apuestas</i> Wins</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Bouts</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Wins</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Pinfall Wins</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Submission Wins</th>\n'
         html += '        </tr>\n'
         html += '        <tr>\n'
-        html += '            <th style="width: 14%;">Name</th><th style="width: 5%;">#</th>\n' * 5
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -1804,7 +2222,7 @@ class WrestlingDatabase:
             html += f'            <th>{i+1}</th>\n'
             
             for top_list, stat_key in [(top_bouts, None), (top_wins, 'wins'), (top_pinfall, 'pinfall_wins'), 
-                                        (top_submission, 'submission_wins'), (top_lucha, 'lucha_wins')]:
+                                        (top_submission, 'submission_wins')]:
                 if i < len(top_list):
                     w = top_list[i]
                     if stat_key:
@@ -1833,45 +2251,41 @@ class WrestlingDatabase:
             total_bouts = w['wins'] + w['losses'] + w['draws']
             if total_bouts >= 5:  # Minimum 5 bouts to qualify
                 win_pct = (w['wins'] / total_bouts * 100) if total_bouts > 0 else 0
-                loss_pct = (w['losses'] / total_bouts * 100) if total_bouts > 0 else 0
-                draw_pct = (w['draws'] / total_bouts * 100) if total_bouts > 0 else 0
                 
                 total_wins = w['wins']
                 pin_win_pct = (w['pinfall_wins'] / total_wins * 100) if total_wins > 0 else 0
                 sub_win_pct = (w['submission_wins'] / total_wins * 100) if total_wins > 0 else 0
+                dec_win_pct = (w['decision_wins'] / total_wins * 100) if total_wins > 0 else 0
                 
                 wrestlers_with_stats.append({
                     'name': w['name'],
                     'country': w['country'],
                     'win_pct': win_pct,
-                    'loss_pct': loss_pct,
-                    'draw_pct': draw_pct,
                     'pin_win_pct': pin_win_pct,
-                    'sub_win_pct': sub_win_pct
+                    'sub_win_pct': sub_win_pct,
+                    'dec_win_pct': dec_win_pct
                 })
         
-        # Top 5 lists
+        # Top 10 lists
         top_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['win_pct'], reverse=True)[:10]
-        top_loss_pct = sorted(wrestlers_with_stats, key=lambda x: x['loss_pct'], reverse=True)[:10]
-        top_draw_pct = sorted(wrestlers_with_stats, key=lambda x: x['draw_pct'], reverse=True)[:10]
         top_pin_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['pin_win_pct'], reverse=True)[:10]
         top_sub_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['sub_win_pct'], reverse=True)[:10]
+        top_dec_win_pct = sorted(wrestlers_with_stats, key=lambda x: x['dec_win_pct'], reverse=True)[:10]
         
-        html = '    <!-- Statistics Records -->\n'
+        html = '    <!-- Percentage Records -->\n'
         html += '    <details>\n'
         html += '    <summary>Percentage</summary>\n'
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
         html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 19%;">Win %</th>\n'
-        html += '            <th colspan="2" style="width: 19%;">Loss %</th>\n'
-        html += '            <th colspan="2" style="width: 19%;">Draw %</th>\n'
-        html += '            <th colspan="2" style="width: 19%;">Pinfall Win %</th>\n'
-        html += '            <th colspan="2" style="width: 19%;">Submission Win %</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Win%</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Pinfall per Win%</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Submission per Win%</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Decision per Win%</th>\n'
         html += '        </tr>\n'
         html += '        <tr>\n'
-        html += '            <th style="width: 14%;">Name</th><th style="width: 5%;">%</th>\n' * 5
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">%</th>\n' * 4
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -1880,9 +2294,8 @@ class WrestlingDatabase:
             html += '        <tr>\n'
             html += f'            <th>{i+1}</th>\n'
             
-            for top_list, stat_key in [(top_win_pct, 'win_pct'), (top_loss_pct, 'loss_pct'), 
-                                        (top_draw_pct, 'draw_pct'), (top_pin_win_pct, 'pin_win_pct'), 
-                                        (top_sub_win_pct, 'sub_win_pct')]:
+            for top_list, stat_key in [(top_win_pct, 'win_pct'), (top_pin_win_pct, 'pin_win_pct'), 
+                                        (top_sub_win_pct, 'sub_win_pct'), (top_dec_win_pct, 'dec_win_pct')]:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = f"{w[stat_key]:.1f}%"
@@ -2037,15 +2450,14 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2">No.</th>\n'
-        html += '            <th colspan="2">Titles Won</th>\n'
-        html += '            <th colspan="2">Title Defenses</th>\n'
-        html += '            <th colspan="2">Days as Champion</th>\n'
-        html += '            <th colspan="2">Unique Opponents</th>\n'
-        html += '            <th colspan="2">Title Bouts</th>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Titles Won</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Title Defenses</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Days as Champion</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Title Bouts</th>\n'
         html += '        </tr>\n'
         html += '        <tr>\n'
-        html += '            <th>Name</th><th>#</th>\n' * 5
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -2075,13 +2487,6 @@ class WrestlingDatabase:
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
-            # Unique Opponents
-            if i < len(top_unique_opponents):
-                champ, stats = top_unique_opponents[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{len(stats["unique_opponents"])}</td>\n'
-            else:
-                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
-            
             # Title Bouts
             if i < len(top_title_bouts):
                 champ, stats = top_title_bouts[i]
@@ -2101,11 +2506,26 @@ class WrestlingDatabase:
         """Generate event records table"""
         wrestler_list = list(self.wrestlers.values())
         
-        top_ppv = sorted(wrestler_list, key=lambda x: x['main_events'], reverse=True)[:10]
-        top_wm = sorted(wrestler_list, key=lambda x: x['wrestlemania_main_events'], reverse=True)[:10]
-        top_lm = sorted(wrestler_list, key=lambda x: x['libremania_main_events'], reverse=True)[:10]
-        top_open = sorted(wrestler_list, key=lambda x: x['open_tournament_wins'], reverse=True)[:10]
-        top_trios = sorted(wrestler_list, key=lambda x: x['trios_tournament_wins'], reverse=True)[:10]
+        # Calculate PPV bouts
+        wrestler_ppv_stats = []
+        for w in wrestler_list:
+            ppv_bouts = 0
+            for match in w['matches']:
+                if match.get('event', '') != 'Live TV':
+                    ppv_bouts += 1
+            wrestler_ppv_stats.append({
+                'name': w['name'],
+                'country': w['country'],
+                'ppv_bouts': ppv_bouts,
+                'main_events': w['main_events'],
+                'wrestlemania_main_events': w['wrestlemania_main_events'],
+                'libremania_main_events': w['libremania_main_events']
+            })
+        
+        top_ppv_bouts = sorted(wrestler_ppv_stats, key=lambda x: x['ppv_bouts'], reverse=True)[:10]
+        top_ppv = sorted(wrestler_ppv_stats, key=lambda x: x['main_events'], reverse=True)[:10]
+        top_wm = sorted(wrestler_ppv_stats, key=lambda x: x['wrestlemania_main_events'], reverse=True)[:10]
+        top_lm = sorted(wrestler_ppv_stats, key=lambda x: x['libremania_main_events'], reverse=True)[:10]
         
         html = '    <!-- Event Records -->\n'
         html += '    <details>\n'
@@ -2113,15 +2533,14 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2">No.</th>\n'
-        html += '            <th colspan="2">PPV Main Events</th>\n'
-        html += '            <th colspan="2">WrestleMania Main Events</th>\n'
-        html += '            <th colspan="2">LibreMania Main Events</th>\n'
-        html += '            <th colspan="2">Open Tournament Wins</th>\n'
-        html += '            <th colspan="2">Trios Tournament Wins</th>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">PPV Bouts</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">PPV Main Events</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">WrestleMania Main Events</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">LibreMania Main Events</th>\n'
         html += '        </tr>\n'
         html += '        <tr>\n'
-        html += '            <th>Name</th><th>#</th>\n' * 5
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -2130,9 +2549,73 @@ class WrestlingDatabase:
             html += '        <tr>\n'
             html += f'            <th>{i+1}</th>\n'
             
-            for top_list, stat_key in [(top_ppv, 'main_events'), (top_wm, 'wrestlemania_main_events'), 
-                                        (top_lm, 'libremania_main_events'), (top_open, 'open_tournament_wins'), 
-                                        (top_trios, 'trios_tournament_wins')]:
+            for top_list, stat_key in [(top_ppv_bouts, 'ppv_bouts'), (top_ppv, 'main_events'), (top_wm, 'wrestlemania_main_events'), 
+                                        (top_lm, 'libremania_main_events')]:
+                if i < len(top_list):
+                    w = top_list[i]
+                    stat = w[stat_key]
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                else:
+                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n'
+        html += '    </details>\n\n'
+        
+        return html
+
+    def generate_misc_records_html(self):
+        """Generate misc records table"""
+        wrestler_list = list(self.wrestlers.values())
+        
+        # Calculate PPV wins
+        wrestler_misc_stats = []
+        for w in wrestler_list:
+            ppv_wins = 0
+            for match in w['matches']:
+                if match['result'] == 'Win' and match.get('event', '') != 'Live TV':
+                    ppv_wins += 1
+            
+            wrestler_misc_stats.append({
+                'name': w['name'],
+                'country': w['country'],
+                'lucha_wins': w.get('lucha_wins', 0),
+                'open_tournament_wins': w.get('open_tournament_wins', 0),
+                'trios_tournament_wins': w.get('trios_tournament_wins', 0),
+                'ppv_wins': ppv_wins
+            })
+        
+        top_lucha = sorted(wrestler_misc_stats, key=lambda x: x['lucha_wins'], reverse=True)[:10]
+        top_open = sorted(wrestler_misc_stats, key=lambda x: x['open_tournament_wins'], reverse=True)[:10]
+        top_trios = sorted(wrestler_misc_stats, key=lambda x: x['trios_tournament_wins'], reverse=True)[:10]
+        top_ppv_wins = sorted(wrestler_misc_stats, key=lambda x: x['ppv_wins'], reverse=True)[:10]
+        
+        html = '    <!-- Misc Records -->\n'
+        html += '    <details>\n'
+        html += '    <summary>Misc</summary>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;"><i>Lucha de Apuestas</i></th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Open Tournament Wins</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Trios Tournament Wins</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">PPV Wins</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for i in range(10):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            for top_list, stat_key in [(top_lucha, 'lucha_wins'), (top_open, 'open_tournament_wins'), 
+                                        (top_trios, 'trios_tournament_wins'), (top_ppv_wins, 'ppv_wins')]:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = w[stat_key]

@@ -246,8 +246,10 @@ class WrestlingDatabase:
                 event_name = event_name.split(':')[0].strip()
                 event_name = re.sub(r'World Title Series (\d+)', r'WTS \1', event_name)
                 event_name = re.sub(r'World Championship Wrestling (\d+)', r'WCW \1', event_name)
-                # Remove " - Day X" portion for multi-day events
-                event_name = re.sub(r'\s*-\s*Day\s+\d+', '', event_name, flags=re.IGNORECASE)
+                event_name = re.sub(r'(\d{4}) Open Tournament', r'\1 Open', event_name)
+                event_name = re.sub(r'(\d{4}) Trios Tournament', r'\1 Trios', event_name)
+                # Remove everything after " - " (including Day X, The Finals, etc.)
+                event_name = re.sub(r'\s*-\s*.+', '', event_name)
 
             if table:
                 self.parse_match_card(table, event_name, is_weekly=is_weekly)
@@ -953,7 +955,7 @@ class WrestlingDatabase:
             for match in event['matches']:
                 # Reprocess this match's championship implications
                 is_title, orgs = self.is_title_match(match['notes'])
-                if not is_title or not match['winner']:
+                if not is_title:
                     continue
                 
                 weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
@@ -1496,6 +1498,7 @@ class WrestlingDatabase:
         html += self.generate_streaks_records_html()
         html += self.generate_event_records_html()
         html += self.generate_misc_records_html()
+        html += self.generate_drawing_power_html()
         html += self.generate_broadcast_records_html()
         html += self.generate_attendance_records_html()
         return html

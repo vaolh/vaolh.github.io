@@ -1502,6 +1502,83 @@ class WrestlingDatabase:
         html += self.generate_broadcast_records_html()
         html += self.generate_attendance_records_html()
         return html
+    
+    def generate_single_org_records_html(self, org):
+        """Generate organization-specific records table for one org"""
+        org_display = 'The Ring' if org == 'ring' else org.upper()
+        
+        # Calculate stats per wrestler for this org only
+        wrestler_org_stats = defaultdict(lambda: {'total_reigns': 0, 'total_defenses': 0, 'total_days': 0, 'title_bouts': 0, 'country': 'un'})
+        
+        weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
+        
+        # Collect reigns from this org
+        for weight in weights:
+            for reign in self.championships[org][weight]:
+                champ = reign['champion']
+                wrestler_org_stats[champ]['total_reigns'] += 1
+                wrestler_org_stats[champ]['total_defenses'] += reign.get('defenses', 0)
+                wrestler_org_stats[champ]['total_days'] += reign.get('days', 0)
+                wrestler_org_stats[champ]['country'] = reign.get('country', 'un')
+        
+        # Count title bouts for this org
+        for event in self.events:
+            for match in event['matches']:
+                is_title, orgs = self.is_title_match(match['notes'])
+                if is_title and org in orgs and match['winner']:
+                    fighter1 = match['fighter1']
+                    fighter2 = match['fighter2']
+                    
+                    if fighter1 in wrestler_org_stats:
+                        wrestler_org_stats[fighter1]['title_bouts'] += 1
+                    if fighter2 in wrestler_org_stats:
+                        wrestler_org_stats[fighter2]['title_bouts'] += 1
+        
+        # Sort and get top 5 for each category
+        top_reigns = sorted(wrestler_org_stats.items(), key=lambda x: x[1]['total_reigns'], reverse=True)[:5]
+        top_defenses = sorted(wrestler_org_stats.items(), key=lambda x: x[1]['total_defenses'], reverse=True)[:5]
+        top_days = sorted(wrestler_org_stats.items(), key=lambda x: x[1]['total_days'], reverse=True)[:5]
+        top_bouts = sorted(wrestler_org_stats.items(), key=lambda x: x[1]['title_bouts'], reverse=True)[:5]
+        
+        # Generate table
+        html = f'<h2>{org_display} Records</h2>\n'
+        html += '    <table class="records">\n'
+        html += '    <thead>\n'
+        html += '        <tr>\n'
+        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Titles Won</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Title Defenses</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Days as Champion</th>\n'
+        html += '            <th colspan="2" style="width: 23.75%;">Title Bouts</th>\n'
+        html += '        </tr>\n'
+        html += '        <tr>\n'
+        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '        </tr>\n'
+        html += '    </thead>\n'
+        html += '    <tbody>\n'
+        
+        for i in range(5):
+            html += '        <tr>\n'
+            html += f'            <th>{i+1}</th>\n'
+            
+            for top_list, stat_key in [(top_reigns, 'total_reigns'), (top_defenses, 'total_defenses'), 
+                                        (top_days, 'total_days'), (top_bouts, 'title_bouts')]:
+                if i < len(top_list):
+                    name, stats = top_list[i]
+                    stat = stats[stat_key]
+                    if stat_key == 'total_days':
+                        html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{self.format_number(stat)}</td>\n'
+                    else:
+                        html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{stat}</td>\n'
+                else:
+                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+            
+            html += '        </tr>\n'
+        
+        html += '    </tbody>\n'
+        html += '    </table>\n\n'
+        
+        return html
 
     def generate_percentage_records_table(self):
         """Percentage: Win%, Pinfall per Win%, Submission per Win%, Decision per Win%"""
@@ -2923,19 +3000,40 @@ class WrestlingDatabase:
                 'avg_stm': avg_stm
             })
         
-        # Ensure we have at least 1 of each category in top 10
-        # Sort by combined score (weighted average)
+        if not wrestler_list:
+            return ''
+        
+        # Calculate mean and standard deviation for each metric
+        import math
+        
+        metrics = ['avg_attendance', 'total_ppv', 'avg_ppv', 'avg_tv', 'avg_stm']
+        means = {}
+        stdevs = {}
+        
+        for metric in metrics:
+            values = [w[metric] for w in wrestler_list if w[metric] > 0]
+            if values:
+                means[metric] = sum(values) / len(values)
+                variance = sum((x - means[metric]) ** 2 for x in values) / len(values)
+                stdevs[metric] = math.sqrt(variance) if variance > 0 else 1
+            else:
+                means[metric] = 0
+                stdevs[metric] = 1
+        
+        # Calculate z-scores for each wrestler
         for w in wrestler_list:
-            w['score'] = (w['avg_attendance'] * 0.25 + 
-                         w['total_ppv'] * 0.25 + 
-                         w['avg_ppv'] * 0.25 + 
-                         w['avg_tv'] * 0.125 + 
-                         w['avg_stm'] * 0.125)
+            z_scores = []
+            for metric in metrics:
+                if w[metric] > 0 and stdevs[metric] > 0:
+                    z_score = (w[metric] - means[metric]) / stdevs[metric]
+                    z_scores.append(z_score)
+                else:
+                    z_scores.append(0)
+            
+            # Combined score is average of z-scores (equal weight now that they're normalized)
+            w['score'] = sum(z_scores) / len(z_scores) if z_scores else 0
         
         top_10 = sorted(wrestler_list, key=lambda x: x['score'], reverse=True)[:10]
-        
-        if not top_10:
-            return ''
         
         html = '    <!-- Drawing Power Records -->\n'
         html += '    <details>\n'
@@ -3029,10 +3127,17 @@ class WrestlingDatabase:
                     before = content.split(f'<!-- {org.upper()}CHAMPS_START -->')[0]
                     after = content.split(f'<!-- {org.upper()}CHAMPS_END -->')[1]
                     content = before + f'<!-- {org.upper()}CHAMPS_START -->\n' + org_champs_html + f'<!-- {org.upper()}CHAMPS_END -->' + after
+                
+                # Add org records table
+                org_records_html = self.generate_single_org_records_html(org)
+                if f'<!-- {org.upper()}RECORDS_START -->' in content and f'<!-- {org.upper()}RECORDS_END -->' in content:
+                    before = content.split(f'<!-- {org.upper()}RECORDS_START -->')[0]
+                    after = content.split(f'<!-- {org.upper()}RECORDS_END -->')[1]
+                    content = before + f'<!-- {org.upper()}RECORDS_START -->\n' + org_records_html + f'<!-- {org.upper()}RECORDS_END -->' + after
                     
-                    with open(org_path, 'w', encoding='utf-8') as f:
-                        f.write(content)
-                    print(f"✓ Updated {org_path}")
+                with open(org_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                print(f"✓ Updated {org_path}")
 
         HTML_HEADER = """<!DOCTYPE html>
         <html lang="en">
@@ -3149,7 +3254,12 @@ class WrestlingDatabase:
 
         # 4. Create/update wrestlers index page (ONLY PPV wrestlers)
         index_path = 'wrestling/wrestlers/index.html'
-        sorted_wrestlers = sorted([name for name in self.wrestlers.keys() if name in self.ppv_wrestlers])
+        # Filter: must be in PPV AND have 7+ total matches
+        sorted_wrestlers = sorted([
+            name for name in self.wrestlers.keys() 
+            if name in self.ppv_wrestlers and 
+            (self.wrestlers[name]['wins'] + self.wrestlers[name]['losses'] + self.wrestlers[name]['draws']) >= 7
+        ])
 
         index_html = HTML_HEADER
         index_html += '<h1>Wrestler Directory</h1>\n\n'

@@ -292,6 +292,7 @@ table.bracket td {
     border: none;
     background-color: transparent;
     padding: 0;
+    text-align: left;
 }
 
 /* Bracket cell styles */

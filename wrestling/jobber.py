@@ -24,26 +24,9 @@ import os
 import calendar
 
 # ─── Faker locales ───────────────────────────────────────────────────────────
-fake_mx = Faker('es_MX')
 fake_us = Faker('en_US')
-
-# Romanized Japanese name pools (Faker ja_JP outputs kanji)
-JP_FIRST_NAMES = [
-    'Akira', 'Daisuke', 'Haruki', 'Hiroshi', 'Isamu', 'Junichi', 'Kazuo',
-    'Kenji', 'Koji', 'Masahiro', 'Noboru', 'Osamu', 'Ryo', 'Satoshi',
-    'Shinji', 'Takeshi', 'Taro', 'Tetsuya', 'Tomohiro', 'Yasuhiro',
-    'Yoshiaki', 'Yuji', 'Yukio', 'Tadashi', 'Kenta', 'Shogo', 'Naoki',
-    'Ren', 'Shuji', 'Makoto', 'Hideo', 'Goro', 'Jiro', 'Saburo',
-    'Ichiro', 'Rokuro', 'Shiro', 'Hayato', 'Ryota', 'Daiki',
-]
-JP_LAST_NAMES = [
-    'Tanaka', 'Yamamoto', 'Suzuki', 'Watanabe', 'Takahashi', 'Nakamura',
-    'Kobayashi', 'Saito', 'Kato', 'Yoshida', 'Yamada', 'Sasaki', 'Matsuda',
-    'Inoue', 'Kimura', 'Hayashi', 'Shimizu', 'Yamazaki', 'Mori', 'Ikeda',
-    'Hashimoto', 'Ishikawa', 'Ogawa', 'Fujita', 'Okada', 'Goto', 'Hasegawa',
-    'Murakami', 'Kondo', 'Fukuda', 'Nishimura', 'Aoki', 'Sakamoto', 'Endo',
-    'Sugiyama', 'Ueda', 'Morita', 'Hara', 'Miyamoto', 'Ota',
-]
+fake_jp = Faker('ja_JP')
+fake_mx = Faker('es_ES')  # es_MX is broken (mixed genders); es_ES works correctly
 
 # ─── Location pools ─────────────────────────────────────────────────────────
 LOCATIONS = {
@@ -103,26 +86,35 @@ LOCATIONS = {
 WEIGHT_CLASSES = ['Heavyweight', 'Bridgerweight', 'Middleweight', 'Welterweight',
                   'Lightweight', 'Featherweight']
 METHODS_WIN = ['Pinfall', 'Submission', 'Pinfall', 'Pinfall', 'Submission',
-               'Pinfall', 'Count Out', 'Disqualification']
+               'Pinfall', 'Pinfall', 'Submission', 'Pinfall', 'Pinfall',
+               'Count Out', 'Disqualification']
 METHODS_LOSS = ['Pinfall', 'Submission', 'Pinfall', 'Pinfall', 'Submission']
 FALLS_WIN = ['[1-0]', '[2-1]', '[1-0]', '[1-0]']
 FALLS_LOSS = ['[0-1]', '[1-2]', '[0-1]', '[0-1]']
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
-def generate_jobber_name(nationality):
-    """Generate a realistic jobber name based on nationality."""
+def generate_jobber_name(nationality, gender='m'):
+    """Generate a realistic jobber name based on nationality and gender."""
     if nationality == 'mx':
-        first = fake_mx.first_name_male()
+        if gender == 'f':
+            first = fake_mx.first_name_female()
+        else:
+            first = fake_mx.first_name_male()
         last = fake_mx.last_name()
         return first + ' ' + last, 'mx'
     elif nationality == 'jp':
-        # Use romanized Japanese names (Last First order)
-        last = random.choice(JP_LAST_NAMES)
-        first = random.choice(JP_FIRST_NAMES)
+        last = fake_jp.last_romanized_name()
+        if gender == 'f':
+            first = fake_jp.first_romanized_name_female()
+        else:
+            first = fake_jp.first_romanized_name_male()
         return last + ' ' + first, 'jp'
     else:
-        first = fake_us.first_name_male()
+        if gender == 'f':
+            first = fake_us.first_name_female()
+        else:
+            first = fake_us.first_name_male()
         last = fake_us.last_name()
         return first + ' ' + last, 'us'
 
@@ -800,7 +792,12 @@ def main():
     wrestler_country = get_wrestler_country(wrestler_name, weekly_path, ppv_path)
     print(f"  Country: {wrestler_country}")
 
-    # 2. Win or Loss
+    # 2. Jobber gender
+    gender_input = input("  Jobber gender — (m)ale or (f)emale? [m]: ").strip().lower()
+    jobber_gender = 'f' if gender_input == 'f' else 'm'
+    print(f"  → {'Female' if jobber_gender == 'f' else 'Male'} jobbers")
+
+    # 3. Win or Loss
     print()
     result_input = input("  Result type — (w)ins or (l)osses? [w]: ").strip().lower()
     result_type = 'loss' if result_input == 'l' else 'win'
@@ -975,7 +972,7 @@ def main():
         loc_data = LOCATIONS[nat]
         city, venue = random.choice(loc_data['cities'])
 
-        jobber_name, jobber_cc = generate_jobber_name(nat)
+        jobber_name, jobber_cc = generate_jobber_name(nat, jobber_gender)
         if result_type == 'win':
             method = random.choice(METHODS_WIN)
             falls = random.choice(FALLS_WIN)

@@ -306,27 +306,21 @@ def get_wrestler_country(wrestler_name, weekly_path, ppv_path):
     return 'un'
 
 
-def get_current_titles(wrestler_name, weekly_path, ppv_path):
+def get_titles_for_period(wrestler_name, start_dt, end_dt, weekly_path, ppv_path):
     """
-    Run the WrestlingDatabase engine to determine current championship holdings.
+    Run the WrestlingDatabase engine to find title holdings for a wrestler
+    during a specific date range. Checks all reigns that overlap the period.
     Returns list of dicts: [{'org': 'wwf', 'weight': 'bridgerweight'}, ...]
     """
-    # Import and use the existing update.py logic
     import sys
     script_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(script_dir)
     if parent_dir not in sys.path:
         sys.path.insert(0, parent_dir)
 
-    # We need to run the database to compute championships
-    from wrestling.update import WrestlingDatabase
+    from update import WrestlingDatabase
 
     db = WrestlingDatabase()
-
-    ppv_full = os.path.join(parent_dir, ppv_path) if not os.path.isabs(ppv_path) else ppv_path
-    weekly_full = os.path.join(parent_dir, weekly_path) if not os.path.isabs(weekly_path) else weekly_path
-
-    # Use relative paths from CWD like update.py does
     db.parse_events(ppv_path, is_weekly=False)
     if os.path.exists(weekly_path):
         db.parse_events(weekly_path, is_weekly=True)
@@ -340,8 +334,31 @@ def get_current_titles(wrestler_name, weekly_path, ppv_path):
         for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight',
                         'lightweight', 'featherweight']:
             reigns = db.championships[org][weight]
-            if reigns and reigns[-1]['champion'] == wrestler_name and 'vacancy_message' not in reigns[-1]:
+            for i, reign in enumerate(reigns):
+                if reign['champion'] != wrestler_name:
+                    continue
+                if 'vacancy_message' in reign:
+                    continue
+
+                reign_start = db.parse_date(reign['date'])
+                if not reign_start:
+                    continue
+
+                # Determine reign end: next reign's start date, or ongoing
+                if i + 1 < len(reigns):
+                    next_start = db.parse_date(reigns[i + 1]['date'])
+                    reign_end = next_start if next_start else None
+                else:
+                    reign_end = None  # Still champion
+
+                # Check if reign overlaps with [start_dt, end_dt]
+                if reign_end and reign_end < start_dt:
+                    continue  # Reign ended before our period
+                if reign_start > end_dt:
+                    continue  # Reign started after our period
+
                 titles.append({'org': org, 'weight': weight})
+                break  # One match per org/weight is enough
 
     return titles
 
@@ -419,10 +436,10 @@ def generate_match_dates(start_dt, end_dt, count, occupied_months):
     return selected_dates, total_available
 
 
-def find_block_for_month(content, year, month):
+def find_block_for_month(content, year, month, show_name=None):
     """
     Find an existing <details> block whose date falls in the given (year, month)
-    that has fewer than 5 singles matches.
+    that has fewer than 5 singles matches and matches the show_name.
     Returns dict with 'insert_pos' and 'match_count', or None.
     """
     details_pattern = re.compile(r'<details>(.*?)</details>', re.DOTALL)
@@ -430,6 +447,14 @@ def find_block_for_month(content, year, month):
     for m in details_pattern.finditer(content):
         block_text = m.group(1)
         block_content_start = m.start(1)
+
+        # Check show name match (Wrestling, Lucha Libre, Puroresu)
+        if show_name:
+            summary_match = re.search(r'<summary>(.*?)</summary>', block_text)
+            if summary_match:
+                block_show = summary_match.group(1).strip()
+                if block_show != show_name:
+                    continue
 
         # Find dates in the block — the info row date is the last date mention
         date_matches = re.findall(
@@ -665,8 +690,8 @@ def insert_matches_into_weekly(weekly_path, matches, wrestler_name,
     for match in all_matches:
         dt = match['date']
 
-        # Try to find an existing block in the same month with room
-        block_info = find_block_for_month(content, dt.year, dt.month)
+        # Try to find an existing block in the same month with matching show
+        block_info = find_block_for_month(content, dt.year, dt.month, match['show_name'])
 
         if block_info:
             # Add match to existing block
@@ -775,70 +800,24 @@ def main():
     wrestler_country = get_wrestler_country(wrestler_name, weekly_path, ppv_path)
     print(f"  Country: {wrestler_country}")
 
-    # 2. Check current championship titles
-    print("\n  Checking current championship holdings...")
-    current_titles = get_current_titles(wrestler_name, weekly_path, ppv_path)
-
-    is_defense = False
-    defense_orgs = []
-    defense_weight = None
-
-    if current_titles:
-        print(f"\n  🏆 {wrestler_name} is CURRENT CHAMPION of:")
-        for i, t in enumerate(current_titles, 1):
-            org_display = 'The Ring' if t['org'] == 'ring' else t['org'].upper()
-            print(f"    {i}. {org_display} {t['weight'].capitalize()}")
-
-        defense_input = input("\n  Generate these as title defenses? (y/n): ").strip().lower()
-        if defense_input == 'y':
-            is_defense = True
-            # All titles of the same weight class get defended together
-            # Group by weight
-            weights_held = defaultdict(list)
-            for t in current_titles:
-                weights_held[t['weight']].append(t)
-
-            if len(weights_held) == 1:
-                defense_weight = list(weights_held.keys())[0]
-                defense_orgs = [t['org'] for t in current_titles]
-            else:
-                print("\n  Multiple weight classes held. Select division for defenses:")
-                weight_list = list(weights_held.keys())
-                for i, w in enumerate(weight_list, 1):
-                    orgs = [('The Ring' if t['org'] == 'ring' else t['org'].upper()) for t in weights_held[w]]
-                    print(f"    {i}. {w.capitalize()} ({', '.join(orgs)})")
-                wc = input("  Pick number: ").strip()
-                if wc.isdigit() and 1 <= int(wc) <= len(weight_list):
-                    defense_weight = weight_list[int(wc) - 1]
-                    defense_orgs = [t['org'] for t in weights_held[defense_weight]]
-                else:
-                    print("  Invalid choice. Generating non-title matches.")
-                    is_defense = False
-    else:
-        print(f"\n  {wrestler_name} does not currently hold any titles.")
-
-    # 3. Win or Loss
+    # 2. Win or Loss
     print()
     result_input = input("  Result type — (w)ins or (l)osses? [w]: ").strip().lower()
     result_type = 'loss' if result_input == 'l' else 'win'
     print(f"  → Generating {result_type}{'es' if result_type == 'loss' else 's'}")
 
-    # 4. Weight class (if not defense)
-    if is_defense:
-        weight_class = defense_weight.capitalize()
-        print(f"  Weight class (from title): {weight_class}")
+    # 3. Weight class
+    print("\n  Weight class options:")
+    for i, w in enumerate(WEIGHT_CLASSES, 1):
+        print(f"    {i}. {w}")
+    wc_input = input("  Pick number [2=Bridgerweight]: ").strip()
+    if wc_input.isdigit() and 1 <= int(wc_input) <= len(WEIGHT_CLASSES):
+        weight_class = WEIGHT_CLASSES[int(wc_input) - 1]
     else:
-        print("\n  Weight class options:")
-        for i, w in enumerate(WEIGHT_CLASSES, 1):
-            print(f"    {i}. {w}")
-        wc_input = input("  Pick number [2=Bridgerweight]: ").strip()
-        if wc_input.isdigit() and 1 <= int(wc_input) <= len(WEIGHT_CLASSES):
-            weight_class = WEIGHT_CLASSES[int(wc_input) - 1]
-        else:
-            weight_class = 'Bridgerweight'
-        print(f"  → {weight_class}")
+        weight_class = 'Bridgerweight'
+    print(f"  → {weight_class}")
 
-    # 5. Date range
+    # 4. Date range
     print()
     start_str = input("  Start date (e.g. February 1970 or February 1, 1970): ").strip()
     start_dt = parse_date(start_str)
@@ -863,6 +842,73 @@ def main():
         end_dt = end_dt.replace(day=calendar.monthrange(end_dt.year, end_dt.month)[1])
 
     print(f"  → Range: {format_date(start_dt)} to {format_date(end_dt)}")
+
+    # 5. Check championship titles during this period
+    is_defense = False
+    defense_orgs = []
+    defense_weight = None
+
+    if result_type == 'win':
+        print("\n  Checking championship holdings for this period...")
+        period_titles = get_titles_for_period(wrestler_name, start_dt, end_dt,
+                                              weekly_path, ppv_path)
+
+        if period_titles:
+            print(f"\n  🏆 {wrestler_name} held title(s) during this period:")
+            for i, t in enumerate(period_titles, 1):
+                org_display = 'The Ring' if t['org'] == 'ring' else t['org'].upper()
+                print(f"    {i}. {org_display} {t['weight'].capitalize()}")
+
+            defense_input = input("\n  Generate these as title defenses? (y/n): ").strip().lower()
+            if defense_input == 'y':
+                is_defense = True
+                weights_held = defaultdict(list)
+                for t in period_titles:
+                    weights_held[t['weight']].append(t)
+
+                if len(weights_held) == 1:
+                    defense_weight = list(weights_held.keys())[0]
+                    defense_orgs = [t['org'] for t in period_titles]
+                    weight_class = defense_weight.capitalize()
+                    print(f"  Weight class (from title): {weight_class}")
+                else:
+                    print("\n  Multiple weight classes held. Select division:")
+                    weight_list = list(weights_held.keys())
+                    for i, w in enumerate(weight_list, 1):
+                        orgs = [('The Ring' if t['org'] == 'ring' else t['org'].upper()) for t in weights_held[w]]
+                        print(f"    {i}. {w.capitalize()} ({', '.join(orgs)})")
+                    wc = input("  Pick number: ").strip()
+                    if wc.isdigit() and 1 <= int(wc) <= len(weight_list):
+                        defense_weight = weight_list[int(wc) - 1]
+                        defense_orgs = [t['org'] for t in weights_held[defense_weight]]
+                        weight_class = defense_weight.capitalize()
+                        print(f"  Weight class (from title): {weight_class}")
+                    else:
+                        print("  Invalid choice. Generating non-title matches.")
+                        is_defense = False
+        else:
+            print(f"\n  {wrestler_name} did not hold any titles in this period.")
+            force = input("  Force title defense mode anyway? (y/n): ").strip().lower()
+            if force == 'y':
+                is_defense = True
+                print("\n  Select org(s) for defenses:")
+                all_orgs = ['wwf', 'wwo', 'iwb', 'ring']
+                org_labels = ['WWF', 'WWO', 'IWB', 'The Ring']
+                for i, label in enumerate(org_labels, 1):
+                    print(f"    {i}. {label}")
+                org_input = input("  Pick number(s), comma-separated (e.g. 1,3): ").strip()
+                defense_orgs = []
+                for part in org_input.split(','):
+                    part = part.strip()
+                    if part.isdigit() and 1 <= int(part) <= 4:
+                        defense_orgs.append(all_orgs[int(part) - 1])
+                if not defense_orgs:
+                    print("  No valid orgs selected. Generating non-title matches.")
+                    is_defense = False
+                else:
+                    defense_weight = weight_class.lower()
+                    chosen = [('The Ring' if o == 'ring' else o.upper()) for o in defense_orgs]
+                    print(f"  → Defending: {', '.join(chosen)} {weight_class}")
 
     # 6. Count
     count_str = input("  Number of matches to generate: ").strip()
@@ -901,9 +947,28 @@ def main():
 
     print(f"\n  ✓ Generated {len(match_dates)} match dates")
 
-    # 8. Build individual matches (one per date)
+    # 8. Location preference
+    print("\n  Match locations:")
+    print("    1. Mexico")
+    print("    2. Japan")
+    print("    3. USA")
+    print("    4. Mix (random)")
+    loc_input = input("  Pick number [4=Mix]: ").strip()
+    if loc_input == '1':
+        nationalities = ['mx']
+        print("  → Mexico only")
+    elif loc_input == '2':
+        nationalities = ['jp']
+        print("  → Japan only")
+    elif loc_input == '3':
+        nationalities = ['us']
+        print("  → USA only")
+    else:
+        nationalities = ['mx', 'jp', 'us']
+        print("  → Mix of all three")
+
+    # 9. Build individual matches (one per date)
     matches_to_insert = []
-    nationalities = ['mx', 'jp', 'us']
 
     for dt in match_dates:
         nat = random.choice(nationalities)

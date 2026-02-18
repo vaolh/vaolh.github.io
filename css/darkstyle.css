@@ -366,7 +366,6 @@ span.date {
 }
 
 .theorem-block .theorem-head {
-  font-weight: 600;
   color: var(--accent-primary);
   margin-bottom: 0.25rem;
 }

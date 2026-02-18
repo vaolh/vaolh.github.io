@@ -390,7 +390,6 @@ span.date {
 
 .axiom-list .axiom-label {
   color: var(--accent-primary);
-  font-weight: 600;
   min-width: 3.5rem;
   flex-shrink: 0;
   margin-right: 0.75rem;
@@ -398,7 +397,6 @@ span.date {
 
 .axiom-list .axiom-name {
   color: var(--accent-primary);
-  font-weight: 600;
   margin-left: auto;
   padding-left: 1rem;
   white-space: nowrap;

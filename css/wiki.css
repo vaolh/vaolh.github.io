@@ -403,3 +403,108 @@ table.matchesum th,
 table.matchesum td {
     padding: 6px 6px;  /* smaller than the default 8px/10px */
 }
+
+/* Auto dark mode for wiki pages */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #1a1a1a;
+    color: #d4d4d4;
+  }
+
+  a, a:visited {
+    color: #6ba3ff;
+  }
+
+  .infobox {
+    border-color: #444;
+    background-color: #2a2a2a;
+  }
+
+  .infobox-title {
+    background-color: #3a5068;
+  }
+
+  .infobox-section {
+    background-color: #3a5068;
+  }
+
+  .infobox-champion {
+    background-color: #5a4a2a;
+  }
+
+  .infobox-resection {
+    background-color: #3a3e44;
+  }
+
+  table, th, td {
+    border-color: #444;
+  }
+
+  th {
+    background-color: #2a2a2a;
+    color: #d4d4d4;
+  }
+
+  td {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+  }
+
+  .total-row td {
+    background-color: #2a2a2a !important;
+  }
+
+  summary {
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #d4d4d4;
+  }
+
+  summary:hover {
+    background-color: #1a3050;
+  }
+
+  .win {
+    background-color: #1a4a2a;
+  }
+
+  .loss {
+    background-color: #4a1a1a;
+  }
+
+  .draw {
+    background-color: #2a3a4a;
+  }
+
+  .medal-header {
+    background-color: #2a2a2a;
+    color: #d4d4d4;
+  }
+
+  .medal-competition {
+    background-color: #333;
+    color: #d4d4d4;
+  }
+
+  .medal-table td {
+    border-bottom-color: #444;
+  }
+
+  table.bracket .header,
+  table.bracket .seed {
+    background-color: #2a2a2a;
+    border-color: #444;
+    color: #d4d4d4;
+  }
+
+  table.bracket .team,
+  table.bracket .score {
+    background-color: #1e1e1e;
+    border-color: #444;
+    color: #d4d4d4;
+  }
+
+  caption {
+    color: #d4d4d4;
+  }
+}

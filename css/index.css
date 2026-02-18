@@ -31,6 +31,35 @@ a:visited {
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
+:root {
+  --bg: #ffffff;
+  --text: #1a1a1a;
+  --link: #005eff;
+  --link-hover: #003fbd;
+  --date-color: #666;
+  --heading-color: #1a1a1a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a1a;
+    --text: #d4d4d4;
+    --link: #6ba3ff;
+    --link-hover: #91bfff;
+    --date-color: #999;
+    --heading-color: #e0e0e0;
+  }
+}
+
+[data-theme="dark"] {
+  --bg: #1a1a1a;
+  --text: #d4d4d4;
+  --link: #6ba3ff;
+  --link-hover: #91bfff;
+  --date-color: #999;
+  --heading-color: #e0e0e0;
+}
+
 html {
   font-family: -apple-system, 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -41,6 +70,9 @@ body {
   scrollbar-gutter: stable;
   margin: 0;
   padding: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 main {
@@ -68,11 +100,13 @@ main {
 }
 
 .directory li a {
-  color: #005eff;
+  color: var(--link);
   text-decoration: none;
+  transition: color 0.2s ease;
 }
 
 .directory li a:hover {
+  color: var(--link-hover);
   text-decoration: underline;
 }
 
@@ -102,17 +136,20 @@ main {
 }
 
 a {
-  color: #005eff;
+  color: var(--link);
   text-decoration: none;
+  transition: color 0.2s ease;
 }
 
 a:hover {
+  color: var(--link-hover);
   text-decoration: underline;
 }
 
 h1, h2, h3 {
   font-weight: 400;
   margin: 2rem 0 1rem 0;
+  color: var(--heading-color);
 }
 
 h1 {
@@ -195,5 +232,36 @@ span.date {
     position: relative;
     bottom: 1px;
     margin-right: 1rem;
-    color: #555;
+    color: var(--date-color);
+}
+
+/* Theme toggle */
+#theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: var(--link);
+  transition: color 0.2s ease;
+}
+
+#theme-toggle:hover {
+  color: var(--link-hover);
+}
+
+#theme-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.icon-sun { display: none; }
+
+[data-theme="dark"] .icon-sun { display: inline; }
+[data-theme="dark"] .icon-moon { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .icon-sun { display: inline; }
+  :root:not([data-theme="light"]) .icon-moon { display: none; }
 }

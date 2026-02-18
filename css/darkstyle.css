@@ -34,7 +34,26 @@ a:visited {
 :root {
   --accent-primary: #ff6b35;
   --accent-secondary: #ff006e;
+  --accent-glow: rgba(255, 107, 53, 0.15);
+  --bg: #ffffff;
+  --text: #1a1a1a;
+  --date-color: #666;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a1a;
+    --text: #d4d4d4;
+    --accent-glow: rgba(255, 107, 53, 0.3);
+    --date-color: #999;
+  }
+}
+
+[data-theme="dark"] {
+  --bg: #1a1a1a;
+  --text: #d4d4d4;
   --accent-glow: rgba(255, 107, 53, 0.3);
+  --date-color: #999;
 }
 
 html {
@@ -47,8 +66,9 @@ body {
   scrollbar-gutter: stable;
   margin: 0;
   padding: 0;
-  background-color: #0a0a0a;
-  color: #ffffff;
+  background-color: var(--bg);
+  color: var(--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 main {
@@ -249,7 +269,7 @@ span.date {
     position: relative;
     bottom: 1px;
     margin-right: 1rem;
-    color: #888888;
+    color: var(--date-color);
 }
 
 .footnote-ref {
@@ -268,7 +288,7 @@ span.date {
 .footnotes {
     margin-top: 40px;
     padding-top: 20px;
-    border-top: 1px solid #ff6b35;
+    border-top: 1px solid var(--accent-primary);
     font-size: 0.9em;
 }
 
@@ -369,4 +389,35 @@ span.date {
 .axiom-list .axiom-label {
   color: var(--accent-primary);
   font-weight: 600;
+}
+
+/* Theme toggle */
+#theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: var(--accent-primary);
+  transition: color 0.2s ease;
+}
+
+#theme-toggle:hover {
+  color: var(--accent-secondary);
+}
+
+#theme-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.icon-sun { display: none; }
+
+[data-theme="dark"] .icon-sun { display: inline; }
+[data-theme="dark"] .icon-moon { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .icon-sun { display: inline; }
+  :root:not([data-theme="light"]) .icon-moon { display: none; }
 }

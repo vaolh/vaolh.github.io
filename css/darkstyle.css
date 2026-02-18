@@ -337,3 +337,36 @@ span.date {
   text-align: justify;
   text-justify: inter-word;
 }
+
+/* Theorem / Definition / Proposition blocks */
+.theorem-block {
+  border-left: 3px solid var(--accent-primary);
+  padding: 0.75rem 1rem;
+  margin: 1.5rem 0;
+}
+
+.theorem-block .theorem-head {
+  font-weight: 600;
+  color: var(--accent-primary);
+  margin-bottom: 0.25rem;
+}
+
+.theorem-block p {
+  margin: 0.4rem 0;
+}
+
+/* Indented axiom / condition list */
+.axiom-list {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.axiom-list p {
+  margin: 0.25rem 0;
+  line-height: 1.5rem;
+}
+
+.axiom-list .axiom-label {
+  color: var(--accent-primary);
+  font-weight: 600;
+}

@@ -7,8 +7,15 @@
     
     <title>Victor Ortega</title>
     
-    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js">
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        }
+      };
     </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>
 
   </head>
 

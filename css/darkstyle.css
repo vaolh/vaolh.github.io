@@ -381,7 +381,9 @@ span.date {
   margin: 0.5rem 0;
 }
 
-.axiom-list p {
+.axiom-list .axiom-row {
+  display: flex;
+  align-items: baseline;
   margin: 0.25rem 0;
   line-height: 1.5rem;
 }
@@ -389,6 +391,23 @@ span.date {
 .axiom-list .axiom-label {
   color: var(--accent-primary);
   font-weight: 600;
+  min-width: 3.5rem;
+  flex-shrink: 0;
+  margin-right: 0.75rem;
+}
+
+.axiom-list .axiom-name {
+  color: var(--accent-primary);
+  font-weight: 600;
+  margin-left: auto;
+  padding-left: 1rem;
+  white-space: nowrap;
+}
+
+.axiom-list .axiom-content {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
 }
 
 /* Theme toggle */

@@ -26,7 +26,7 @@ import calendar
 # ─── Faker locales ───────────────────────────────────────────────────────────
 fake_us = Faker('en_US')
 fake_jp = Faker('ja_JP')
-fake_mx = Faker('es_ES')  # es_MX is broken (mixed genders); es_ES works correctly
+fake_mx = Faker('es_ES')
 
 # ─── Location pools ─────────────────────────────────────────────────────────
 LOCATIONS = {

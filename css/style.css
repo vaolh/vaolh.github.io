@@ -34,6 +34,7 @@ a:visited {
 html {
   font-family: -apple-system, 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
+  color: #2c1a0e; /* warm dark brown for body text */
 }
 
 body {
@@ -41,7 +42,7 @@ body {
   scrollbar-gutter: stable;
   margin: 0;
   padding: 0;
-  background-color: #fff1e5;
+  background-color: #f4ead5; /* warm parchment */
 }
 
 main {
@@ -69,7 +70,7 @@ main {
 }
 
 .directory li a {
-  color: #8B4513;
+  color: #6b3012; /* deeper sepia brown */
   text-decoration: none;
 }
 
@@ -103,7 +104,7 @@ main {
 }
 
 a {
-  color: #8B4513;
+  color: #6b3012;
   text-decoration: none;
 }
 
@@ -114,6 +115,7 @@ a:hover {
 h1, h2, h3 {
   font-weight: 400;
   margin: 2rem 0 1rem 0;
+  color: #1e1008; /* near-black with warm undertone */
 }
 
 h1 {
@@ -154,6 +156,7 @@ div.picture-container {
 }
 img {
     width: 100%;
+    filter: sepia(30%) brightness(0.97); /* subtle sepia tint on images */
 }
 @media (max-width: 500px) {
   main {
@@ -196,11 +199,11 @@ span.date {
     position: relative;
     bottom: 1px;
     margin-right: 1rem;
-    color: #555;
+    color: #7a5c44; /* muted sepia tone for dates */
 }
 
 .footnote-ref {
-    color: #8B4513;
+    color: #6b3012;
     text-decoration: none;
     font-size: 0.8em;
     vertical-align: super;
@@ -214,14 +217,14 @@ span.date {
 .footnotes {
     margin-top: 40px;
     padding-top: 20px;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid #c9b89a; /* warm tan border */
     font-size: 0.9em;
 }
 
 .footnotes h3 {
     font-size: 1.1em;
     margin-bottom: 15px;
-    color: #333;
+    color: #3a2010;
 }
 
 .footnote {
@@ -232,12 +235,12 @@ span.date {
 }
 
 .footnote-number {
-    color: #8B4513;
+    color: #6b3012;
     font-weight: bold;
 }
 
 .footnote-backref {
-    color: #8B4513;
+    color: #6b3012;
     text-decoration: none;
     margin-left: 5px;
     font-size: 0.8em;
@@ -276,6 +279,7 @@ span.date {
     margin-top: 0.5rem;
     font-size: 1.1em;
     margin-bottom: 30px;
+    color: #5a3820;
 }
 
 .container p {

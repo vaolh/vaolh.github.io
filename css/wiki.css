@@ -404,6 +404,50 @@ table.matchesum td {
     padding: 6px 6px;  /* smaller than the default 8px/10px */
 }
 
+.float-infobox-right {
+    float: right;
+    display: flex;
+    gap: 12px;
+    margin: 0 0 16px 16px;
+    max-width: 540px;
+    border: 1px solid #aaa;
+    background-color: #f9f9f9;
+    padding: 5px;
+    font-size: 90%;
+}
+
+.float-infobox-left {
+    float: left;
+    display: flex;
+    gap: 12px;
+    margin: 0 16px 20px 0;
+    max-width: 540px;
+    border: 1px solid #aaa;
+    background-color: #f9f9f9;
+    padding: 5px;
+    font-size: 90%;
+}
+
+.float-infobox-right .float-infobox-img,
+.float-infobox-left .float-infobox-img {
+    width: 170px;
+}
+
+.float-infobox-right .float-infobox-img img,
+.float-infobox-left .float-infobox-img img {
+    display: block;
+    width: 170px;
+    height: auto;
+    margin: 0 auto;
+}
+
+.float-infobox-right .float-infobox-img div,
+.float-infobox-left .float-infobox-img div {
+    text-align: left;
+    font-size: 0.9em;
+    margin: 4px 0 0 0;
+}
+
 /* Auto dark mode for wiki pages */
 @media (prefers-color-scheme: dark) {
   body {
@@ -413,6 +457,12 @@ table.matchesum td {
 
   a, a:visited {
     color: #6ba3ff;
+  }
+
+  .float-infobox-right,
+  .float-infobox-left {
+    border-color: #444;
+    background-color: #2a2a2a;
   }
 
   .infobox {

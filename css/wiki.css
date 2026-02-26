@@ -90,6 +90,7 @@ a:hover {
     margin: 5px -5px;
     text-align: center;
 }
+
 .infobox table {
     width: 100%;
     border: none;
@@ -199,12 +200,10 @@ caption {
     text-align: left;
 }
 
-
 .total-row td {
     background-color: #f2f2f2 !important;
     font-weight: bold;
 }
-
 
 .fi {
     display: inline-block !important;
@@ -233,13 +232,12 @@ caption {
 .champ-history td:nth-child(9) {
     font-size: 0.8em;
     overflow-wrap: break-word;
-    word-break: break-word; 
+    word-break: break-word;
 }
 
 .champ-history td:nth-child(7),
 .champ-history td:nth-child(8) {
     text-align: center;
-
 }
 
 .totals td:nth-child(2) {
@@ -278,7 +276,7 @@ h3 {
     }
 }
 
-/* Bracket table - completely separate styles */
+/* Bracket table */
 table.bracket {
     width: auto;
     margin: 1em 2em 1em 1em;
@@ -295,39 +293,43 @@ table.bracket td {
     text-align: left;
 }
 
-/* Bracket cell styles */
 table.bracket .header {
     background-color: #f2f2f2;
     padding: 8px;
     font-weight: bold;
     border: 1px solid #ddd;
 }
+
 table.bracket .seed {
     background-color: #f2f2f2;
     padding: 8px;
     font-weight: bold;
     border: 1px solid #ddd;
 }
+
 table.bracket .team {
     padding: 8px;
     background-color: #f8f9fa;
-    overflow:inherit;
+    overflow: inherit;
     border: 1px solid #ddd;
 }
+
 table.bracket .score {
-    text-align:center;
+    text-align: center;
     padding: 8px;
     background-color: #f8f9fa;
-    overflow:inherit;
+    overflow: inherit;
     border: 1px solid #ddd;
 }
+
 table.bracket .conn {
-    border-style:solid;
-    border-width:0;
-    border-color:inherit;
+    border-style: solid;
+    border-width: 0;
+    border-color: inherit;
 }
-table.bracket .h7 { 
-    height:7px;
+
+table.bracket .h7 {
+    height: 7px;
 }
 
 details {
@@ -350,15 +352,19 @@ summary:hover {
 details table caption {
     display: none;
 }
+
 .win {
     background-color: #bbffdd;
 }
+
 .loss {
     background-color: #f8d7da;
 }
+
 .draw {
     background-color: #ccddee;
 }
+
 .records td:nth-child(2),
 .records td:nth-child(4),
 .records td:nth-child(6),
@@ -390,18 +396,20 @@ details table caption {
 }
 
 details summary {
-    margin-bottom: 0;   /* remove extra space below summary */
+    margin-bottom: 0;
 }
+
 details[open] summary {
-    margin-bottom: 10px;   /* remove extra space below summary */
+    margin-bottom: 10px;
 }
+
 details {
-    margin-bottom: 10px; /* space between details blocks */
+    margin-bottom: 10px;
 }
 
 table.matchesum th,
 table.matchesum td {
-    padding: 6px 6px;  /* smaller than the default 8px/10px */
+    padding: 6px 6px;
 }
 
 .float-infobox-right {
@@ -448,113 +456,260 @@ table.matchesum td {
     margin: 4px 0 0 0;
 }
 
-/* Auto dark mode for wiki pages */
+
+/* ============================================================
+   PROMOTION SCHEDULE
+   Championship pipeline grid — cell types, org accents,
+   weight-class headers, tournament columns, scroll wrapper.
+   ============================================================ */
+
+/* Match-type cell colours */
+.cell-M {
+    background-color: #a83c00 !important;
+    color: #fff;
+    font-weight: 900;
+}
+
+.cell-C {
+    background-color: #0f4f96 !important;
+    color: #fff;
+    font-weight: 900;
+}
+
+.cell-D {
+    background-color: #5a4608 !important;
+    color: #fff;
+    font-weight: 900;
+}
+
+/* Organisation left-border accent stripes */
+.org-wwf { border-left: 5px solid #1a1a1a !important; }   /* WWF — black from the W logo */
+.org-wwo { border-left: 5px solid #4dbb8a !important; }   /* WWO — teal-green from the globe badge */
+.org-iwb { border-left: 5px solid #e8131a !important; }   /* IWB — red from the iwbwrestling wordmark */
+
+/* Weight-class group separator rows */
+.wc-header td {
+    background-color: #3a5068 !important;
+    color: #fff !important;
+    font-weight: bold;
+    text-align: center !important;
+    padding: 4px 6px;
+    font-size: 0.78em;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+/* Tournament show column headers */
+.th-tournament {
+    background-color: #5c2d8a !important;
+    color: #fff !important;
+}
+
+/* Tournament show data cells */
+.td-tournament {
+    background-color: #f3ecfb !important;
+    color: #bbb;
+    font-size: 0.75em;
+}
+
+/* Horizontal scroll wrapper for the wide grid */
+.sched-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 30px;
+    border: 1px solid #ddd;
+}
+
+/* The schedule grid table overrides the global table styles */
+table#sched {
+    font-size: 0.68em;
+    width: auto;
+    min-width: max-content;
+    white-space: nowrap;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+table#sched th,
+table#sched td {
+    padding: 4px 5px;
+    min-width: 30px;
+    max-width: 38px;
+    text-align: center;
+}
+
+table#sched .belt-label {
+    text-align: left !important;
+    min-width: 175px;
+    max-width: 180px;
+    font-weight: bold;
+    padding-left: 10px;
+    font-size: 0.95em;
+}
+
+table#sched .belt-label-head {
+    min-width: 175px;
+}
+
+/* Legend row */
+.sched-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    margin-bottom: 20px;
+    font-size: 0.88em;
+    align-items: center;
+}
+
+.sched-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.sched-legend-swatch {
+    width: 28px;
+    height: 18px;
+    border-radius: 3px;
+    border: 1px solid #bbb;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.sched-legend-swatch.sw-M { background: #a83c00; }
+.sched-legend-swatch.sw-C { background: #0f4f96; }
+.sched-legend-swatch.sw-D { background: #5a4608; }
+.sched-legend-swatch.sw-T { background: #5c2d8a; border: none; }
+.sched-legend-swatch.sw-org { width: 8px; border-radius: 2px; }
+.sched-legend-swatch.sw-wwf { background: #1a1a1a; border: 1px solid #555; }
+.sched-legend-swatch.sw-wwo { background: #4dbb8a; }
+.sched-legend-swatch.sw-iwb { background: #e8131a; }
+
+/* Validation table */
+.val-ok  { background-color: #d4edda !important; color: #155724; font-weight: bold; }
+.val-warn { background-color: #f8d7da !important; color: #721c24; font-weight: bold; }
+
+
+/* ============================================================
+   DARK MODE
+   ============================================================ */
+
 @media (prefers-color-scheme: dark) {
-  body {
-    background-color: #1a1a1a;
-    color: #d4d4d4;
-  }
+    body {
+        background-color: #1a1a1a;
+        color: #d4d4d4;
+    }
 
-  a, a:visited {
-    color: #6ba3ff;
-  }
+    a, a:visited {
+        color: #6ba3ff;
+    }
 
-  .float-infobox-right,
-  .float-infobox-left {
-    border-color: #444;
-    background-color: #2a2a2a;
-  }
+    .float-infobox-right,
+    .float-infobox-left {
+        border-color: #444;
+        background-color: #2a2a2a;
+    }
 
-  .infobox {
-    border-color: #444;
-    background-color: #2a2a2a;
-  }
+    .infobox {
+        border-color: #444;
+        background-color: #2a2a2a;
+    }
 
-  .infobox-title {
-    background-color: #3a5068;
-  }
+    .infobox-title {
+        background-color: #3a5068;
+    }
 
-  .infobox-section {
-    background-color: #3a5068;
-  }
+    .infobox-section {
+        background-color: #3a5068;
+    }
 
-  .infobox-champion {
-    background-color: #5a4a2a;
-  }
+    .infobox-champion {
+        background-color: #5a4a2a;
+    }
 
-  .infobox-resection {
-    background-color: #3a3e44;
-  }
+    .infobox-resection {
+        background-color: #3a3e44;
+    }
 
-  table, th, td {
-    border-color: #444;
-  }
+    table, th, td {
+        border-color: #444;
+    }
 
-  th {
-    background-color: #2a2a2a;
-    color: #d4d4d4;
-  }
+    th {
+        background-color: #2a2a2a;
+        color: #d4d4d4;
+    }
 
-  td {
-    background-color: #1e1e1e;
-    color: #d4d4d4;
-  }
+    td {
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+    }
 
-  .total-row td {
-    background-color: #2a2a2a !important;
-  }
+    .total-row td {
+        background-color: #2a2a2a !important;
+    }
 
-  summary {
-    background-color: #2a2a2a;
-    border-color: #444;
-    color: #d4d4d4;
-  }
+    summary {
+        background-color: #2a2a2a;
+        border-color: #444;
+        color: #d4d4d4;
+    }
 
-  summary:hover {
-    background-color: #1a3050;
-  }
+    summary:hover {
+        background-color: #1a3050;
+    }
 
-  .win {
-    background-color: #1a4a2a;
-  }
+    .win  { background-color: #1a4a2a; }
+    .loss { background-color: #4a1a1a; }
+    .draw { background-color: #2a3a4a; }
 
-  .loss {
-    background-color: #4a1a1a;
-  }
+    .medal-header {
+        background-color: #2a2a2a;
+        color: #d4d4d4;
+    }
 
-  .draw {
-    background-color: #2a3a4a;
-  }
+    .medal-competition {
+        background-color: #333;
+        color: #d4d4d4;
+    }
 
-  .medal-header {
-    background-color: #2a2a2a;
-    color: #d4d4d4;
-  }
+    .medal-table td {
+        border-bottom-color: #444;
+    }
 
-  .medal-competition {
-    background-color: #333;
-    color: #d4d4d4;
-  }
+    table.bracket .header,
+    table.bracket .seed {
+        background-color: #2a2a2a;
+        border-color: #444;
+        color: #d4d4d4;
+    }
 
-  .medal-table td {
-    border-bottom-color: #444;
-  }
+    table.bracket .team,
+    table.bracket .score {
+        background-color: #1e1e1e;
+        border-color: #444;
+        color: #d4d4d4;
+    }
 
-  table.bracket .header,
-  table.bracket .seed {
-    background-color: #2a2a2a;
-    border-color: #444;
-    color: #d4d4d4;
-  }
+    caption {
+        color: #d4d4d4;
+    }
 
-  table.bracket .team,
-  table.bracket .score {
-    background-color: #1e1e1e;
-    border-color: #444;
-    color: #d4d4d4;
-  }
+    /* Schedule dark mode */
+    .sched-wrap {
+        border-color: #444;
+    }
 
-  caption {
-    color: #d4d4d4;
-  }
+    .wc-header td {
+        background-color: #2a3e52 !important;
+    }
+
+    .th-tournament {
+        background-color: #3d1a60 !important;
+    }
+
+    .td-tournament {
+        background-color: #1e1528 !important;
+        color: #666;
+    }
 }

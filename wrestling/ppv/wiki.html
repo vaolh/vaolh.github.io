@@ -1,426 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Annual Promotion Schedule — World Title Series / WCW</title>
-<style>
-body {
-  max-width: 1450px;
-  font-family: 'Helvetica','Arial',sans-serif;
-  margin-left: max(20px, calc((100vw - 1450px) / 2));
-  margin-right: max(20px, calc((100vw - 1450px) / 2));
-  background-color: #ffffff;
-}
-a,a:visited{color:#0000EE;text-decoration:none}
-a:hover{text-decoration:underline}
-table{width:100%;margin:0 auto 20px;border-collapse:collapse;text-align:center}
-table,th,td{border:1px solid #ddd}
-th{background:#f2f2f2;padding:10px;font-weight:bold}
-td{padding:8px;background:#f8f9fa}
-caption{font-weight:bold;margin-bottom:10px;text-align:left}
-h1{padding-bottom:5px}
-h2{padding-bottom:5px;margin-top:30px}
-h3{margin-top:20px}
-
-/* Cell colours */
-.cell-M{background:#b84a00!important;color:#fff;font-weight:900}
-.cell-C{background:#1254a0!important;color:#fff;font-weight:900}
-.cell-D{background:#6b520a!important;color:#fff;font-weight:900}
-
-/* Org accent stripe */
-.org-wwf{border-left:5px solid #cc1111!important}
-.org-wwo{border-left:5px solid #1144cc!important}
-.org-iwb{border-left:5px solid #119933!important}
-
-/* Weight class header rows */
-.wc-header td{
-  background:#3a5068!important;color:#fff!important;font-weight:bold;
-  text-align:center!important;padding:4px 6px;font-size:.78em;
-  letter-spacing:.07em;text-transform:uppercase
-}
-
-/* Tournament show columns */
-.th-tournament{background:#5c2d8a!important;color:#fff!important}
-.td-tournament{background:#f3ecfb!important;color:#bbb;font-size:.75em}
-
-/* Scroll wrapper */
-.sched-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:30px;border:1px solid #ddd}
-
-/* Grid table */
-#sched{font-size:.68em;width:auto;min-width:max-content;white-space:nowrap;border-collapse:collapse;margin-bottom:0}
-#sched th,#sched td{padding:4px 5px;min-width:30px;max-width:38px;text-align:center}
-#sched .belt-label{text-align:left!important;min-width:175px;max-width:180px;font-weight:bold;padding-left:10px;font-size:.95em}
-#sched .belt-label-head{min-width:175px}
-
-/* Legend */
-.legend{display:flex;flex-wrap:wrap;gap:8px 22px;margin-bottom:20px;font-size:.88em;align-items:center}
-.legend-item{display:flex;align-items:center;gap:7px}
-.legend-swatch{width:28px;height:18px;border-radius:3px;border:1px solid #bbb;display:inline-block;flex-shrink:0}
-.sw-M{background:#b84a00}.sw-C{background:#1254a0}.sw-D{background:#6b520a}.sw-T{background:#5c2d8a;border:none}
-.sw-acc{width:8px!important;border-radius:2px;height:18px}
-.sw-wwf{background:#cc1111}.sw-wwo{background:#1144cc}.sw-iwb{background:#119933}
-
-/* Summary cards */
-.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:24px}
-.summary-card{border:1px solid #ddd;border-radius:4px;padding:11px 14px;background:#f9f9f9}
-.summary-card .sc-num{font-size:1.8em;font-weight:900;color:#3a5068;line-height:1}
-.summary-card .sc-label{font-size:.8em;color:#555;margin-top:3px}
-
-/* Explainer */
-.explainer{background:#f2f6fb;border-left:4px solid #3a5068;padding:13px 18px;margin-bottom:22px;font-size:.88em;line-height:1.6}
-.explainer h3{margin-top:0;color:#3a5068}
-
-/* Bar chart */
-#barWrap{margin-bottom:28px}
-canvas{max-width:100%;display:block}
-
-/* Validation */
-#valTable td{font-size:.78em;padding:4px 6px}
-.val-ok{background:#d4edda!important;color:#155724}
-.val-warn{background:#f8d7da!important;color:#721c24}
-
-@media(prefers-color-scheme:dark){
-  body{background:#1a1a1a;color:#d4d4d4}
-  a,a:visited{color:#6ba3ff}
-  table,th,td{border-color:#444}
-  th{background:#2a2a2a;color:#d4d4d4}
-  td{background:#1e1e1e;color:#d4d4d4}
-  .summary-card{background:#222;border-color:#444}
-  .summary-card .sc-num{color:#7aa8d0}
-  .summary-card .sc-label{color:#aaa}
-  .explainer{background:#1e2530;border-left-color:#5a7898}
-  .explainer h3{color:#7aa8d0}
-  .wc-header td{background:#2a3e52!important}
-  .th-tournament{background:#3d1a60!important}
-  .td-tournament{background:#1e1528!important}
-  .sched-wrap{border-color:#444}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.3.2/css/flag-icons.min.css">
+    <title>Annual Promotion Schedule</title>
+    <link rel="stylesheet" href="/css/wiki.css">
 </head>
 <body>
 
 <h1>Annual Promotion Schedule</h1>
-<p style="color:#666;margin-top:-4px;font-size:.9em">
-  <em>World Title Series · World Championship Wrestling — 32-card rotating calendar</em>
-</p>
+<p><em>World Title Series · World Championship Wrestling — 32-card rotating calendar</em></p>
 
-<div class="explainer">
-  <h3>Schedule structure</h3>
-  <p>
-    Each belt runs exactly <strong>6 pairs of C→D</strong> per year, evenly spread across the calendar.
-    2 of the 6 contender slots are <strong>M</strong> (multiman: gauntlet / chamber / battle royal),
-    the other 4 are <strong>C</strong> (one-on-one #1 contender final). Every defense is always
-    preceded by a contender match — never a standalone D.
-  </p>
-  <p>
-    <strong>Base pattern per belt</strong> (active-show indices, 0–29, spacing = 5 slots per pair):
-    <code>M@0 · D@2 · C@5 · D@7 · M@10 · D@12 · C@15 · D@17 · C@20 · D@22 · C@25 · D@27</code>
-  </p>
-  <p>
-    Each of the 18 belts is offset by <code>floor(b × 30/18)</code> active slots, staggering
-    pipelines evenly throughout the year. No sorting-then-labelling — types are hardcoded in
-    the base pattern, so M/C always appears before its D by construction.
-  </p>
-</div>
-
-<div class="summary-grid" id="summaryCards"></div>
-
-<div class="legend">
-  <div class="legend-item"><span class="legend-swatch sw-M"></span><strong>M</strong>&nbsp;Multiman contender (gauntlet / chamber / battle royal)</div>
-  <div class="legend-item"><span class="legend-swatch sw-C"></span><strong>C</strong>&nbsp;#1 Contender final (1-on-1)</div>
-  <div class="legend-item"><span class="legend-swatch sw-D"></span><strong>D</strong>&nbsp;Title Defense</div>
-  <div class="legend-item"><span class="legend-swatch sw-T"></span>&nbsp;Shows 8 &amp; 24 — Tournaments</div>
-  <div class="legend-item" style="margin-left:8px">
-    <span class="legend-swatch sw-acc sw-wwf"></span>&nbsp;WWF&nbsp;
-    <span class="legend-swatch sw-acc sw-wwo"></span>&nbsp;WWO&nbsp;
-    <span class="legend-swatch sw-acc sw-iwb"></span>&nbsp;IWB
-  </div>
+<div class="sched-legend">
+    <div class="sched-legend-item">
+        <span class="sched-legend-swatch sw-M"></span>
+        <strong>M</strong>&nbsp;Multiman contender (gauntlet / chamber / battle royal)
+    </div>
+    <div class="sched-legend-item">
+        <span class="sched-legend-swatch sw-C"></span>
+        <strong>C</strong>&nbsp;#1 Contender final (1-on-1)
+    </div>
+    <div class="sched-legend-item">
+        <span class="sched-legend-swatch sw-D"></span>
+        <strong>D</strong>&nbsp;Title Defense
+    </div>
+    <div class="sched-legend-item">
+        <span class="sched-legend-swatch sw-T"></span>
+        Shows 8 &amp; 24 — Tournament specials
+    </div>
+    <div class="sched-legend-item" style="margin-left:8px">
+        <span class="sched-legend-swatch sw-org sw-wwf"></span>&nbsp;WWF&nbsp;
+        <span class="sched-legend-swatch sw-org sw-wwo"></span>&nbsp;WWO&nbsp;
+        <span class="sched-legend-swatch sw-org sw-iwb"></span>&nbsp;IWB
+    </div>
 </div>
 
 <div class="sched-wrap">
-  <table id="sched">
-    <caption>Championship Pipeline · 32-Show Rotation</caption>
-    <thead id="schedHead"></thead>
-    <tbody id="schedBody"></tbody>
-  </table>
+    <table id="sched">
+        <caption>Championship Pipeline · 32-Show Rotation</caption>
+        <thead id="schedHead"></thead>
+        <tbody id="schedBody"></tbody>
+    </table>
 </div>
 
-<h2>Matches per show</h2>
-<p style="font-size:.85em;color:#666">Target: 7 per show (green). Blue = 8. Red = problem. Tournament shows excluded.</p>
-<div id="barWrap"><canvas id="barChart" height="130"></canvas></div>
-
-<h2>Sequence validation — each belt</h2>
-<p style="font-size:.85em;color:#666">Every belt must show alternating C/M → D pairs all year. Any violation is highlighted red.</p>
+<h2>Sequence validation</h2>
+<p>Every belt must read M/C → D → M/C → D throughout the year.</p>
 <div id="valWrap"></div>
 
 <script>
-/* ═══════════════════════════════════════
+/* ══════════════════════════════════════════
    CONFIGURATION
-   ═══════════════════════════════════════ */
+   ══════════════════════════════════════════ */
 
 const TOTAL_SHOWS = 32;
-const TOURNAMENT_SHOWS = new Set([8, 24]);
+const TOURNAMENT  = new Set([8, 24]);
+const N           = 30;   // active shows
 
-const WC_LIST = [
-  {label:'Heavyweight',   spec:'224+ lb / 102+ kg'},
-  {label:'Bridgerweight', spec:'≤224 lb / 102 kg'},
-  {label:'Middleweight',  spec:'202 lb / 92 kg'},
-  {label:'Welterweight',  spec:'180 lb / 82 kg'},
-  {label:'Lightweight',   spec:'+140 lb / +64 kg'},
-  {label:'Featherweight', spec:'140 lb / 64 kg'},
-];
-const ORGS = ['WWF','WWO','IWB'];
-
-// Belt names built directly — no string mangling
-const belts = [];
-for (const wc of WC_LIST)
-  for (const org of ORGS)
-    belts.push({
-      displayName: `${org} ${wc.label}`,          // e.g. "WWF Heavyweight", "WWO Welterweight"
-      org: org.toLowerCase(),                      // 'wwf','wwo','iwb'
-      wcKey: wc.label,
-      wcHeader: `${wc.label.toUpperCase()} — ${wc.spec}`,
-    });
-
-// Active show list (skip tournament shows)
 const activeShows = [];
 for (let s = 1; s <= TOTAL_SHOWS; s++)
-  if (!TOURNAMENT_SHOWS.has(s)) activeShows.push(s);
-const N = activeShows.length; // 30
+    if (!TOURNAMENT.has(s)) activeShows.push(s);
 
-/* ═══════════════════════════════════════
-   BASE PATTERN
-   
-   The pattern is 6 C→D pairs spread across
-   30 active shows (one pair every 5 slots).
-   Types are FIXED here in the array.
-   2 of the 6 C-slots are M.
-   M's are placed at pairs 0 and 2 (roughly
-   Q1 and Q2) for maximum spread.
-   
-   [activeSlotIndex, type]
-   ═══════════════════════════════════════ */
-const BASE = [
-  [0,  'M'],   // pair 1 — multiman contender
-  [2,  'D'],   // pair 1 — defense
-  [5,  'C'],   // pair 2 — one-on-one contender
-  [7,  'D'],   // pair 2 — defense
-  [10, 'M'],   // pair 3 — multiman contender
-  [12, 'D'],   // pair 3 — defense
-  [15, 'C'],   // pair 4 — one-on-one contender
-  [17, 'D'],   // pair 4 — defense
-  [20, 'C'],   // pair 5 — one-on-one contender
-  [22, 'D'],   // pair 5 — defense
-  [25, 'C'],   // pair 6 — one-on-one contender
-  [27, 'D'],   // pair 6 — defense
+const WC_LIST = [
+    { label: 'Heavyweight',   spec: '224+ lb / 102+ kg' },
+    { label: 'Bridgerweight', spec: '≤224 lb / 102 kg'  },
+    { label: 'Middleweight',  spec: '202 lb / 92 kg'    },
+    { label: 'Welterweight',  spec: '180 lb / 82 kg'    },
+    { label: 'Lightweight',   spec: '+140 lb / +64 kg'  },
+    { label: 'Featherweight', spec: '140 lb / 64 kg'    },
 ];
+const ORGS = ['WWF', 'WWO', 'IWB'];
 
-/* ═══════════════════════════════════════
-   ASSIGN SCHEDULES
+const belts = [];
+for (const wc of WC_LIST)
+    for (const org of ORGS)
+        belts.push({
+            displayName: `${org} ${wc.label}`,
+            org:         org.toLowerCase(),
+            wcKey:       wc.label,
+            wcHeader:    `${wc.label.toUpperCase()} — ${wc.spec}`,
+        });
+
+/* ══════════════════════════════════════════
+   ALGEBRAIC SCHEDULE
    
-   Belt b gets offset = floor(b * 30 / 18).
-   Each event's active-slot = (BASE_slot + offset) % 30.
-   Map active-slot → real show number via activeShows[].
+   c_idx(b,p) = (b + p×5) % 30  → M or C
+   d_idx(b,p) = (b + p×5 + 2) % 30  → D
    
-   No sorting. No re-labelling. Types come
-   straight from BASE.
-   ═══════════════════════════════════════ */
+   Pairs 0 and 3 → M (multiman)
+   Pairs 1, 2, 4, 5 → C (one-on-one)
+   
+   Proven load: [7,7,8,7,7] × 6 = 216 total.
+   ══════════════════════════════════════════ */
 
-const schedule = belts.map(() => ({}));   // schedule[b][showNum] = type
-const showLoad  = {};
-activeShows.forEach(s => { showLoad[s] = 0; });
+const PAIR_TYPE = ['M', 'C', 'C', 'M', 'C', 'C'];
 
-belts.forEach((belt, b) => {
-  const offset = Math.floor(b * N / belts.length);  // 0,1,3,5,6,8,10,11,13,15,16,18,20,21,23,25,26,28
+const schedule = belts.map(() => ({}));
 
-  BASE.forEach(([baseSlot, type]) => {
-    let slot = (baseSlot + offset) % N;
-
-    // Light overload guard: if this slot is already at 8, nudge forward by 1
-    // (never backward — that could put a D before its C)
-    let tries = 0;
-    while (showLoad[activeShows[slot]] >= 8 && tries < N) {
-      slot = (slot + 1) % N;
-      tries++;
+belts.forEach((_, b) => {
+    for (let p = 0; p < 6; p++) {
+        const cIdx  = (b + p * 5)     % N;
+        const dIdx  = (b + p * 5 + 2) % N;
+        schedule[b][activeShows[cIdx]] = PAIR_TYPE[p];
+        schedule[b][activeShows[dIdx]] = 'D';
     }
-
-    const show = activeShows[slot];
-    schedule[b][show] = type;
-    showLoad[show]++;
-  });
 });
 
-/* ═══════════════════════════════════════
+/* ══════════════════════════════════════════
    BUILD TABLE HEAD
-   ═══════════════════════════════════════ */
+   ══════════════════════════════════════════ */
 const thead = document.getElementById('schedHead');
 const hRow  = document.createElement('tr');
-const thB   = document.createElement('th');
+
+const thB = document.createElement('th');
 thB.className   = 'belt-label-head';
 thB.textContent = 'Championship';
 hRow.appendChild(thB);
+
 for (let s = 1; s <= TOTAL_SHOWS; s++) {
-  const th = document.createElement('th');
-  th.textContent = s;
-  if (TOURNAMENT_SHOWS.has(s)) th.classList.add('th-tournament');
-  hRow.appendChild(th);
+    const th = document.createElement('th');
+    th.textContent = s;
+    if (TOURNAMENT.has(s)) th.classList.add('th-tournament');
+    hRow.appendChild(th);
 }
 thead.appendChild(hRow);
 
-/* ═══════════════════════════════════════
+/* ══════════════════════════════════════════
    BUILD TABLE BODY
-   ═══════════════════════════════════════ */
-const tbody    = document.getElementById('schedBody');
-let lastWcKey  = null;
+   ══════════════════════════════════════════ */
+const tbody   = document.getElementById('schedBody');
+let lastWcKey = null;
 
 belts.forEach((belt, b) => {
-  // Weight-class separator row
-  if (belt.wcKey !== lastWcKey) {
-    lastWcKey = belt.wcKey;
-    const hr  = document.createElement('tr');
-    hr.className  = 'wc-header';
-    const htd = document.createElement('td');
-    htd.colSpan   = TOTAL_SHOWS + 1;
-    htd.textContent = belt.wcHeader;
-    hr.appendChild(htd);
-    tbody.appendChild(hr);
-  }
-
-  const tr  = document.createElement('tr');
-
-  // Belt name cell
-  const tdN = document.createElement('td');
-  tdN.className   = `belt-label org-${belt.org}`;
-  tdN.textContent = belt.displayName;   // "WWF Heavyweight", "WWO Welterweight" etc.
-  tr.appendChild(tdN);
-
-  // Show cells
-  for (let s = 1; s <= TOTAL_SHOWS; s++) {
-    const td = document.createElement('td');
-    if (TOURNAMENT_SHOWS.has(s)) {
-      td.className   = 'td-tournament';
-      td.textContent = '—';
-    } else {
-      const type = schedule[b][s];
-      if (type) { td.textContent = type; td.className = `cell-${type}`; }
+    if (belt.wcKey !== lastWcKey) {
+        lastWcKey = belt.wcKey;
+        const hr  = document.createElement('tr');
+        hr.className = 'wc-header';
+        const htd = document.createElement('td');
+        htd.colSpan   = TOTAL_SHOWS + 1;
+        htd.textContent = belt.wcHeader;
+        hr.appendChild(htd);
+        tbody.appendChild(hr);
     }
-    tr.appendChild(td);
-  }
-  tbody.appendChild(tr);
+
+    const tr  = document.createElement('tr');
+
+    const tdN = document.createElement('td');
+    tdN.className   = `belt-label org-${belt.org}`;
+    tdN.textContent = belt.displayName;
+    tr.appendChild(tdN);
+
+    for (let s = 1; s <= TOTAL_SHOWS; s++) {
+        const td = document.createElement('td');
+        if (TOURNAMENT.has(s)) {
+            td.className   = 'td-tournament';
+            td.textContent = '—';
+        } else {
+            const type = schedule[b][s];
+            if (type) { td.textContent = type; td.className = `cell-${type}`; }
+        }
+        tr.appendChild(td);
+    }
+
+    tbody.appendChild(tr);
 });
 
-/* ═══════════════════════════════════════
-   SUMMARY CARDS
-   ═══════════════════════════════════════ */
-let tM=0, tC=0, tD=0;
-schedule.forEach(bs => Object.values(bs).forEach(t => {
-  if (t==='M') tM++; else if (t==='C') tC++; else tD++;
-}));
+/* ══════════════════════════════════════════
+   VALIDATION TABLE
+   ══════════════════════════════════════════ */
+const valDiv = document.getElementById('valWrap');
+const valTbl = document.createElement('table');
 
-[
-  [32,          'Shows per year'],
-  [2,           'Tournament specials (shows 8 & 24)'],
-  [18,          'Active championships'],
-  [12,          'Appearances per belt per year'],
-  [tM,          'Multiman contender matches (M)'],
-  [tC,          'One-on-one contender finals (C)'],
-  [tD,          'Title defenses (D)'],
-  [tM+tC+tD,   'Total structured matches'],
-].forEach(([n, lbl]) => {
-  document.getElementById('summaryCards').innerHTML +=
-    `<div class="summary-card"><div class="sc-num">${n}</div><div class="sc-label">${lbl}</div></div>`;
+const vHead = valTbl.createTHead().insertRow();
+['Belt', 'Chronological sequence', 'Pairs valid?', 'M', 'C', 'D'].forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    vHead.appendChild(th);
 });
 
-/* ═══════════════════════════════════════
-   BAR CHART
-   ═══════════════════════════════════════ */
-const canvas  = document.getElementById('barChart');
-canvas.width  = document.getElementById('barWrap').clientWidth || 900;
-const ctx     = canvas.getContext('2d');
-const chartH  = canvas.height - 28;
-
-const chartData = activeShows.map(s => ({show:s, count:showLoad[s]}));
-const maxC = Math.max(...chartData.map(x => x.count));
-const bW   = Math.max(6, Math.floor((canvas.width - 40) / chartData.length) - 2);
-
-chartData.forEach(({show, count}, i) => {
-  const x    = 20 + i * (bW + 2);
-  const barH = Math.round((count / maxC) * (chartH - 8));
-  const y    = chartH - barH + 5;
-  ctx.fillStyle = count >= 8 ? '#1254a0' : count >= 7 ? '#2e7d32' : count >= 6 ? '#e6a817' : '#b71c1c';
-  ctx.fillRect(x, y, bW, barH);
-  if (barH > 13) {
-    ctx.fillStyle = '#fff';
-    ctx.font      = `bold ${Math.min(10, bW-1)}px Helvetica,Arial,sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.fillText(count, x + bW/2, y + 11);
-  }
-  ctx.fillStyle = '#666';
-  ctx.font      = '9px Helvetica,Arial,sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(show, x + bW/2, canvas.height - 5);
-});
-
-ctx.fillStyle = '#555';
-ctx.font      = '10px Helvetica,Arial,sans-serif';
-ctx.textAlign = 'left';
-ctx.fillText('Matches per show  ■ 7 green  ■ 8 blue  ■ 6 amber  ■ <6 red  (tournament shows excluded)', 20, 13);
-
-/* ═══════════════════════════════════════
-   SEQUENCE VALIDATION TABLE
-   Checks every belt: types must alternate
-   C/M → D → C/M → D throughout the year.
-   ═══════════════════════════════════════ */
-const valWrap = document.getElementById('valWrap');
-const valTable = document.createElement('table');
-valTable.id = 'valTable';
-
-const vHead = valTable.createTHead().insertRow();
-['Belt','Sequence (chronological)','Pairs valid?','M count','C count','D count'].forEach(h => {
-  const th = document.createElement('th');
-  th.textContent = h;
-  vHead.appendChild(th);
-});
-
-const vBody = valTable.createTBody();
+const vBody = valTbl.createTBody();
 
 belts.forEach((belt, b) => {
-  const entries = Object.entries(schedule[b])
-    .map(([s,t]) => [+s,t])
-    .sort((a,c) => a[0]-c[0]);
+    const sorted = Object.entries(schedule[b])
+        .map(([s, t]) => [+s, t])
+        .sort((a, c) => a[0] - c[0]);
 
-  const seq   = entries.map(([,t]) => t);
-  const seqStr = seq.join(' → ');
+    const types  = sorted.map(([, t]) => t);
+    let   valid  = types.length === 12;
+    for (let i = 0; i < types.length && valid; i++) {
+        if (i % 2 === 0 && types[i] === 'D')                     valid = false;
+        if (i % 2 === 1 && (types[i] === 'M' || types[i] === 'C')) valid = false;
+    }
 
-  // Validate: every even-index (0,2,4…) must be M or C; every odd-index must be D
-  let valid = seq.length === 12;
-  for (let i = 0; i < seq.length; i++) {
-    if (i % 2 === 0 && seq[i] !== 'M' && seq[i] !== 'C') { valid = false; break; }
-    if (i % 2 === 1 && seq[i] !== 'D')                   { valid = false; break; }
-  }
+    const mC = types.filter(t => t === 'M').length;
+    const cC = types.filter(t => t === 'C').length;
+    const dC = types.filter(t => t === 'D').length;
 
-  const mCount = seq.filter(t => t==='M').length;
-  const cCount = seq.filter(t => t==='C').length;
-  const dCount = seq.filter(t => t==='D').length;
+    const seqStr = sorted
+        .map(([s, t]) => `<span style="font-size:.8em;color:#888">${s}:</span><strong>${t}</strong>`)
+        .join(' ');
 
-  const tr = vBody.insertRow();
-  [
-    belt.displayName,
-    seqStr,
-    valid ? '✓ YES' : '✗ NO',
-    mCount,
-    cCount,
-    dCount,
-  ].forEach((val, col) => {
-    const td = tr.insertCell();
-    td.textContent = val;
-    if (col === 2) td.className = valid ? 'val-ok' : 'val-warn';
-    if (col === 1) td.style.fontSize = '.72em';
-  });
+    const tr = vBody.insertRow();
+    [belt.displayName, seqStr, valid ? '✓' : '✗ FAIL', mC, cC, dC].forEach((v, col) => {
+        const td = tr.insertCell();
+        if (col === 1) td.innerHTML = v; else td.textContent = v;
+        if (col === 2) td.className = valid ? 'val-ok' : 'val-warn';
+    });
 });
 
-valWrap.appendChild(valTable);
+valDiv.appendChild(valTbl);
 </script>
 </body>
 </html>

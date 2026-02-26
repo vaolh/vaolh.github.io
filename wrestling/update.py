@@ -2990,14 +2990,22 @@ class WrestlingDatabase:
             avg_tv = stats['total_tv'] / stats['tv_count'] if stats['tv_count'] > 0 else 0
             avg_stm = stats['total_stm'] / stats['stm_count'] if stats['stm_count'] > 0 else 0
             
+            # Combine TV and streaming
+            total_broadcast = stats['total_tv'] + stats['total_stm']
+            broadcast_count = stats['tv_count'] + stats['stm_count']
+            avg_broadcast = total_broadcast / broadcast_count if broadcast_count > 0 else 0
+            
+            # Count total main events
+            main_events = stats['attendance_count']  # Each attendance is a main event
+            
             wrestler_list.append({
                 'name': name,
                 'country': stats['country'],
+                'main_events': main_events,
                 'avg_attendance': avg_attendance,
                 'total_ppv': stats['total_ppv'],
                 'avg_ppv': avg_ppv,
-                'avg_tv': avg_tv,
-                'avg_stm': avg_stm
+                'avg_broadcast': avg_broadcast
             })
         
         if not wrestler_list:
@@ -3006,7 +3014,7 @@ class WrestlingDatabase:
         # Calculate mean and standard deviation for each metric
         import math
         
-        metrics = ['avg_attendance', 'total_ppv', 'avg_ppv', 'avg_tv', 'avg_stm']
+        metrics = ['main_events', 'avg_attendance', 'total_ppv', 'avg_ppv', 'avg_broadcast']
         means = {}
         stdevs = {}
         
@@ -3023,15 +3031,22 @@ class WrestlingDatabase:
         # Calculate z-scores for each wrestler
         for w in wrestler_list:
             z_scores = []
+            missing_categories = 0
+            
             for metric in metrics:
                 if w[metric] > 0 and stdevs[metric] > 0:
                     z_score = (w[metric] - means[metric]) / stdevs[metric]
                     z_scores.append(z_score)
                 else:
                     z_scores.append(0)
+                    missing_categories += 1
             
-            # Combined score is average of z-scores (equal weight now that they're normalized)
-            w['score'] = sum(z_scores) / len(z_scores) if z_scores else 0
+            # Combined score is average of z-scores
+            avg_z = sum(z_scores) / len(z_scores) if z_scores else 0
+            
+            # Penalty: subtract 0.5 for each missing category (0 value)
+            penalty = missing_categories * 0.5
+            w['score'] = avg_z - penalty
         
         top_10 = sorted(wrestler_list, key=lambda x: x['score'], reverse=True)[:10]
         
@@ -3043,11 +3058,11 @@ class WrestlingDatabase:
         html += '        <tr>\n'
         html += '            <th>No.</th>\n'
         html += '            <th>Wrestler</th>\n'
+        html += '            <th>Main Events</th>\n'
         html += '            <th>Avg Attendance</th>\n'
         html += '            <th>Total PPV Sales</th>\n'
         html += '            <th>Avg PPV Sales</th>\n'
-        html += '            <th>Avg TV Viewers</th>\n'
-        html += '            <th>Avg Streaming Viewers</th>\n'
+        html += '            <th>Avg Broadcast Viewers</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -3056,11 +3071,11 @@ class WrestlingDatabase:
             html += '        <tr>\n'
             html += f'            <th>{idx + 1}</th>\n'
             html += f'            <td><span class="fi fi-{wrestler["country"]}"></span> {wrestler["name"]}</td>\n'
+            html += f'            <td>{wrestler["main_events"]}</td>\n'
             html += f'            <td>{self.format_number(int(wrestler["avg_attendance"]))}</td>\n'
             html += f'            <td>{self.format_number(int(wrestler["total_ppv"]))}</td>\n'
             html += f'            <td>{self.format_number(int(wrestler["avg_ppv"]))}</td>\n'
-            html += f'            <td>{self.format_number(int(wrestler["avg_tv"]))}</td>\n'
-            html += f'            <td>{self.format_number(int(wrestler["avg_stm"]))}</td>\n'
+            html += f'            <td>{self.format_number(int(wrestler["avg_broadcast"]))}</td>\n'
             html += '        </tr>\n'
         
         html += '    </tbody>\n'

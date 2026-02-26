@@ -581,7 +581,7 @@ table#sched .belt-label-head {
 .sched-legend-swatch.sw-D { background: #5a4608; }
 .sched-legend-swatch.sw-T { background: #5c2d8a; border: none; }
 .sched-legend-swatch.sw-org { width: 8px; border-radius: 2px; }
-.sched-legend-swatch.sw-wwf { background: #1a1a1a; border: 1px solid #555; }
+.sched-legend-swatch.sw-wwf { background: #0748d4; }
 .sched-legend-swatch.sw-wwo { background: #4dbb8a; }
 .sched-legend-swatch.sw-iwb { background: #e8131a; }
 

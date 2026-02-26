@@ -97,10 +97,15 @@ const PAIR_TYPE = ['M', 'C', 'C', 'M', 'C', 'C'];
 
 const schedule = belts.map(() => ({}));
 
+// IWB Heavyweight (b=2) and IWB Lightweight (b=14) have their slots swapped
+// to resolve the D-conflict between IWB Heavyweight and WWO Middleweight
+const OFFSET_SWAP = { 2: 14, 14: 2 };
+
 belts.forEach((_, b) => {
+    const offset = OFFSET_SWAP[b] !== undefined ? OFFSET_SWAP[b] : b;
     for (let p = 0; p < 6; p++) {
-        const cIdx  = (b + p * 5)     % N;
-        const dIdx  = (b + p * 5 + 2) % N;
+        const cIdx  = (offset + p * 5)     % N;
+        const dIdx  = (offset + p * 5 + 2) % N;
         schedule[b][activeShows[cIdx]] = PAIR_TYPE[p];
         schedule[b][activeShows[dIdx]] = 'D';
     }

@@ -483,7 +483,7 @@ table.matchesum td {
 }
 
 /* Organisation left-border accent stripes */
-.org-wwf { border-left: 5px solid #1a1a1a !important; }   /* WWF — black from the W logo */
+.org-wwf { border-left: 5px solid #0748d4 !important; }   /* WWF — black from the W logo */
 .org-wwo { border-left: 5px solid #4dbb8a !important; }   /* WWO — teal-green from the globe badge */
 .org-iwb { border-left: 5px solid #e8131a !important; }   /* IWB — red from the iwbwrestling wordmark */
 

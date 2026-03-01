@@ -12,14 +12,21 @@
 <h1>Annual Promotion Schedule</h1>
 <p><em>World Title Series · World Championship Wrestling — 32-card rotating calendar</em></p>
 
+<div class="sched-wrap">
+    <table id="sched">
+        <thead id="schedHead"></thead>
+        <tbody id="schedBody"></tbody>
+    </table>
+</div>
+
 <div class="sched-legend">
     <div class="sched-legend-item">
         <span class="sched-legend-swatch sw-M"></span>
-        <strong>M</strong>&nbsp;Multiman contender (gauntlet / chamber / battle royal)
+        <strong>M</strong>&nbsp;Multiman contender
     </div>
     <div class="sched-legend-item">
         <span class="sched-legend-swatch sw-C"></span>
-        <strong>C</strong>&nbsp;#1 Contender final (1-on-1)
+        <strong>C</strong>&nbsp;#1 Contender final
     </div>
     <div class="sched-legend-item">
         <span class="sched-legend-swatch sw-D"></span>
@@ -27,31 +34,16 @@
     </div>
     <div class="sched-legend-item">
         <span class="sched-legend-swatch sw-T"></span>
-        Shows 8 &amp; 24 — Tournament specials
+        Shows 8 &amp; 24 — Tournament
     </div>
     <div class="sched-legend-item" style="margin-left:8px">
-        <span class="sched-legend-swatch sw-org sw-wwf"></span>&nbsp;WWF&nbsp;
-        <span class="sched-legend-swatch sw-org sw-wwo"></span>&nbsp;WWO&nbsp;
-        <span class="sched-legend-swatch sw-org sw-iwb"></span>&nbsp;IWB
     </div>
-</div>
-
-<div class="sched-wrap">
-    <table id="sched">
-        <caption>Championship Pipeline · 32-Show Rotation</caption>
-        <thead id="schedHead"></thead>
-        <tbody id="schedBody"></tbody>
-    </table>
 </div>
 
 <script>
-/* ══════════════════════════════════════════
-   CONFIGURATION
-   ══════════════════════════════════════════ */
-
 const TOTAL_SHOWS = 32;
 const TOURNAMENT  = new Set([8, 24]);
-const N           = 30;   // active shows
+const N           = 30;
 
 const activeShows = [];
 for (let s = 1; s <= TOTAL_SHOWS; s++)
@@ -65,27 +57,21 @@ const WC_LIST = [
     { label: 'Lightweight',   spec: '+140 lb / +64 kg'  },
     { label: 'Featherweight', spec: '140 lb / 64 kg'    },
 ];
-const ORGS = ['WWF', 'WWO', 'IWB'];
 
 const belts = [];
+const ORGS = ['WWF', 'WWO', 'IWB'];
+
 for (const wc of WC_LIST)
     for (const org of ORGS)
         belts.push({
-            // Show only the org name — weight class is already in the section header
             displayName: org,
             org:         org.toLowerCase(),
             wcKey:       wc.label,
             wcHeader:    `${wc.label.toUpperCase()} — ${wc.spec}`,
         });
 
-/* ══════════════════════════════════════════
-   ALGEBRAIC SCHEDULE
-   ══════════════════════════════════════════ */
-
 const PAIR_TYPE = ['M', 'C', 'C', 'M', 'C', 'C'];
-
 const schedule = belts.map(() => ({}));
-
 const OFFSET_SWAP = { 2: 14, 14: 2 };
 
 belts.forEach((_, b) => {
@@ -98,12 +84,8 @@ belts.forEach((_, b) => {
     }
 });
 
-/* ══════════════════════════════════════════
-   BUILD TABLE HEAD
-   ══════════════════════════════════════════ */
 const thead = document.getElementById('schedHead');
 const hRow  = document.createElement('tr');
-
 const thB = document.createElement('th');
 thB.className   = 'belt-label-head';
 thB.textContent = 'Org';
@@ -117,9 +99,6 @@ for (let s = 1; s <= TOTAL_SHOWS; s++) {
 }
 thead.appendChild(hRow);
 
-/* ══════════════════════════════════════════
-   BUILD TABLE BODY
-   ══════════════════════════════════════════ */
 const tbody   = document.getElementById('schedBody');
 let lastWcKey = null;
 
@@ -136,7 +115,6 @@ belts.forEach((belt, b) => {
     }
 
     const tr  = document.createElement('tr');
-
     const tdN = document.createElement('td');
     tdN.className   = `belt-label org-${belt.org}`;
     tdN.textContent = belt.displayName;

@@ -463,7 +463,7 @@ table.matchesum td {
 
 /* Match-type cell colours — Wikipedia pastel style */
 .cell-M {
-    background-color: #EFCFFF !important;
+    background-color: #E8D5FF !important;
     color: #000;
     font-weight: bold;
 }
@@ -480,14 +480,11 @@ table.matchesum td {
     font-weight: bold;
 }
 
-/* Organisation left-border accent stripes */
-.org-wwf { border-left: 4px solid #0748d4 !important; }
-.org-wwo { border-left: 4px solid #2a9d6e !important; }
-.org-iwb { border-left: 4px solid #c0392b !important; }
+/* Organisation left-border accent stripes — no background color on cells */
 
 /* Weight-class group separator rows */
 .wc-header td {
-    background-color: #eaecf0 !important;
+    background-color: #dce8ff !important;
     color: #222 !important;
     font-weight: bold;
     text-align: center !important;
@@ -495,29 +492,28 @@ table.matchesum td {
     font-size: 0.78em;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    border-top: 2px solid #a2a9b1 !important;
+    border-top: 2px solid #aabcdd !important;
 }
 
 /* Tournament show column headers */
 .th-tournament {
-    background-color: #dfe8ff !important;
+    background-color: #EFCFFF !important;
     color: #222 !important;
     font-style: italic;
 }
 
 /* Tournament show data cells */
 .td-tournament {
-    background-color: #f0f4ff !important;
+    background-color: #f9f0ff !important;
     color: #aaa;
     font-size: 0.75em;
 }
 
-/* Horizontal scroll wrapper for the wide grid */
+/* No border/frame on the scroll wrapper */
 .sched-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    margin-bottom: 30px;
-    border: 1px solid #a2a9b1;
+    margin-bottom: 12px;
 }
 
 /* The schedule grid table overrides the global table styles */
@@ -556,39 +552,37 @@ table#sched .belt-label-head {
     padding-left: 8px;
 }
 
-/* Legend row */
+/* Legend — below table, small font, square swatches */
 .sched-legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 22px;
+    gap: 5px 16px;
+    margin-top: 6px;
     margin-bottom: 20px;
-    font-size: 0.88em;
+    font-size: 0.75em;
     align-items: center;
+    color: #555;
 }
 
 .sched-legend-item {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 5px;
 }
 
 .sched-legend-swatch {
-    width: 28px;
-    height: 18px;
-    border-radius: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 0;
     border: 1px solid #aaa;
     display: inline-block;
     flex-shrink: 0;
 }
 
-.sched-legend-swatch.sw-M { background: #EFCFFF; }
+.sched-legend-swatch.sw-M { background: #E8D5FF; }
 .sched-legend-swatch.sw-C { background: #CFCFFF; }
 .sched-legend-swatch.sw-D { background: #FFFFBF; }
-.sched-legend-swatch.sw-T { background: #dfe8ff; border: 1px solid #aaa; }
-.sched-legend-swatch.sw-org { width: 8px; border-radius: 2px; border: none; }
-.sched-legend-swatch.sw-wwf { background: #0748d4; }
-.sched-legend-swatch.sw-wwo { background: #2a9d6e; }
-.sched-legend-swatch.sw-iwb { background: #c0392b; }
+.sched-legend-swatch.sw-T { background: #EFCFFF; border: 1px solid #aaa; }
 
 
 /* ============================================================
@@ -702,25 +696,25 @@ table#sched .belt-label-head {
     }
 
     .wc-header td {
-        background-color: #2e3035 !important;
-        color: #c8ccd0 !important;
+        background-color: #1a2840 !important;
+        color: #a8c0e0 !important;
         border-top-color: #555 !important;
     }
 
     .th-tournament {
-        background-color: #252c40 !important;
-        color: #a8b8d8 !important;
+        background-color: #3d2645 !important;
+        color: #e8c8f8 !important;
     }
 
     .td-tournament {
-        background-color: #1c2030 !important;
+        background-color: #2a1a35 !important;
         color: #555;
     }
 
     /* Dark-mode pastels — desaturated, darkened */
     .cell-M {
-        background-color: #3d2645 !important;
-        color: #e8c8f8 !important;
+        background-color: #2e1a45 !important;
+        color: #d8b8f8 !important;
     }
 
     .cell-C {
@@ -743,8 +737,8 @@ table#sched .belt-label-head {
         color: #c8c8c8;
     }
 
-    .sched-legend-swatch.sw-M { background: #3d2645; border-color: #666; }
+    .sched-legend-swatch.sw-M { background: #2e1a45; border-color: #666; }
     .sched-legend-swatch.sw-C { background: #252545; border-color: #666; }
     .sched-legend-swatch.sw-D { background: #3a3a10; border-color: #666; }
-    .sched-legend-swatch.sw-T { background: #252c40; border-color: #666; }
+    .sched-legend-swatch.sw-T { background: #3d2645; border-color: #666; }
 }

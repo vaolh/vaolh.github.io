@@ -32,6 +32,14 @@ WEIGHT_ORDER = ['heavyweight', 'bridgerweight', 'middleweight',
 MAJOR_ORGS   = {'wwf', 'wwo', 'iwb'}
 ALL_ORGS     = {'wwf', 'wwo', 'iwb', 'ring'}
 
+# Path to the wiki/org page that contains the #open Open Tournament table
+OPEN_WIKI_PATH = 'wrestling/wiki.html'   # adjust if your file is named differently
+
+# Scoring weight for winning The Open in a given year
+# This is the biggest single-year achievement — near-guaranteed WOTY
+OPEN_WIN_YEARLY_BONUS  = 60   # added directly to year_score (0-100 scale)
+OPEN_WIN_GOAT_TITLE_PTS = 40  # championship points per Open win (for GOAT score)
+
 MENS_P4P_START   = 1963
 WOMENS_P4P_START = 1968
 
@@ -92,6 +100,85 @@ def read_infobox_height(name):
 
 
 # =============================================================================
+# OPEN TOURNAMENT PARSER
+# =============================================================================
+
+def parse_open_tournament(wiki_path=None):
+    """
+    Parse The Open Tournament table from the wiki/org page.
+    Returns dict: {year: {'winner': name, 'runner_up': name}}
+    Each year is a separate entry — winning in different years = separate titles.
+
+    Looks for <h2 id="open"> then reads the first <table class="match-card"> after it.
+    Strips flag spans to get plain name text.
+    """
+    path = wiki_path or OPEN_WIKI_PATH
+    if not os.path.exists(path):
+        print(f"  ⚠ Open Tournament: {path} not found, skipping")
+        return {}
+
+    with open(path, 'r', encoding='utf-8') as f:
+        html = f.read()
+
+    # Find the #open section
+    open_idx = html.find('id="open"')
+    if open_idx == -1:
+        open_idx = html.find("id='open'")
+    if open_idx == -1:
+        print("  ⚠ Open Tournament: #open anchor not found in wiki page")
+        return {}
+
+    # Find the next match-card table after that point
+    table_start = html.find('<table', open_idx)
+    table_end   = html.find('</table>', table_start) + len('</table>')
+    if table_start == -1:
+        print("  ⚠ Open Tournament: table not found after #open")
+        return {}
+
+    table_html = html[table_start:table_end]
+
+    # Parse rows — each <tr> in <tbody>
+    results = {}
+    tbody_m = re.search(r'<tbody>(.*?)</tbody>', table_html, re.DOTALL)
+    if not tbody_m:
+        return {}
+
+    for row in re.finditer(r'<tr>(.*?)</tr>', tbody_m.group(1), re.DOTALL):
+        cells = re.findall(r'<t[dh]>(.*?)</t[dh]>', row.group(1), re.DOTALL)
+        if len(cells) < 3:
+            continue
+
+        # Strip HTML tags (flags etc) to get plain text
+        def strip_tags(s):
+            return re.sub(r'<[^>]+>', '', s).strip()
+
+        try:
+            year    = int(strip_tags(cells[0]))   # No. or Year — we want the year column
+        except ValueError:
+            continue
+
+        # The table has: No. | Year | Winner | Runner-Up | Venue | Location
+        # But No. is <th> so cells[0]=No, cells[1]=Year, cells[2]=Winner, cells[3]=Runner-Up
+        # Re-parse including th
+        all_cells = re.findall(r'<(?:td|th)>(.*?)</(?:td|th)>', row.group(1), re.DOTALL)
+        if len(all_cells) < 4:
+            continue
+        try:
+            year = int(strip_tags(all_cells[1]))
+        except ValueError:
+            continue
+
+        winner    = strip_tags(all_cells[2])
+        runner_up = strip_tags(all_cells[3])
+        if winner:
+            results[year] = {'winner': winner, 'runner_up': runner_up}
+
+    print(f"  Open Tournament: parsed {len(results)} editions "
+          f"({min(results) if results else '?'}–{max(results) if results else '?'})")
+    return results
+
+
+# =============================================================================
 # PRE-COMPUTE CACHES  (called once)
 # =============================================================================
 
@@ -148,10 +235,22 @@ def build_caches(db):
     cache['women'] = women
     cache['men']   = men
 
+    # open_wins: name → sorted list of years they won The Open Tournament
+    # parsed fresh each run from the wiki page
+    open_data = parse_open_tournament()
+    open_wins = defaultdict(list)   # name → [year, year, ...]
+    for year, entry in open_data.items():
+        open_wins[entry['winner']].append(year)
+    for name in open_wins:
+        open_wins[name].sort()
+    cache['open_wins'] = open_wins
+    cache['open_data'] = open_data   # {year: {winner, runner_up}}
+
     print(f"  Cache built: {len(db.wrestlers)} wrestlers, "
           f"{len(all_years)} years "
           f"({min(all_years) if all_years else '?'}–{max(all_years) if all_years else '?'}), "
-          f"{len(men)} men, {len(women)} women")
+          f"{len(men)} men, {len(women)} women, "
+          f"{sum(len(v) for v in open_wins.values())} Open Tournament wins tracked")
     return cache
 
 
@@ -268,11 +367,17 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
         )
         draw_score = min(w.get('main_events', 0) * 20, 100)
 
+        # Open Tournament wins — each year won = OPEN_WIN_GOAT_TITLE_PTS prestige
+        # Capped at 3 wins worth to prevent runaway stacking
+        open_win_years = [y for y in cache['open_wins'].get(name, []) if y <= ranking_year]
+        open_bonus = min(len(open_win_years) * OPEN_WIN_GOAT_TITLE_PTS, OPEN_WIN_GOAT_TITLE_PTS * 3)
+        championship_score_with_open = min(championship_score + open_bonus, 100)
+
         return round(
-            quality_wins_score * 0.40 +
-            dominance_score    * 0.25 +
-            championship_score * 0.25 +
-            draw_score         * 0.10,
+            quality_wins_score          * 0.40 +
+            dominance_score             * 0.25 +
+            championship_score_with_open * 0.25 +
+            draw_score                  * 0.10,
             4
         )
 
@@ -350,11 +455,19 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
         100
     )
 
-    # ── FINAL: 70% year + 30% career prestige ────────────────────────────
-    raw = year_score * 0.70 + career_prestige * 0.30
+    # ── OPEN TOURNAMENT BONUS ─────────────────────────────────────────────
+    # Winning The Open this year is the biggest single achievement possible.
+    # It bypasses the year_score formula and adds a flat bonus directly,
+    # making the winner almost certainly WOTY unless someone had a truly
+    # exceptional regular-season year (multiple title defenses vs champions).
+    won_open_this_year = ranking_year in cache['open_wins'].get(name, [])
+    open_yearly_bonus  = OPEN_WIN_YEARLY_BONUS if won_open_this_year else 0
+
+    # ── FINAL: 70% year + 30% career prestige + Open bonus ───────────────
+    raw = year_score * 0.70 + career_prestige * 0.30 + open_yearly_bonus
 
     # Recency: slight penalty if they didn't fight this year (ranked on prior year)
-    if not this_year_matches:
+    if not this_year_matches and not won_open_this_year:
         last_fight = max((y for (y, *_) in results), default=0)
         inactive   = max(ranking_year - last_fight, 0)
         raw *= max(1.0 - inactive * 0.20, 0.5)
@@ -379,11 +492,9 @@ def compute_goat_with_fatigue(db, cache, name, current_year):
 # TITLES HELPERS
 # =============================================================================
 
-def titles_at_year(db, name, year):
+def titles_at_year(db, name, year, cache=None):
     """
-    Full title list held during `year`, formatted like all_titles_str:
-    'WWF Heavyweight <br> <i>The Ring</i> Middleweight'
-    Only includes titles the wrestler actually held at some point during that year.
+    Full title list held during `year`. Includes Open Tournament win if cache provided.
     """
     parts = []
     for org in ['wwf', 'wwo', 'iwb', 'ring']:
@@ -405,13 +516,15 @@ def titles_at_year(db, name, year):
                 txt = f"{label} {weight.capitalize()}"
                 if txt not in parts:
                     parts.append(txt)
+    if cache and year in cache['open_wins'].get(name, []):
+        parts.append("The Open")
     return ' <br> '.join(parts)
 
 
-def all_titles_str(db, name):
+def all_titles_str(db, name, cache=None):
     """
-    Full career championship list formatted like the rest of the site:
-    'WWF Heavyweight <br> WWO Middleweight (2x) <br> <i>The Ring</i> Middleweight'
+    Full career championship list. Includes Open Tournament wins if cache provided.
+    Format: 'WWF Heavyweight <br> The Open (1972, 1976)'
     """
     parts = []
     for org in ['wwf', 'wwo', 'iwb', 'ring']:
@@ -424,6 +537,10 @@ def all_titles_str(db, name):
             if len(reigns) > 1:
                 txt += f" ({len(reigns)}x)"
             parts.append(txt)
+    if cache:
+        wins = cache['open_wins'].get(name, [])
+        if wins:
+            parts.append(f"The Open ({', '.join(str(y) for y in wins)})")
     return ' <br> '.join(parts)
 
 
@@ -454,10 +571,13 @@ def rank_for_year(db, cache, year, gender_set, top_n=10):
 
         wins_to_year  = sum(1 for (y, r, *_) in matches_to_year if r == 'Win')
         total_to_year = len(matches_to_year)
-        if total_to_year < P4P_MIN_BOUTS:
-            continue
-        if wins_to_year < P4P_MIN_CAREER_WINS:
-            continue
+        # Open Tournament winners are always eligible regardless of bout count
+        won_open = year in cache['open_wins'].get(name, [])
+        if not won_open:
+            if total_to_year < P4P_MIN_BOUTS:
+                continue
+            if wins_to_year < P4P_MIN_CAREER_WINS:
+                continue
 
         score = compute_score(db, cache, name, year)
         if score <= 0:
@@ -478,7 +598,7 @@ def rank_for_year(db, cache, year, gender_set, top_n=10):
             wc_count[m2.get('weight_class', 'Unknown')] += 1
         primary = max(wc_count, key=wc_count.get) if wc_count else 'Unknown'
 
-        titles = titles_at_year(db, name, year)
+        titles = titles_at_year(db, name, year, cache)
         results.append((name, score, record, year_record, primary, titles))
 
     results.sort(key=lambda x: x[1], reverse=True)
@@ -557,7 +677,7 @@ def generate_p4p_html(db, cache):
         html += '        </tr>\n'
         for rank, (name, score, record) in enumerate(goat, 1):
             country   = db.wrestlers[name]['country']
-            titles    = all_titles_str(db, name)
+            titles    = all_titles_str(db, name, cache)
             titles_td = f'<td>{titles}</td>' if titles else '<th></th>'
             html += '        <tr>\n'
             html += f'            <th>{rank}</th>\n'
@@ -677,7 +797,7 @@ def generate_hof_html(db, cache):
             if not w:
                 continue
             record   = f"{w['wins']}-{w['losses']}-{w['draws']}"
-            titles   = all_titles_str(db, name)
+            titles   = all_titles_str(db, name, cache)
             ranking  = compute_highest_ranking(db, cache, name)
             activity = hof_activity_str(db, cache, name)
             country  = w['country']

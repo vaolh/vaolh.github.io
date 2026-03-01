@@ -499,7 +499,6 @@ table.matchesum td {
 .th-tournament {
     background-color: #EFCFFF !important;
     color: #222 !important;
-    font-style: italic;
 }
 
 /* Tournament show data cells */
@@ -698,7 +697,6 @@ table#sched .belt-label-head {
     .wc-header td {
         background-color: #1a2840 !important;
         color: #a8c0e0 !important;
-        border-top-color: #555 !important;
     }
 
     .th-tournament {

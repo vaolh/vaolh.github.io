@@ -41,7 +41,7 @@ OPEN_WIN_YEARLY_BONUS  = 60   # added directly to year_score (0-100 scale)
 OPEN_WIN_GOAT_TITLE_PTS = 40  # championship points per Open win (for GOAT score)
 
 MENS_P4P_START   = 1963
-WOMENS_P4P_START = 1968
+WOMENS_P4P_START = 1980
 
 # Minimum career requirements to appear in a yearly P4P table
 P4P_MIN_BOUTS        = 3   # career bouts
@@ -49,8 +49,8 @@ P4P_MIN_CAREER_WINS  = 2   # career wins (stops 1-fight title holders from ranki
 
 # HoF criteria — deliberately strict
 HOF_MAX_PER_YEAR     = 3     # max inductees per class (keeps it exclusive)
-HOF_MIN_WINS         = 15    # career wins required
-HOF_MIN_WIN_PCT      = 0.68  # 68%+ win rate required
+HOF_MIN_WINS         = 18    # career wins required
+HOF_MIN_WIN_PCT      = 0.75  # 68%+ win rate required
 HOF_MIN_SCORE        = 45.0  # GOAT score required
 HOF_RETIREMENT_YEARS = 5     # years inactive before eligible
 HOF_REQUIRE_MAJOR    = True  # must hold a MAJOR title (wwf/wwo/iwb), ring alone doesn't count
@@ -58,7 +58,7 @@ HOF_REQUIRE_MAJOR    = True  # must hold a MAJOR title (wwf/wwo/iwb), ring alone
 # Voter fatigue — diminishing returns for years at peak
 # A wrestler who dominates for 8 years doesn't get 8x the credit of one who dominated for 4.
 # Each year in the top 3 beyond this cap contributes at half weight to their GOAT score.
-HOF_VOTER_FATIGUE_CAP = 5   # full-credit years in top 3; beyond this → diminishing
+HOF_VOTER_FATIGUE_CAP = 6   # full-credit years in top 3; beyond this → diminishing
 
 
 # =============================================================================
@@ -783,7 +783,7 @@ def generate_hof_html(db, cache):
     hof_classes, _ = compute_hof_classes(db, cache)
 
     html  = '    <!-- List of PWHOF Members -->\n'
-    html += '    <table class="champ-history">\n'
+    html += '    <table class="hof-history">\n'
     html += '    <tr>\n'
     html += '        <th>No.</th><th>Class</th><th>Ring name</th>'
     html += '<th>Record</th><th>Height</th><th>Titles</th>'

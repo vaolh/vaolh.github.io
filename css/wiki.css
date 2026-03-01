@@ -106,7 +106,7 @@ a:hover {
 .infobox table th {
     background-color: transparent;
     font-weight: bold;
-    width: 35%;
+    width: 40%;
     vertical-align: top;
 }
 
@@ -227,6 +227,14 @@ caption {
 
 .champ-history td {
     text-align: left;
+}
+
+.hof-history td {
+    text-align: left;
+}
+
+.hof-history td:nth-child(4) {
+    text-align: center;
 }
 
 .champ-history td:nth-child(9) {

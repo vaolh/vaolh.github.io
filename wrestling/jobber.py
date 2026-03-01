@@ -85,12 +85,14 @@ LOCATIONS = {
 
 WEIGHT_CLASSES = ['Heavyweight', 'Bridgerweight', 'Middleweight', 'Welterweight',
                   'Lightweight', 'Featherweight']
-METHODS_WIN = ['Pinfall', 'Submission', 'Pinfall', 'Pinfall', 'Submission',
-               'Pinfall', 'Pinfall', 'Submission', 'Pinfall', 'Pinfall',
-               'Count Out', 'Disqualification']
+METHODS_WIN  = ['Pinfall', 'Submission', 'Pinfall', 'Pinfall', 'Submission',
+                'Pinfall', 'Pinfall', 'Submission', 'Pinfall', 'Pinfall',
+                'Count Out', 'Disqualification']
 METHODS_LOSS = ['Pinfall', 'Submission', 'Pinfall', 'Pinfall', 'Submission']
-FALLS_WIN = ['[1-0]', '[2-1]', '[1-0]', '[1-0]']
-FALLS_LOSS = ['[0-1]', '[1-2]', '[0-1]', '[0-1]']
+METHODS_DRAW = ['Time Limit', 'Decision', 'Count Out']
+FALLS_WIN    = ['[1-0]', '[2-1]', '[1-0]', '[1-0]']
+FALLS_LOSS   = ['[0-1]', '[1-2]', '[0-1]', '[0-1]']
+FALLS_DRAW   = ['[1-1]', '[0-0]', '[1-1]', '[1-1]']
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -119,19 +121,49 @@ def generate_jobber_name(nationality, gender='m'):
         return first + ' ' + last, 'us'
 
 
+# Mapping of month abbreviations / alternate spellings → full month name
+MONTH_ALIASES = {
+    'jan': 'January', 'feb': 'February', 'mar': 'March', 'apr': 'April',
+    'may': 'May',     'jun': 'June',     'jul': 'July',  'aug': 'August',
+    'sep': 'September', 'sept': 'September', 'oct': 'October',
+    'nov': 'November', 'dec': 'December',
+    # full names map to themselves for completeness
+    'january': 'January', 'february': 'February', 'march': 'March',
+    'april': 'April', 'june': 'June', 'july': 'July', 'august': 'August',
+    'september': 'September', 'october': 'October', 'november': 'November',
+    'december': 'December',
+}
+
+
+def normalise_date_str(date_str):
+    """
+    Expand month abbreviations so that strptime can handle them.
+    e.g. 'Feb 1970' → 'February 1970', 'Feb 1, 1970' → 'February 1, 1970'
+    """
+    date_str = date_str.strip()
+    # Match a leading word that could be an abbreviated month
+    m = re.match(r'^([A-Za-z]+)([\s,].*)?$', date_str)
+    if m:
+        word = m.group(1).lower()
+        rest = m.group(2) or ''
+        if word in MONTH_ALIASES:
+            return MONTH_ALIASES[word] + rest
+    return date_str
+
+
 def parse_date(date_str):
-    """Parse date string -> datetime."""
-    try:
-        return datetime.strptime(date_str.strip(), "%B %d, %Y")
-    except:
+    """Parse date string → datetime (supports full and abbreviated month names)."""
+    normalised = normalise_date_str(date_str.strip())
+    for fmt in ("%B %d, %Y", "%B %Y"):
         try:
-            return datetime.strptime(date_str.strip(), "%B %Y")
-        except:
-            return None
+            return datetime.strptime(normalised, fmt)
+        except ValueError:
+            pass
+    return None
 
 
 def format_date(dt):
-    """datetime -> 'Month DD, YYYY'."""
+    """datetime → 'Month DD, YYYY'."""
     return dt.strftime("%B %-d, %Y")
 
 
@@ -142,8 +174,8 @@ def get_year_month(dt):
 
 def parse_weekly_html(filepath):
     """Parse existing weekly list.html to extract all match dates per wrestler."""
-    wrestler_dates = defaultdict(list)  # wrestler_name -> list of (year, month) tuples
-    all_event_dates = []  # list of (datetime, line_number_approx) for ordering
+    wrestler_dates = defaultdict(list)
+    all_event_dates = []
 
     if not os.path.exists(filepath):
         return wrestler_dates, all_event_dates
@@ -166,7 +198,6 @@ def parse_weekly_html(filepath):
         if not rows:
             continue
 
-        # Last row = info row
         info_row = rows[-1]
         th_cells = info_row.find_all('th')
         event_date_str = None
@@ -186,7 +217,6 @@ def parse_weekly_html(filepath):
 
         all_event_dates.append(event_dt)
 
-        # Parse match rows for wrestler names
         match_rows = rows[1:-1]
         for row in match_rows:
             cols = row.find_all(['td', 'th'])
@@ -336,21 +366,19 @@ def get_titles_for_period(wrestler_name, start_dt, end_dt, weekly_path, ppv_path
                 if not reign_start:
                     continue
 
-                # Determine reign end: next reign's start date, or ongoing
                 if i + 1 < len(reigns):
                     next_start = db.parse_date(reigns[i + 1]['date'])
                     reign_end = next_start if next_start else None
                 else:
-                    reign_end = None  # Still champion
+                    reign_end = None
 
-                # Check if reign overlaps with [start_dt, end_dt]
                 if reign_end and reign_end < start_dt:
-                    continue  # Reign ended before our period
+                    continue
                 if reign_start > end_dt:
-                    continue  # Reign started after our period
+                    continue
 
                 titles.append({'org': org, 'weight': weight})
-                break  # One match per org/weight is enough
+                break
 
     return titles
 
@@ -359,13 +387,8 @@ def generate_match_dates(start_dt, end_dt, count, occupied_months):
     """
     Generate `count` random dates between start_dt and end_dt, respecting
     the 1-match-per-calendar-month constraint.
-
-    occupied_months: dict of (year, month) -> count of existing matches
-
-    Returns sorted list of datetimes, or None if impossible.
     """
-    # Build pool of available (year, month) slots
-    available_slots = {}  # (year, month) -> max_new_matches
+    available_slots = {}
 
     current = start_dt.replace(day=1)
     end_ym = (end_dt.year, end_dt.month)
@@ -376,7 +399,6 @@ def generate_match_dates(start_dt, end_dt, count, occupied_months):
         available = 1 - existing
         if available > 0:
             available_slots[ym] = available
-        # Next month
         if current.month == 12:
             current = current.replace(year=current.year + 1, month=1)
         else:
@@ -386,16 +408,12 @@ def generate_match_dates(start_dt, end_dt, count, occupied_months):
     if total_available < count:
         return None, total_available
 
-    # Distribute matches evenly across the date range
     months_list = sorted(available_slots.keys())
     selected_dates = []
 
-    # Spread matches evenly: divide available months into `count` segments
-    # and pick one month per segment for better distribution
     available_months = [ym for ym in months_list if available_slots.get(ym, 0) > 0]
 
     if count <= len(available_months):
-        # Even spread: divide into `count` equal segments, pick one per segment
         segment_size = len(available_months) / count
         chosen_months = []
         for i in range(count):
@@ -405,19 +423,16 @@ def generate_match_dates(start_dt, end_dt, count, occupied_months):
             picked = random.choice(available_months[seg_start:seg_end])
             chosen_months.append(picked)
     else:
-        # More matches than months: fill all available months first
         chosen_months = list(available_months)
         remaining = count - len(chosen_months)
         extras = [ym for ym in available_months if available_slots[ym] > 1]
         random.shuffle(extras)
         chosen_months.extend(extras[:remaining])
 
-    # For each chosen (year, month), pick a random day
     for ym in chosen_months:
         year, month = ym
         max_day = calendar.monthrange(year, month)[1]
 
-        # Ensure date is within [start_dt, end_dt]
         min_day = start_dt.day if (year, month) == get_year_month(start_dt) else 1
         max_day_bound = end_dt.day if (year, month) == get_year_month(end_dt) else max_day
 
@@ -432,7 +447,6 @@ def find_block_for_month(content, year, month, show_name=None):
     """
     Find an existing <details> block whose date falls in the given (year, month)
     that has fewer than 5 singles matches and matches the show_name.
-    Returns dict with 'insert_pos' and 'match_count', or None.
     """
     details_pattern = re.compile(r'<details>(.*?)</details>', re.DOTALL)
 
@@ -440,7 +454,6 @@ def find_block_for_month(content, year, month, show_name=None):
         block_text = m.group(1)
         block_content_start = m.start(1)
 
-        # Check show name match (Wrestling, Lucha Libre, Puroresu)
         if show_name:
             summary_match = re.search(r'<summary>(.*?)</summary>', block_text)
             if summary_match:
@@ -448,7 +461,6 @@ def find_block_for_month(content, year, month, show_name=None):
                 if block_show != show_name:
                     continue
 
-        # Find dates in the block — the info row date is the last date mention
         date_matches = re.findall(
             r'(?:January|February|March|April|May|June|July|August|September|'
             r'October|November|December)\s+\d{1,2},\s+\d{4}',
@@ -464,12 +476,10 @@ def find_block_for_month(content, year, month, show_name=None):
         if block_date.year != year or block_date.month != month:
             continue
 
-        # Count singles matches
         singles_count = block_text.count('<td>Singles</td>')
         if singles_count >= 5:
             continue
 
-        # Find the info row: <tr> with empty <th></th> then <th colspan="2">
         info_pattern = re.compile(r'<tr>\s*<th>\s*</th>\s*<th\s+colspan="2">')
         info_match = info_pattern.search(block_text)
         if not info_match:
@@ -486,31 +496,31 @@ def find_block_for_month(content, year, month, show_name=None):
 
 
 def add_match_to_block(content, block_info, match_row_html):
-    """
-    Insert a match row into an existing block, right before the info row.
-    Returns modified content.
-    """
+    """Insert a match row into an existing block, right before the info row."""
     pos = block_info['insert_pos']
-
-    # pos points to '<tr><th></th>...' (the info row)
-    # Find the start of this line so we insert before it
     line_start = content.rfind('\n', 0, pos)
     if line_start == -1:
         line_start = 0
-
-    # Insert the match row before the info row's line
     content = content[:line_start] + '\n' + match_row_html.rstrip('\n') + content[line_start:]
     return content
 
 
 def build_match_row(match_num, weight_class, wrestler_name, wrestler_country,
                     jobber_name, jobber_country, result, method, falls, notes=''):
-    """Build a single HTML <tr> for a match."""
-    if result == 'win':
+    """
+    Build a single HTML <tr> for a match.
+    result: 'win', 'loss', or 'draw'
+    """
+    if result == 'draw':
+        # For draws the wrestler is listed first, separator is 'vs.'
+        w1_name, w1_cc = wrestler_name, wrestler_country
+        w2_name, w2_cc = jobber_name, jobber_country
+        result_text = 'vs.'
+    elif result == 'win':
         w1_name, w1_cc = wrestler_name, wrestler_country
         w2_name, w2_cc = jobber_name, jobber_country
         result_text = 'def.'
-    else:
+    else:  # loss
         w1_name, w1_cc = jobber_name, jobber_country
         w2_name, w2_cc = wrestler_name, wrestler_country
         result_text = 'def.'
@@ -534,10 +544,7 @@ def build_match_row(match_num, weight_class, wrestler_name, wrestler_country,
 
 def build_details_block(matches_data, show_name, location_str, country_code,
                          venue, date_str):
-    """
-    Build a full <details> block with up to 5 matches.
-    matches_data: list of match row HTML strings.
-    """
+    """Build a full <details> block with up to 5 matches."""
     date_parts = date_str.split()
     month_label = date_parts[0].upper()
     year_label = date_parts[-1]
@@ -566,24 +573,15 @@ def build_details_block(matches_data, show_name, location_str, country_code,
 
 
 def find_insertion_point(content, target_date):
-    """
-    Find the right place in weekly/list.html to insert a new details block.
-    We find the year header and insert after existing details for same/earlier dates
-    in that year, or create a new year section.
-
-    Returns (insert_position, year_header_needed).
-    """
+    """Find the right place in weekly/list.html to insert a new details block."""
     target_year = target_date.year
     year_header_h2 = f'<h2>{target_year}</h2>'
     year_header_h3 = f'<h3>{target_year}</h3>'
 
-    # Check if year header exists
     has_h2 = year_header_h2.lower().replace(' ', '') in content.lower().replace(' ', '')
     has_h3 = year_header_h3.lower().replace(' ', '') in content.lower().replace(' ', '')
 
     if has_h2 or has_h3:
-        # Year exists. Find all details blocks and their dates within this year section.
-        # Find the year header position
         if has_h2:
             pattern = re.compile(re.escape(f'<h2>{target_year}</h2>'), re.IGNORECASE)
         else:
@@ -591,25 +589,20 @@ def find_insertion_point(content, target_date):
 
         match = pattern.search(content)
         if not match:
-            # Shouldn't happen since we checked, but fallback
             return len(content), True
 
         year_start = match.end()
 
-        # Find next year header or end of file
         next_year_pattern = re.compile(r'<h[23]>\d{4}</h[23]>', re.IGNORECASE)
         next_match = next_year_pattern.search(content, year_start)
         year_end = next_match.start() if next_match else len(content)
 
         year_section = content[year_start:year_end]
 
-        # Find all </details> positions within this year section and their dates
         details_ends = []
         for m in re.finditer(r'</details>', year_section):
             pos = m.end()
-            # Look backwards from this position to find the date in the info row
             block_before = year_section[:pos]
-            # Find the last date in this block
             date_matches = list(re.finditer(
                 r'(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4}',
                 block_before
@@ -621,7 +614,6 @@ def find_insertion_point(content, target_date):
                     details_ends.append((pos + year_start, block_date))
 
         if details_ends:
-            # Find the last block whose date <= target_date
             insert_after = None
             for pos, dt in details_ends:
                 if dt <= target_date:
@@ -630,23 +622,18 @@ def find_insertion_point(content, target_date):
             if insert_after is not None:
                 return insert_after, False
             else:
-                # All existing blocks are after our target date — insert right after year header
                 return year_start, False
         else:
             return year_start, False
     else:
-        # Year doesn't exist — find where to insert the year header
-        # Find all year headers and insert in order
         year_headers = list(re.finditer(r'<h[23]>(\d{4})</h[23]>', content))
 
         if not year_headers:
-            # No year headers at all — append before closing tags
             body_end = content.rfind('</body>')
             if body_end == -1:
                 return len(content), True
             return body_end, True
 
-        # Find where our year fits
         insert_pos = None
         for m in year_headers:
             header_year = int(m.group(1))
@@ -655,7 +642,6 @@ def find_insertion_point(content, target_date):
                 break
 
         if insert_pos is None:
-            # Our year is after all existing — insert at end
             body_end = content.rfind('</body>')
             if body_end == -1:
                 insert_pos = len(content)
@@ -669,9 +655,8 @@ def insert_matches_into_weekly(weekly_path, matches, wrestler_name,
                                 wrestler_country, weight_class, result_type):
     """
     Insert matches into weekly/list.html.
-    For each match, tries to aggregate into an existing block in the same month
-    (up to 5 matches per block). Otherwise creates a new block.
-    matches: list of dicts with match data including 'date'.
+    result_type: 'win', 'loss', 'draw', or 'mix'
+    For 'mix', each match dict already carries its own resolved result.
     """
     with open(weekly_path, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -681,25 +666,23 @@ def insert_matches_into_weekly(weekly_path, matches, wrestler_name,
 
     for match in all_matches:
         dt = match['date']
+        resolved_result = match['result']
 
-        # Try to find an existing block in the same month with matching show
         block_info = find_block_for_month(content, dt.year, dt.month, match['show_name'])
 
         if block_info:
-            # Add match to existing block
             match_num = block_info['match_count'] + 1
             match_row = build_match_row(
                 match_num, weight_class, match['w_name_display'],
                 wrestler_country, match['jobber_name'], match['jobber_cc'],
-                result_type, match['method'], match['falls'], match['notes']
+                resolved_result, match['method'], match['falls'], match['notes']
             )
             content = add_match_to_block(content, block_info, match_row)
         else:
-            # Create new 1-match block
             match_row = build_match_row(
                 1, weight_class, match['w_name_display'],
                 wrestler_country, match['jobber_name'], match['jobber_cc'],
-                result_type, match['method'], match['falls'], match['notes']
+                resolved_result, match['method'], match['falls'], match['notes']
             )
 
             html = build_details_block(
@@ -754,6 +737,28 @@ def get_all_wrestler_names(weekly_path, ppv_path):
     return sorted(names)
 
 
+def pick_result_for_match(result_type):
+    """Return 'win', 'loss', or 'draw' for a single match given the mode."""
+    if result_type == 'mix':
+        return random.choice(['win', 'loss', 'draw'])
+    return result_type
+
+
+def build_method_and_falls(resolved_result, is_defense):
+    """Return (method, falls) strings appropriate for the resolved result."""
+    if resolved_result == 'win' or (is_defense and resolved_result != 'loss'):
+        method = random.choice(['Pinfall', 'Submission', 'Pinfall', 'Pinfall',
+                                'Submission']) if is_defense else random.choice(METHODS_WIN)
+        falls = random.choice(FALLS_WIN)
+    elif resolved_result == 'loss':
+        method = random.choice(METHODS_LOSS)
+        falls = random.choice(FALLS_LOSS)
+    else:  # draw
+        method = random.choice(METHODS_DRAW)
+        falls = random.choice(FALLS_DRAW)
+    return method, falls
+
+
 # ─── Main Interactive Flow ──────────────────────────────────────────────────
 
 def main():
@@ -797,13 +802,29 @@ def main():
     jobber_gender = 'f' if gender_input == 'f' else 'm'
     print(f"  → {'Female' if jobber_gender == 'f' else 'Male'} jobbers")
 
-    # 3. Win or Loss
+    # 3. Result type (win / loss / draw / mix)
     print()
-    result_input = input("  Result type — (w)ins or (l)osses? [w]: ").strip().lower()
-    result_type = 'loss' if result_input == 'l' else 'win'
-    print(f"  → Generating {result_type}{'es' if result_type == 'loss' else 's'}")
+    print("  Result type:")
+    print("    w = wins only")
+    print("    l = losses only")
+    print("    d = draws only")
+    print("    m = mix (random wins, losses, and draws)")
+    result_input = input("  Pick [w/l/d/m, default w]: ").strip().lower()
+    if result_input == 'l':
+        result_type = 'loss'
+        result_label = 'losses'
+    elif result_input == 'd':
+        result_type = 'draw'
+        result_label = 'draws'
+    elif result_input == 'm':
+        result_type = 'mix'
+        result_label = 'mixed results'
+    else:
+        result_type = 'win'
+        result_label = 'wins'
+    print(f"  → Generating {result_label}")
 
-    # 3. Weight class
+    # 4. Weight class
     print("\n  Weight class options:")
     for i, w in enumerate(WEIGHT_CLASSES, 1):
         print(f"    {i}. {w}")
@@ -814,15 +835,17 @@ def main():
         weight_class = 'Bridgerweight'
     print(f"  → {weight_class}")
 
-    # 4. Date range
+    # 5. Date range (accepts full or abbreviated month names)
     print()
-    start_str = input("  Start date (e.g. February 1970 or February 1, 1970): ").strip()
+    print("  Date format: full or abbreviated month accepted")
+    print("  e.g.  February 1970 / Feb 1970 / Feb 1, 1970 / February 1, 1970")
+    start_str = input("  Start date: ").strip()
     start_dt = parse_date(start_str)
     if not start_dt:
         print("  ERROR: Could not parse start date.")
         return
 
-    end_str = input("  End date (e.g. February 1971 or February 28, 1971): ").strip()
+    end_str = input("  End date: ").strip()
     end_dt = parse_date(end_str)
     if not end_dt:
         print("  ERROR: Could not parse end date.")
@@ -833,19 +856,19 @@ def main():
         return
 
     # If month-only format, set end to last day of that month
-    if end_dt.day == 1 and 'February' in end_str and ',' not in end_str:
-        end_dt = end_dt.replace(day=calendar.monthrange(end_dt.year, end_dt.month)[1])
-    elif ',' not in end_str:
+    if ',' not in normalise_date_str(end_str):
         end_dt = end_dt.replace(day=calendar.monthrange(end_dt.year, end_dt.month)[1])
 
     print(f"  → Range: {format_date(start_dt)} to {format_date(end_dt)}")
 
-    # 5. Check championship titles during this period
+    # 6. Championship title logic (only relevant when wins or mix can produce wins)
     is_defense = False
     defense_orgs = []
     defense_weight = None
 
-    if result_type == 'win':
+    can_have_wins = result_type in ('win', 'mix')
+
+    if can_have_wins:
         print("\n  Checking championship holdings for this period...")
         period_titles = get_titles_for_period(wrestler_name, start_dt, end_dt,
                                               weekly_path, ppv_path)
@@ -856,7 +879,7 @@ def main():
                 org_display = 'The Ring' if t['org'] == 'ring' else t['org'].upper()
                 print(f"    {i}. {org_display} {t['weight'].capitalize()}")
 
-            defense_input = input("\n  Generate these as title defenses? (y/n): ").strip().lower()
+            defense_input = input("\n  Generate wins as title defenses? (y/n): ").strip().lower()
             if defense_input == 'y':
                 is_defense = True
                 weights_held = defaultdict(list)
@@ -907,26 +930,24 @@ def main():
                     chosen = [('The Ring' if o == 'ring' else o.upper()) for o in defense_orgs]
                     print(f"  → Defending: {', '.join(chosen)} {weight_class}")
 
-    # 6. Count
+    # 7. Count
     count_str = input("  Number of matches to generate: ").strip()
     if not count_str.isdigit() or int(count_str) < 1:
         print("  ERROR: Must be a positive integer.")
         return
     count = int(count_str)
 
-    # 7. Parse existing schedule to check constraints
+    # 8. Parse existing schedule to check constraints
     print("\n  Parsing existing schedule...")
     weekly_dates, _ = parse_weekly_html(weekly_path)
     ppv_dates = parse_ppv_html(ppv_path)
 
-    # Merge all (year, month) occurrences for this wrestler
     occupied_months = defaultdict(int)
     for ym in weekly_dates.get(wrestler_name, []):
         occupied_months[ym] += 1
     for ym in ppv_dates.get(wrestler_name, []):
         occupied_months[ym] += 1
 
-    # Generate dates
     match_dates, max_available = generate_match_dates(start_dt, end_dt, count, occupied_months)
     if match_dates is None:
         print(f"\n  ❌ IMPOSSIBLE: Requested {count} matches but only {max_available} "
@@ -944,7 +965,7 @@ def main():
 
     print(f"\n  ✓ Generated {len(match_dates)} match dates")
 
-    # 8. Location preference
+    # 9. Location preference
     print("\n  Match locations:")
     print("    1. Mexico")
     print("    2. Japan")
@@ -964,7 +985,7 @@ def main():
         nationalities = ['mx', 'jp', 'us']
         print("  → Mix of all three")
 
-    # 9. Build individual matches (one per date)
+    # 10. Build individual matches (one per date)
     matches_to_insert = []
 
     for dt in match_dates:
@@ -973,16 +994,15 @@ def main():
         city, venue = random.choice(loc_data['cities'])
 
         jobber_name, jobber_cc = generate_jobber_name(nat, jobber_gender)
-        if result_type == 'win':
-            method = random.choice(METHODS_WIN)
-            falls = random.choice(FALLS_WIN)
-        else:
-            method = random.choice(METHODS_LOSS)
-            falls = random.choice(FALLS_LOSS)
 
-        # Build notes for title defenses
+        # Resolve result for this specific match
+        resolved_result = pick_result_for_match(result_type)
+
+        method, falls = build_method_and_falls(resolved_result, is_defense)
+
+        # Build notes for title defenses (only on wins)
         notes = ''
-        if is_defense and result_type == 'win':
+        if is_defense and resolved_result == 'win':
             org_labels = []
             for org in defense_orgs:
                 if org == 'ring':
@@ -996,15 +1016,14 @@ def main():
             else:
                 notes = ', '.join(org_labels[:-1]) + f' and {org_labels[-1]} titles'
 
-            method = random.choice(['Pinfall', 'Submission', 'Pinfall', 'Pinfall', 'Submission'])
-            falls = random.choice(FALLS_WIN)
-
+        # Show (c) on the wrestler's name for wins and draws when defending
         w_name_display = wrestler_name
-        if is_defense:
+        if is_defense and resolved_result in ('win', 'draw'):
             w_name_display = wrestler_name + ' (c)'
 
         matches_to_insert.append({
             'date': dt,
+            'result': resolved_result,
             'jobber_name': jobber_name,
             'jobber_cc': jobber_cc,
             'method': method,
@@ -1018,28 +1037,37 @@ def main():
             'w_name_display': w_name_display,
         })
 
-    # 9. Preview
+    # 11. Preview
     print(f"\n  Preview of {len(matches_to_insert)} match(es):")
     print("  " + "-" * 56)
+    result_symbols = {'win': '✓', 'loss': '✗', 'draw': '='}
     for m in matches_to_insert:
         date_str = format_date(m['date'])
-        print(f"    {date_str} — {m['w_name_display']} vs {m['jobber_name']} ({m['method']})")
+        sym = result_symbols.get(m['result'], '?')
+        print(f"    [{sym}] {date_str} — {m['w_name_display']} vs {m['jobber_name']} "
+              f"({m['method']}, {m['falls']})")
 
-    # 10. Confirm
+    # 12. Confirm
     confirm = input("\n  Insert into weekly/list.html? (y/n): ").strip().lower()
     if confirm != 'y':
         print("  Cancelled.")
         return
 
-    # 11. Insert (aggregates into existing blocks when possible)
+    # 13. Insert
     print("\n  Inserting into weekly/list.html...")
     insert_matches_into_weekly(weekly_path, matches_to_insert, wrestler_name,
                                wrestler_country, weight_class, result_type)
     print("  ✓ Matches inserted!")
 
+    # Summary count
+    win_count  = sum(1 for m in matches_to_insert if m['result'] == 'win')
+    loss_count = sum(1 for m in matches_to_insert if m['result'] == 'loss')
+    draw_count = sum(1 for m in matches_to_insert if m['result'] == 'draw')
+
     print("\n" + "=" * 60)
-    print(f"  ✓ Done! Added {count} jobber {'losses' if result_type == 'loss' else 'wins'} "
-          f"for {wrestler_name}")
+    print(f"  ✓ Done! Added {count} match(es) for {wrestler_name}")
+    if result_type == 'mix':
+        print(f"     Wins: {win_count}  Losses: {loss_count}  Draws: {draw_count}")
     print(f"  Remember to run update.py to rebuild wrestler pages.")
     print("=" * 60)
 

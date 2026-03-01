@@ -44,10 +44,6 @@
     </table>
 </div>
 
-<h2>Sequence validation</h2>
-<p>Every belt must read M/C → D → M/C → D throughout the year.</p>
-<div id="valWrap"></div>
-
 <script>
 /* ══════════════════════════════════════════
    CONFIGURATION
@@ -75,7 +71,8 @@ const belts = [];
 for (const wc of WC_LIST)
     for (const org of ORGS)
         belts.push({
-            displayName: `${org} ${wc.label}`,
+            // Show only the org name — weight class is already in the section header
+            displayName: org,
             org:         org.toLowerCase(),
             wcKey:       wc.label,
             wcHeader:    `${wc.label.toUpperCase()} — ${wc.spec}`,
@@ -83,22 +80,12 @@ for (const wc of WC_LIST)
 
 /* ══════════════════════════════════════════
    ALGEBRAIC SCHEDULE
-   
-   c_idx(b,p) = (b + p×5) % 30  → M or C
-   d_idx(b,p) = (b + p×5 + 2) % 30  → D
-   
-   Pairs 0 and 3 → M (multiman)
-   Pairs 1, 2, 4, 5 → C (one-on-one)
-   
-   Proven load: [7,7,8,7,7] × 6 = 216 total.
    ══════════════════════════════════════════ */
 
 const PAIR_TYPE = ['M', 'C', 'C', 'M', 'C', 'C'];
 
 const schedule = belts.map(() => ({}));
 
-// IWB Heavyweight (b=2) and IWB Lightweight (b=14) have their slots swapped
-// to resolve the D-conflict between IWB Heavyweight and WWO Middleweight
 const OFFSET_SWAP = { 2: 14, 14: 2 };
 
 belts.forEach((_, b) => {
@@ -119,7 +106,7 @@ const hRow  = document.createElement('tr');
 
 const thB = document.createElement('th');
 thB.className   = 'belt-label-head';
-thB.textContent = 'Championship';
+thB.textContent = 'Org';
 hRow.appendChild(thB);
 
 for (let s = 1; s <= TOTAL_SHOWS; s++) {
@@ -169,51 +156,6 @@ belts.forEach((belt, b) => {
 
     tbody.appendChild(tr);
 });
-
-/* ══════════════════════════════════════════
-   VALIDATION TABLE
-   ══════════════════════════════════════════ */
-const valDiv = document.getElementById('valWrap');
-const valTbl = document.createElement('table');
-
-const vHead = valTbl.createTHead().insertRow();
-['Belt', 'Chronological sequence', 'Pairs valid?', 'M', 'C', 'D'].forEach(h => {
-    const th = document.createElement('th');
-    th.textContent = h;
-    vHead.appendChild(th);
-});
-
-const vBody = valTbl.createTBody();
-
-belts.forEach((belt, b) => {
-    const sorted = Object.entries(schedule[b])
-        .map(([s, t]) => [+s, t])
-        .sort((a, c) => a[0] - c[0]);
-
-    const types  = sorted.map(([, t]) => t);
-    let   valid  = types.length === 12;
-    for (let i = 0; i < types.length && valid; i++) {
-        if (i % 2 === 0 && types[i] === 'D')                     valid = false;
-        if (i % 2 === 1 && (types[i] === 'M' || types[i] === 'C')) valid = false;
-    }
-
-    const mC = types.filter(t => t === 'M').length;
-    const cC = types.filter(t => t === 'C').length;
-    const dC = types.filter(t => t === 'D').length;
-
-    const seqStr = sorted
-        .map(([s, t]) => `<span style="font-size:.8em;color:#888">${s}:</span><strong>${t}</strong>`)
-        .join(' ');
-
-    const tr = vBody.insertRow();
-    [belt.displayName, seqStr, valid ? '✓' : '✗ FAIL', mC, cC, dC].forEach((v, col) => {
-        const td = tr.insertCell();
-        if (col === 1) td.innerHTML = v; else td.textContent = v;
-        if (col === 2) td.className = valid ? 'val-ok' : 'val-warn';
-    });
-});
-
-valDiv.appendChild(valTbl);
 </script>
 </body>
 </html>

@@ -459,56 +459,56 @@ table.matchesum td {
 
 /* ============================================================
    PROMOTION SCHEDULE
-   Championship pipeline grid — cell types, org accents,
-   weight-class headers, tournament columns, scroll wrapper.
    ============================================================ */
 
-/* Match-type cell colours */
+/* Match-type cell colours — Wikipedia pastel style */
 .cell-M {
-    background-color: #a83c00 !important;
-    color: #fff;
-    font-weight: 900;
+    background-color: #EFCFFF !important;
+    color: #000;
+    font-weight: bold;
 }
 
 .cell-C {
-    background-color: #0f4f96 !important;
-    color: #fff;
-    font-weight: 900;
+    background-color: #CFCFFF !important;
+    color: #000;
+    font-weight: bold;
 }
 
 .cell-D {
-    background-color: #5a4608 !important;
-    color: #fff;
-    font-weight: 900;
+    background-color: #FFFFBF !important;
+    color: #000;
+    font-weight: bold;
 }
 
 /* Organisation left-border accent stripes */
-.org-wwf { border-left: 5px solid #0748d4 !important; }   /* WWF — black from the W logo */
-.org-wwo { border-left: 5px solid #4dbb8a !important; }   /* WWO — teal-green from the globe badge */
-.org-iwb { border-left: 5px solid #e8131a !important; }   /* IWB — red from the iwbwrestling wordmark */
+.org-wwf { border-left: 4px solid #0748d4 !important; }
+.org-wwo { border-left: 4px solid #2a9d6e !important; }
+.org-iwb { border-left: 4px solid #c0392b !important; }
 
 /* Weight-class group separator rows */
 .wc-header td {
-    background-color: #3a5068 !important;
-    color: #fff !important;
+    background-color: #eaecf0 !important;
+    color: #222 !important;
     font-weight: bold;
     text-align: center !important;
     padding: 4px 6px;
     font-size: 0.78em;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
+    border-top: 2px solid #a2a9b1 !important;
 }
 
 /* Tournament show column headers */
 .th-tournament {
-    background-color: #5c2d8a !important;
-    color: #fff !important;
+    background-color: #dfe8ff !important;
+    color: #222 !important;
+    font-style: italic;
 }
 
 /* Tournament show data cells */
 .td-tournament {
-    background-color: #f3ecfb !important;
-    color: #bbb;
+    background-color: #f0f4ff !important;
+    color: #aaa;
     font-size: 0.75em;
 }
 
@@ -517,38 +517,43 @@ table.matchesum td {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     margin-bottom: 30px;
-    border: 1px solid #ddd;
+    border: 1px solid #a2a9b1;
 }
 
 /* The schedule grid table overrides the global table styles */
 table#sched {
     font-size: 0.68em;
-    width: auto;
-    min-width: max-content;
-    white-space: nowrap;
+    width: 100%;
     border-collapse: collapse;
     margin-bottom: 0;
+    white-space: nowrap;
+    table-layout: fixed;
 }
 
 table#sched th,
 table#sched td {
-    padding: 4px 5px;
-    min-width: 30px;
-    max-width: 38px;
+    padding: 3px 2px;
     text-align: center;
+    overflow: hidden;
 }
 
 table#sched .belt-label {
     text-align: left !important;
-    min-width: 175px;
-    max-width: 180px;
+    width: 120px;
+    min-width: 120px;
     font-weight: bold;
-    padding-left: 10px;
+    padding-left: 8px;
     font-size: 0.95em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 table#sched .belt-label-head {
-    min-width: 175px;
+    width: 120px;
+    min-width: 120px;
+    text-align: left !important;
+    padding-left: 8px;
 }
 
 /* Legend row */
@@ -570,24 +575,20 @@ table#sched .belt-label-head {
 .sched-legend-swatch {
     width: 28px;
     height: 18px;
-    border-radius: 3px;
-    border: 1px solid #bbb;
+    border-radius: 2px;
+    border: 1px solid #aaa;
     display: inline-block;
     flex-shrink: 0;
 }
 
-.sched-legend-swatch.sw-M { background: #a83c00; }
-.sched-legend-swatch.sw-C { background: #0f4f96; }
-.sched-legend-swatch.sw-D { background: #5a4608; }
-.sched-legend-swatch.sw-T { background: #5c2d8a; border: none; }
-.sched-legend-swatch.sw-org { width: 8px; border-radius: 2px; }
+.sched-legend-swatch.sw-M { background: #EFCFFF; }
+.sched-legend-swatch.sw-C { background: #CFCFFF; }
+.sched-legend-swatch.sw-D { background: #FFFFBF; }
+.sched-legend-swatch.sw-T { background: #dfe8ff; border: 1px solid #aaa; }
+.sched-legend-swatch.sw-org { width: 8px; border-radius: 2px; border: none; }
 .sched-legend-swatch.sw-wwf { background: #0748d4; }
-.sched-legend-swatch.sw-wwo { background: #4dbb8a; }
-.sched-legend-swatch.sw-iwb { background: #e8131a; }
-
-/* Validation table */
-.val-ok  { background-color: #d4edda !important; color: #155724; font-weight: bold; }
-.val-warn { background-color: #f8d7da !important; color: #721c24; font-weight: bold; }
+.sched-legend-swatch.sw-wwo { background: #2a9d6e; }
+.sched-legend-swatch.sw-iwb { background: #c0392b; }
 
 
 /* ============================================================
@@ -632,7 +633,7 @@ table#sched .belt-label-head {
     }
 
     table, th, td {
-        border-color: #444;
+        border-color: #3a3a3a;
     }
 
     th {
@@ -695,21 +696,55 @@ table#sched .belt-label-head {
         color: #d4d4d4;
     }
 
-    /* Schedule dark mode */
+    /* Schedule dark mode — muted pastels on dark background */
     .sched-wrap {
         border-color: #444;
     }
 
     .wc-header td {
-        background-color: #2a3e52 !important;
+        background-color: #2e3035 !important;
+        color: #c8ccd0 !important;
+        border-top-color: #555 !important;
     }
 
     .th-tournament {
-        background-color: #3d1a60 !important;
+        background-color: #252c40 !important;
+        color: #a8b8d8 !important;
     }
 
     .td-tournament {
-        background-color: #1e1528 !important;
-        color: #666;
+        background-color: #1c2030 !important;
+        color: #555;
     }
+
+    /* Dark-mode pastels — desaturated, darkened */
+    .cell-M {
+        background-color: #3d2645 !important;
+        color: #e8c8f8 !important;
+    }
+
+    .cell-C {
+        background-color: #252545 !important;
+        color: #c8c8f8 !important;
+    }
+
+    .cell-D {
+        background-color: #3a3a10 !important;
+        color: #f8f8a8 !important;
+    }
+
+    table#sched th {
+        background-color: #262626;
+        color: #c8c8c8;
+    }
+
+    table#sched td {
+        background-color: #1e1e1e;
+        color: #c8c8c8;
+    }
+
+    .sched-legend-swatch.sw-M { background: #3d2645; border-color: #666; }
+    .sched-legend-swatch.sw-C { background: #252545; border-color: #666; }
+    .sched-legend-swatch.sw-D { background: #3a3a10; border-color: #666; }
+    .sched-legend-swatch.sw-T { background: #252c40; border-color: #666; }
 }

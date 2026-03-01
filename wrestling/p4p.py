@@ -32,25 +32,36 @@ WEIGHT_ORDER = ['heavyweight', 'bridgerweight', 'middleweight',
 MAJOR_ORGS   = {'wwf', 'wwo', 'iwb'}
 ALL_ORGS     = {'wwf', 'wwo', 'iwb', 'ring'}
 
-# Path to the wiki/org page that contains the #open Open Tournament table
-OPEN_WIKI_PATH = 'wrestling/wiki.html'   # adjust if your file is named differently
-
-# Scoring weight for winning The Open in a given year
+# Scoring weight for winning the Open Tournament in a given year
 # This is the biggest single-year achievement — near-guaranteed WOTY
 OPEN_WIN_YEARLY_BONUS  = 60   # added directly to year_score (0-100 scale)
 OPEN_WIN_GOAT_TITLE_PTS = 40  # championship points per Open win (for GOAT score)
 
 MENS_P4P_START   = 1963
-WOMENS_P4P_START = 1968
+WOMENS_P4P_START = 1980
 
 # Minimum career requirements to appear in a yearly P4P table
 P4P_MIN_BOUTS        = 3   # career bouts
 P4P_MIN_CAREER_WINS  = 2   # career wins (stops 1-fight title holders from ranking)
 
 # Max wins that count toward quality score normalization in a single year.
-# Winning 5 fights is the max "volume" credit — wins beyond that add value
-# proportionally less (they still help, but can't push quality score above 100).
-WOTY_MAX_WINS = 7
+# Low ceiling (3) prevents jobber wins from diluting elite win quality.
+# A wrestler beating one champion and two jobbers shouldn't lose credit
+# compared to someone who only beat one champion and nobody else.
+WOTY_MAX_WINS = 3
+
+# Title prestige system — specific lineages carry extra weight.
+# Prestigious titles get bonus points in quality and dominance scoring.
+# Values are additive pts on top of base title_pts (30 for major, 25 for Ring).
+TITLE_PRESTIGE = {
+    ('wwo', 'middleweight'): 10,   # longest lineage in lucha libre
+    ('wwf', 'heavyweight'):  10,   # original world heavyweight title
+}
+
+# Low volume penalty — wrestlers with only 1 match in a year can't achieve
+# full yearly score. This prevents 1-fight wonders from ranking #1.
+LOW_VOLUME_THRESHOLD = 1   # yr_total <= this → penalty applied
+LOW_VOLUME_MULT      = 0.85  # score multiplier for low-volume years
 
 # Max times the same wrestler can be WOTY. Santo winning 8× is unrealistic.
 # Once they hit this cap they're excluded from #1 (can still rank 2–10).
@@ -112,78 +123,31 @@ def read_infobox_height(name):
 # OPEN TOURNAMENT PARSER
 # =============================================================================
 
-def parse_open_tournament(wiki_path=None):
+def parse_open_tournament_from_db(db):
     """
-    Parse The Open Tournament table from the wiki/org page.
+    Derive Open Tournament winners from already-parsed match data in the DB.
+    Finds matches where notes contain 'Open Tournament Finals' and the winner won.
     Returns dict: {year: {'winner': name, 'runner_up': name}}
-    Each year is a separate entry — winning in different years = separate titles.
-
-    Looks for <h2 id="open"> then reads the first <table class="match-card"> after it.
-    Strips flag spans to get plain name text.
     """
-    path = wiki_path or OPEN_WIKI_PATH
-    if not os.path.exists(path):
-        print(f"  ⚠ Open Tournament: {path} not found, skipping")
-        return {}
-
-    with open(path, 'r', encoding='utf-8') as f:
-        html = f.read()
-
-    # Find the #open section
-    open_idx = html.find('id="open"')
-    if open_idx == -1:
-        open_idx = html.find("id='open'")
-    if open_idx == -1:
-        print("  ⚠ Open Tournament: #open anchor not found in wiki page")
-        return {}
-
-    # Find the next match-card table after that point
-    table_start = html.find('<table', open_idx)
-    table_end   = html.find('</table>', table_start) + len('</table>')
-    if table_start == -1:
-        print("  ⚠ Open Tournament: table not found after #open")
-        return {}
-
-    table_html = html[table_start:table_end]
-
-    # Parse rows — each <tr> in <tbody>
     results = {}
-    tbody_m = re.search(r'<tbody>(.*?)</tbody>', table_html, re.DOTALL)
-    if not tbody_m:
-        return {}
+    for event in db.events:
+        for match in event.get('matches', []):
+            notes = match.get('notes', '')
+            if 'open tournament finals' not in notes.lower():
+                continue
+            if not match.get('winner'):
+                continue
+            date_str = match.get('date', '')
+            d = _parse_date(date_str)
+            if not d:
+                continue
+            year = d.year
+            runner_up = match['fighter2'] if match['winner'] == match['fighter1'] else match['fighter1']
+            results[year] = {'winner': match['winner'], 'runner_up': runner_up}
 
-    for row in re.finditer(r'<tr>(.*?)</tr>', tbody_m.group(1), re.DOTALL):
-        cells = re.findall(r'<t[dh]>(.*?)</t[dh]>', row.group(1), re.DOTALL)
-        if len(cells) < 3:
-            continue
-
-        # Strip HTML tags (flags etc) to get plain text
-        def strip_tags(s):
-            return re.sub(r'<[^>]+>', '', s).strip()
-
-        try:
-            year    = int(strip_tags(cells[0]))   # No. or Year — we want the year column
-        except ValueError:
-            continue
-
-        # The table has: No. | Year | Winner | Runner-Up | Venue | Location
-        # But No. is <th> so cells[0]=No, cells[1]=Year, cells[2]=Winner, cells[3]=Runner-Up
-        # Re-parse including th
-        all_cells = re.findall(r'<(?:td|th)>(.*?)</(?:td|th)>', row.group(1), re.DOTALL)
-        if len(all_cells) < 4:
-            continue
-        try:
-            year = int(strip_tags(all_cells[1]))
-        except ValueError:
-            continue
-
-        winner    = strip_tags(all_cells[2])
-        runner_up = strip_tags(all_cells[3])
-        if winner:
-            results[year] = {'winner': winner, 'runner_up': runner_up}
-
-    print(f"  Open Tournament: parsed {len(results)} editions "
-          f"({min(results) if results else '?'}–{max(results) if results else '?'})")
+    if results:
+        print(f"  Open Tournament: found {len(results)} winners from PPV data "
+              f"({min(results)}–{max(results)})")
     return results
 
 
@@ -245,8 +209,8 @@ def build_caches(db):
     cache['men']   = men
 
     # open_wins: name → sorted list of years they won The Open Tournament
-    # parsed fresh each run from the wiki page
-    open_data = parse_open_tournament()
+    # Derived from PPV match data (Open Tournament Finals winners)
+    open_data = parse_open_tournament_from_db(db)
     open_wins = defaultdict(list)   # name → [year, year, ...]
     for year, entry in open_data.items():
         open_wins[entry['winner']].append(year)
@@ -365,7 +329,9 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
                 for i, reign in enumerate(reigns):
                     if reign['champion'] != name: continue
                     if not _year_of(reign['date']) or _year_of(reign['date']) > ranking_year: continue
-                    title_pts += 25 if org == 'ring' else (30 if org in MAJOR_ORGS else 10)
+                    base = 25 if org == 'ring' else (30 if org in MAJOR_ORGS else 10)
+                    prestige = TITLE_PRESTIGE.get((org, weight), 0)
+                    title_pts += base + prestige
                     days = reign.get('days') or 0
                     total_days += days; longest_reign = max(longest_reign, days)
         is_current_champ = any(
@@ -414,8 +380,14 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
     titles_held_yr      = 0   # held at any point this year
     titles_entering_yr  = 0   # held going INTO this year (won in a prior year)
     title_pts_yr        = 0
-    defenses_this_yr    = 0   # wins where wrestler was already holding a title
+    defenses_this_yr    = 0   # wins while actually holding a title
 
+    # For each title: track exact (win_date, loss_date) so we know when they held it
+    # A title counts as "held this year" only if the reign overlapped with ranking_year.
+    # "entered as champ" = reign was active on Jan 1 of ranking_year (started before it).
+    # A loss mid-year means they stopped being champ at that point.
+
+    reign_intervals = []  # (win_date_parsed, loss_date_parsed_or_None, org, weight)
     for org in ALL_ORGS:
         for weight in WEIGHT_ORDER:
             reigns = db.championships[org][weight]
@@ -423,40 +395,52 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
                 if reign["champion"] != name: continue
                 ry = _year_of(reign["date"])
                 if not ry or ry > ranking_year: continue
-                end_year = (
-                    _year_of(reigns[i+1]["date"]) if i < len(reigns) - 1
-                    else _year_of(reign.get("vacancy_date", "")) or 9999
-                )
-                if end_year < ranking_year: continue
+                # End date = next reign start date, or vacancy date, or still active
+                if i < len(reigns) - 1:
+                    end_str  = reigns[i+1]["date"]
+                    end_year = _year_of(end_str)
+                    end_d    = _parse_date(end_str)
+                elif "vacancy_date" in reign:
+                    end_str  = reign["vacancy_date"]
+                    end_year = _year_of(end_str)
+                    end_d    = _parse_date(end_str)
+                else:
+                    end_year = 9999
+                    end_d    = None  # still active
+
+                # Reign must overlap with ranking_year
+                if end_year < ranking_year: continue  # reign ended entirely before this year
+
                 titles_held_yr += 1
+                win_d = _parse_date(reign["date"])
+                reign_intervals.append((win_d, end_d, org, weight))
+
+                # title_pts_yr only for titles still held at year-end (end_year > ranking_year)
+                # Lost mid-year = end_year == ranking_year = no bonus points
+                if end_year > ranking_year:
+                    base_pts = max(30 - (titles_held_yr - 1) * 10, 10)
+                    prestige = TITLE_PRESTIGE.get((org, weight), 0)
+                    title_pts_yr += base_pts + prestige
+
+                # Entered year as champ = reign started BEFORE ranking_year
                 if ry < ranking_year:
-                    titles_entering_yr += 1   # pre-existing reign
-                title_pts_yr += max(30 - (titles_held_yr - 1) * 10, 10)
+                    titles_entering_yr += 1
 
     title_pts_yr     = min(title_pts_yr, 80)
     held_title_yr    = titles_held_yr > 0
     entered_as_champ = titles_entering_yr > 0
 
-    # Build list of title win dates so we can tell if a win was a DEFENSE
-    champ_win_dates = []
-    for org in ALL_ORGS:
-        for weight in WEIGHT_ORDER:
-            for reign in db.championships[org][weight]:
-                if reign["champion"] != name: continue
-                ry = _year_of(reign["date"])
-                if ry and ry <= ranking_year:
-                    champ_win_dates.append(reign["date"])
-
+    # Count defenses: wins that happened while the wrestler was actually holding a title
+    # i.e. match date falls within a [win_date, loss_date) interval
     for (fy, result, method, m) in this_year_matches:
         if result != "Win": continue
-        match_date = m.get("date", "")
-        # Defense = there exists a title win that happened BEFORE this match
-        was_champ_before = any(
-            _parse_date(cd) and _parse_date(match_date) and
-            _parse_date(cd) < _parse_date(match_date)
-            for cd in champ_win_dates
+        match_d = _parse_date(m.get("date", ""))
+        if not match_d: continue
+        was_champ_at_match = any(
+            win_d and win_d < match_d and (end_d is None or match_d < end_d)
+            for (win_d, end_d, org, weight) in reign_intervals
         )
-        if was_champ_before:
+        if was_champ_at_match:
             defenses_this_yr += 1
 
     def is_top_calibre(opp_name, as_of_year):
@@ -468,6 +452,8 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
         return t2 >= 5 and w2 / t2 >= 0.70
 
     # Quality score: wins (H2H + defense boost) + draws at 40% value
+    # def_mult is now PER-MATCH: applied only when wrestler was actually champion
+    # at the time of the match, not blanket based on entering_as_champ.
     yr_qw = 0.0
     yr_qw_count = 0.0
     for (fight_year, result, method, m) in this_year_matches:
@@ -478,8 +464,13 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
         if result == "Win":
             mult     = 1.2 if ("pinfall" in method.lower() or "submission" in method.lower()) else 1.0
             h2h      = 1.4 if is_top_calibre(opp, fight_year) else 1.0
-            # Defending a title you ENTERED the year with gets an extra boost
-            def_mult = 1.3 if entered_as_champ else 1.0
+            # Per-match defense multiplier: only if wrestler was champ AT TIME of this match
+            match_d = _parse_date(m.get("date", ""))
+            was_champ_at_match = match_d and any(
+                win_d and win_d <= match_d and (end_d is None or match_d < end_d)
+                for (win_d, end_d, _org, _weight) in reign_intervals
+            )
+            def_mult = 1.3 if was_champ_at_match else 1.0
             yr_qw      += base * mult * h2h * def_mult
             yr_qw_count += 1.0
         else:  # Draw
@@ -489,18 +480,45 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
     yr_quality_score = min(yr_qw / (100 * norm), 1.0) * 100
     yr_quality_score = min(yr_quality_score + title_pts_yr * 0.3, 100)
 
-    # Dominance: entering as champion and defending is the gold standard
+    # Dominance: entering as champion and defending is the gold standard.
+    # Losing a title you entered with is a HEAVY penalty — like Canelo losing to Crawford.
+    # Count title losses this year (losses where they were champion at time of match)
+    title_losses_yr = 0
+    for (fy, result, method, m) in this_year_matches:
+        if result != "Loss": continue
+        match_d = _parse_date(m.get("date", ""))
+        if not match_d: continue
+        was_champ_at_loss = any(
+            win_d and win_d <= match_d and (end_d is None or match_d <= end_d)
+            for (win_d, end_d, org, weight) in reign_intervals
+        )
+        if was_champ_at_loss:
+            title_losses_yr += 1
+
     yr_winpct            = yr_wins / yr_total if yr_total else 0
     defense_bonus        = min(defenses_this_yr * 10, 50)
-    entering_champ_bonus = min(titles_entering_yr * 20, 40)  # 20pts per pre-existing title
+    entering_champ_bonus = min(titles_entering_yr * 20, 40)
+    # Mid-year title winner bonus: won a title THIS year and defended it → partial credit
+    # Not as much as entering_champ, but rewards active champions who won mid-year
+    won_title_this_yr = held_title_yr and not entered_as_champ
+    mid_year_defense_bonus = min(defenses_this_yr * 10, 20) if won_title_this_yr else 0
+    # Each title loss while champion = -25 pts, uncapped. Losing 2 titles = -50.
+    title_loss_penalty   = title_losses_yr * 25
+
     yr_dom_score = min(
         yr_winpct * 30 +
-        entering_champ_bonus +          # big reward for defending champion
-        (10 if held_title_yr and not entered_as_champ else 0) +  # smaller for mid-year win
+        entering_champ_bonus +
+        mid_year_defense_bonus +
+        (10 if held_title_yr and not entered_as_champ else 0) +
         defense_bonus +
         titles_held_yr * 3,
         100
-    )
+    ) - title_loss_penalty
+    yr_dom_score = max(yr_dom_score, 0)
+
+    # Title loss multiplier applied to whole year score — the Canelo effect.
+    # Losing one belt = 0.75x. Two belts = 0.55x. Can't be #1 if you lost your title.
+    title_loss_mult = max(1.0 - title_losses_yr * 0.25, 0.40)
 
     # Activity: volume + quality of opposition
     fought_champ_yr = any(
@@ -518,16 +536,22 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
 
     year_score = (yr_quality_score * 0.50 +
                   yr_dom_score     * 0.30 +
-                  yr_activity      * 0.20)
+                  yr_activity      * 0.20) * title_loss_mult
 
-    # Career prestige (20% weight -- tiebreaker only)
+    # Low volume penalty: 1-fight wonders can't achieve full yearly score
+    if yr_total <= LOW_VOLUME_THRESHOLD:
+        year_score *= LOW_VOLUME_MULT
+
+    # Career prestige (15% weight -- tiebreaker only, year performance dominates)
     cp_title_pts = cp_days = cp_longest = 0
     for org in ALL_ORGS:
         for weight in WEIGHT_ORDER:
             for reign in db.championships[org][weight]:
                 if reign['champion'] != name: continue
                 if not _year_of(reign['date']) or _year_of(reign['date']) > ranking_year: continue
-                cp_title_pts += 25 if org == 'ring' else (30 if org in MAJOR_ORGS else 10)
+                base = 25 if org == 'ring' else (30 if org in MAJOR_ORGS else 10)
+                prestige = TITLE_PRESTIGE.get((org, weight), 0)
+                cp_title_pts += base + prestige
                 days = reign.get('days') or 0
                 cp_days += days; cp_longest = max(cp_longest, days)
     career_prestige = min(
@@ -541,8 +565,8 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
     won_open_this_year = ranking_year in cache['open_wins'].get(name, [])
     open_yearly_bonus  = OPEN_WIN_YEARLY_BONUS if won_open_this_year else 0
 
-    # Final: 80% year + 20% prestige + Open bonus
-    raw = year_score * 0.80 + career_prestige * 0.20 + open_yearly_bonus
+    # Final: 85% year + 15% prestige + Open bonus
+    raw = year_score * 0.85 + career_prestige * 0.15 + open_yearly_bonus
 
     if not this_year_matches and not won_open_this_year:
         last_fight = max((y for (y, *_) in results), default=0)
@@ -587,21 +611,23 @@ def titles_at_year(db, name, year, cache=None):
                     _year_of(reigns[i+1]['date']) if i < len(reigns) - 1
                     else _year_of(reign.get('vacancy_date', '')) or 9999
                 )
-                if end_year < year:
+                # end_year == year means they lost it mid-year (e.g. Thesz loses May 1973)
+                # Don't show at year-end; only show if reign extends PAST this year
+                if end_year <= year:
                     continue
                 label = '<i>The Ring</i>' if org == 'ring' else org.upper()
                 txt = f"{label} {weight.capitalize()}"
                 if txt not in parts:
                     parts.append(txt)
     if cache and year in cache['open_wins'].get(name, []):
-        parts.append("The Open")
+        parts.append(f"{year} Open Tournament")
     return ' <br> '.join(parts)
 
 
 def all_titles_str(db, name, cache=None):
     """
     Full career championship list. Includes Open Tournament wins if cache provided.
-    Format: 'WWF Heavyweight <br> The Open (1972, 1976)'
+    Format: 'WWF Heavyweight <br> 1972 Open Tournament'
     """
     parts = []
     for org in ['wwf', 'wwo', 'iwb', 'ring']:
@@ -617,7 +643,8 @@ def all_titles_str(db, name, cache=None):
     if cache:
         wins = cache['open_wins'].get(name, [])
         if wins:
-            parts.append(f"The Open ({', '.join(str(y) for y in wins)})")
+            for y in sorted(wins):
+                parts.append(f"{y} Open Tournament")
     return ' <br> '.join(parts)
 
 

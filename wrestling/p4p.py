@@ -41,16 +41,25 @@ OPEN_WIN_YEARLY_BONUS  = 60   # added directly to year_score (0-100 scale)
 OPEN_WIN_GOAT_TITLE_PTS = 40  # championship points per Open win (for GOAT score)
 
 MENS_P4P_START   = 1963
-WOMENS_P4P_START = 1980
+WOMENS_P4P_START = 1968
 
 # Minimum career requirements to appear in a yearly P4P table
 P4P_MIN_BOUTS        = 3   # career bouts
 P4P_MIN_CAREER_WINS  = 2   # career wins (stops 1-fight title holders from ranking)
 
+# Max wins that count toward quality score normalization in a single year.
+# Winning 5 fights is the max "volume" credit — wins beyond that add value
+# proportionally less (they still help, but can't push quality score above 100).
+WOTY_MAX_WINS = 7
+
+# Max times the same wrestler can be WOTY. Santo winning 8× is unrealistic.
+# Once they hit this cap they're excluded from #1 (can still rank 2–10).
+WOTY_MAX_TIMES = 5
+
 # HoF criteria — deliberately strict
 HOF_MAX_PER_YEAR     = 3     # max inductees per class (keeps it exclusive)
-HOF_MIN_WINS         = 18    # career wins required
-HOF_MIN_WIN_PCT      = 0.75  # 68%+ win rate required
+HOF_MIN_WINS         = 15    # career wins required
+HOF_MIN_WIN_PCT      = 0.68  # 68%+ win rate required
 HOF_MIN_SCORE        = 45.0  # GOAT score required
 HOF_RETIREMENT_YEARS = 5     # years inactive before eligible
 HOF_REQUIRE_MAJOR    = True  # must hold a MAJOR title (wwf/wwo/iwb), ring alone doesn't count
@@ -58,7 +67,7 @@ HOF_REQUIRE_MAJOR    = True  # must hold a MAJOR title (wwf/wwo/iwb), ring alone
 # Voter fatigue — diminishing returns for years at peak
 # A wrestler who dominates for 8 years doesn't get 8x the credit of one who dominated for 4.
 # Each year in the top 3 beyond this cap contributes at half weight to their GOAT score.
-HOF_VOTER_FATIGUE_CAP = 6   # full-credit years in top 3; beyond this → diminishing
+HOF_VOTER_FATIGUE_CAP = 5   # full-credit years in top 3; beyond this → diminishing
 
 
 # =============================================================================
@@ -317,6 +326,7 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
     if goat_mode:
         # Quality wins: all career wins with no decay
         qw_total = 0.0
+        qw_wins  = 0
         for (fight_year, result, method, m) in matches_to_date:
             if result != 'Win':
                 continue
@@ -324,8 +334,11 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
             base = opponent_rating(db, cache, opp, fight_year)
             mult = 1.2 if ('pinfall' in method.lower() or 'submission' in method.lower()) else 1.0
             qw_total += base * mult
-        n = max(len(matches_to_date), 1)
-        quality_wins_score = min(qw_total / (100 * min(n, 30)), 1.0) * 100
+            qw_wins  += 1
+        # Normalize by wins (not total matches) so jobber padding doesn't dilute.
+        # Cap at 30 wins for normalization so volume still has a ceiling.
+        # Average opponent quality × how prolific — adding wins can only help.
+        quality_wins_score = min(qw_total / (100 * min(max(qw_wins, 1), 30)), 1.0) * 100
 
         wins   = sum(1 for (y, r, *_) in matches_to_date if r == 'Win')
         losses = sum(1 for (y, r, *_) in matches_to_date if r == 'Loss')
@@ -381,92 +394,156 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
             4
         )
 
-    # ── YEARLY MODE: 70% this year's performance + 30% career prestige ───
-    #
-    # THIS YEAR component (scored 0-100 each):
-    #   - Year quality wins: wins this year against quality opponents
-    #   - Year dominance:    win% this year + being champion this year
-    #   - Year activity:     fought at all, fought champions, defended titles
-    #
-    # CAREER PRESTIGE component (scored 0-100):
-    #   - Career championship score (titles held, days, prestige)
-    #   - This prevents a complete nobody from outranking Santo on one fluke win,
-    #     but caps at 30% so a great year always beats a mediocre year.
+    # ── YEARLY MODE ──────────────────────────────────────────────────────
+    # 80% what you did THIS YEAR + 20% career prestige tiebreaker.
+    # Quality score  50% -- quality-adjusted wins + draw credit + titles held
+    # Dominance      30% -- win% + title defenses + title depth
+    # Activity       20% -- volume + fought a champion + had a draw (high-level comp)
+    # Draws: worth 40% of a win. Loss to a star < loss to jobber (both bad, neither fatal).
+    # H2H boost: beating a past/current champion gets x1.4 multiplier.
 
-    # ── YEAR quality wins ─────────────────────────────────────────────────
-    yr_qw = 0.0
-    for (fight_year, result, method, m) in this_year_matches:
-        if result != 'Win':
-            continue
-        opp  = m['fighter2'] if m['fighter1'] == name else m['fighter1']
-        base = opponent_rating(db, cache, opp, fight_year)
-        mult = 1.2 if ('pinfall' in method.lower() or 'submission' in method.lower()) else 1.0
-        yr_qw += base * mult
-    yr_n = max(len(this_year_matches), 1)
-    yr_quality_score = min(yr_qw / (100 * min(yr_n, 10)), 1.0) * 100
-
-    # ── YEAR dominance ────────────────────────────────────────────────────
     yr_wins   = sum(1 for (_, r, *_) in this_year_matches if r == 'Win')
     yr_losses = sum(1 for (_, r, *_) in this_year_matches if r == 'Loss')
     yr_draws  = sum(1 for (_, r, *_) in this_year_matches if r == 'Draw')
-    yr_total  = yr_wins + yr_losses + 0.5 * yr_draws
-    yr_winpct = yr_wins / yr_total if yr_total else 0
+    yr_total  = yr_wins + yr_losses + yr_draws
 
-    # Title at stake this year
-    held_title_this_year = bool(cache['champ_years'][name] & {ranking_year})
-    yr_dom_score = min(yr_winpct * 60 + (30 if held_title_this_year else 0)
-                       + min(yr_wins * 5, 10), 100)
+    # Titles held this year.
+    # Key distinction: entered year as champion (won before ranking_year) vs won mid-year.
+    # Defending a title you entered the year with is worth much more than winning it
+    # in match 4 of the year and "defending" it in match 5.
+    titles_held_yr      = 0   # held at any point this year
+    titles_entering_yr  = 0   # held going INTO this year (won in a prior year)
+    title_pts_yr        = 0
+    defenses_this_yr    = 0   # wins where wrestler was already holding a title
 
-    # ── YEAR activity ─────────────────────────────────────────────────────
-    fought_champ_yr = any(
-        opponent_rating(db, cache,
-                        m['fighter2'] if m['fighter1'] == name else m['fighter1'],
-                        ranking_year) >= 80
-        for (_, _, _, m) in this_year_matches
-    )
-    defended_yr = held_title_this_year and yr_wins > 0
-    yr_activity = min(
-        len(this_year_matches) * 12 +
-        (35 if fought_champ_yr else 0) +
-        (20 if defended_yr else 0),
-        100
-    )
-
-    # ── YEAR composite (0-100) ────────────────────────────────────────────
-    year_score = (yr_quality_score * 0.45 +
-                  yr_dom_score     * 0.35 +
-                  yr_activity      * 0.20)
-
-    # ── CAREER PRESTIGE (0-100, used at 30% weight) ───────────────────────
-    title_pts = total_days = longest_reign = 0
     for org in ALL_ORGS:
         for weight in WEIGHT_ORDER:
             reigns = db.championships[org][weight]
             for i, reign in enumerate(reigns):
-                if reign['champion'] != name: continue
-                if not _year_of(reign['date']) or _year_of(reign['date']) > ranking_year: continue
-                title_pts += 25 if org == 'ring' else (30 if org in MAJOR_ORGS else 10)
-                days = reign.get('days') or 0
-                total_days += days; longest_reign = max(longest_reign, days)
-    career_prestige = min(
-        min(title_pts, 85) +
-        min(total_days / 365, 3) * 10 +
-        min(longest_reign / 365, 2) * 5,
+                if reign["champion"] != name: continue
+                ry = _year_of(reign["date"])
+                if not ry or ry > ranking_year: continue
+                end_year = (
+                    _year_of(reigns[i+1]["date"]) if i < len(reigns) - 1
+                    else _year_of(reign.get("vacancy_date", "")) or 9999
+                )
+                if end_year < ranking_year: continue
+                titles_held_yr += 1
+                if ry < ranking_year:
+                    titles_entering_yr += 1   # pre-existing reign
+                title_pts_yr += max(30 - (titles_held_yr - 1) * 10, 10)
+
+    title_pts_yr     = min(title_pts_yr, 80)
+    held_title_yr    = titles_held_yr > 0
+    entered_as_champ = titles_entering_yr > 0
+
+    # Build list of title win dates so we can tell if a win was a DEFENSE
+    champ_win_dates = []
+    for org in ALL_ORGS:
+        for weight in WEIGHT_ORDER:
+            for reign in db.championships[org][weight]:
+                if reign["champion"] != name: continue
+                ry = _year_of(reign["date"])
+                if ry and ry <= ranking_year:
+                    champ_win_dates.append(reign["date"])
+
+    for (fy, result, method, m) in this_year_matches:
+        if result != "Win": continue
+        match_date = m.get("date", "")
+        # Defense = there exists a title win that happened BEFORE this match
+        was_champ_before = any(
+            _parse_date(cd) and _parse_date(match_date) and
+            _parse_date(cd) < _parse_date(match_date)
+            for cd in champ_win_dates
+        )
+        if was_champ_before:
+            defenses_this_yr += 1
+
+    def is_top_calibre(opp_name, as_of_year):
+        cy = cache["champ_years"].get(opp_name, set())
+        if cy and any(y <= as_of_year for y in cy):
+            return True
+        w2, l2, d2 = cache["cumulative_record"](opp_name, as_of_year)
+        t2 = w2 + l2
+        return t2 >= 5 and w2 / t2 >= 0.70
+
+    # Quality score: wins (H2H + defense boost) + draws at 40% value
+    yr_qw = 0.0
+    yr_qw_count = 0.0
+    for (fight_year, result, method, m) in this_year_matches:
+        if result not in ("Win", "Draw"):
+            continue
+        opp  = m["fighter2"] if m["fighter1"] == name else m["fighter1"]
+        base = opponent_rating(db, cache, opp, fight_year)
+        if result == "Win":
+            mult     = 1.2 if ("pinfall" in method.lower() or "submission" in method.lower()) else 1.0
+            h2h      = 1.4 if is_top_calibre(opp, fight_year) else 1.0
+            # Defending a title you ENTERED the year with gets an extra boost
+            def_mult = 1.3 if entered_as_champ else 1.0
+            yr_qw      += base * mult * h2h * def_mult
+            yr_qw_count += 1.0
+        else:  # Draw
+            yr_qw       += base * 0.40
+            yr_qw_count += 0.4
+    norm = max(min(yr_qw_count, WOTY_MAX_WINS), 1)
+    yr_quality_score = min(yr_qw / (100 * norm), 1.0) * 100
+    yr_quality_score = min(yr_quality_score + title_pts_yr * 0.3, 100)
+
+    # Dominance: entering as champion and defending is the gold standard
+    yr_winpct            = yr_wins / yr_total if yr_total else 0
+    defense_bonus        = min(defenses_this_yr * 10, 50)
+    entering_champ_bonus = min(titles_entering_yr * 20, 40)  # 20pts per pre-existing title
+    yr_dom_score = min(
+        yr_winpct * 30 +
+        entering_champ_bonus +          # big reward for defending champion
+        (10 if held_title_yr and not entered_as_champ else 0) +  # smaller for mid-year win
+        defense_bonus +
+        titles_held_yr * 3,
         100
     )
 
-    # ── OPEN TOURNAMENT BONUS ─────────────────────────────────────────────
-    # Winning The Open this year is the biggest single achievement possible.
-    # It bypasses the year_score formula and adds a flat bonus directly,
-    # making the winner almost certainly WOTY unless someone had a truly
-    # exceptional regular-season year (multiple title defenses vs champions).
+    # Activity: volume + quality of opposition
+    fought_champ_yr = any(
+        opponent_rating(db, cache,
+                        m["fighter2"] if m["fighter1"] == name else m["fighter1"],
+                        fy) >= 80
+        for (fy, _, _, m) in this_year_matches
+    )
+    yr_activity = min(
+        yr_total * 10 +
+        (25 if fought_champ_yr else 0) +
+        (15 if yr_draws > 0 else 0),
+        100
+    )
+
+    year_score = (yr_quality_score * 0.50 +
+                  yr_dom_score     * 0.30 +
+                  yr_activity      * 0.20)
+
+    # Career prestige (20% weight -- tiebreaker only)
+    cp_title_pts = cp_days = cp_longest = 0
+    for org in ALL_ORGS:
+        for weight in WEIGHT_ORDER:
+            for reign in db.championships[org][weight]:
+                if reign['champion'] != name: continue
+                if not _year_of(reign['date']) or _year_of(reign['date']) > ranking_year: continue
+                cp_title_pts += 25 if org == 'ring' else (30 if org in MAJOR_ORGS else 10)
+                days = reign.get('days') or 0
+                cp_days += days; cp_longest = max(cp_longest, days)
+    career_prestige = min(
+        min(cp_title_pts, 70) +
+        min(cp_days / 365, 3) * 8 +
+        min(cp_longest / 365, 2) * 4,
+        100
+    )
+
+    # Open Tournament bonus
     won_open_this_year = ranking_year in cache['open_wins'].get(name, [])
     open_yearly_bonus  = OPEN_WIN_YEARLY_BONUS if won_open_this_year else 0
 
-    # ── FINAL: 70% year + 30% career prestige + Open bonus ───────────────
-    raw = year_score * 0.70 + career_prestige * 0.30 + open_yearly_bonus
+    # Final: 80% year + 20% prestige + Open bonus
+    raw = year_score * 0.80 + career_prestige * 0.20 + open_yearly_bonus
 
-    # Recency: slight penalty if they didn't fight this year (ranked on prior year)
     if not this_year_matches and not won_open_this_year:
         last_fight = max((y for (y, *_) in results), default=0)
         inactive   = max(ranking_year - last_fight, 0)
@@ -548,12 +625,12 @@ def all_titles_str(db, name, cache=None):
 # YEARLY RANKINGS
 # =============================================================================
 
-def rank_for_year(db, cache, year, gender_set, top_n=10):
+def rank_for_year(db, cache, year, gender_set, top_n=10, woty_count=None):
     """
     Top-N wrestlers for a given year within gender_set.
-    Strict eligibility: ppv wrestler, active within 2 years,
-    ≥ P4P_MIN_BOUTS career bouts, ≥ P4P_MIN_CAREER_WINS career wins.
-    Returns list of (name, score, record, primary_weight, titles).
+    woty_count: dict {name: times_been_no1} — if provided, wrestlers who have
+                already been #1 WOTY_MAX_TIMES times get their score capped
+                so they can't be #1 again (still appear at 2-10).
     """
     results = []
     for name in gender_set:
@@ -602,6 +679,19 @@ def rank_for_year(db, cache, year, gender_set, top_n=10):
         results.append((name, score, record, year_record, primary, titles))
 
     results.sort(key=lambda x: x[1], reverse=True)
+
+    # WOTY cap: if top wrestler has hit WOTY_MAX_TIMES, demote them from #1
+    # by reducing their score just below #2, so they still appear but can't win
+    if woty_count and len(results) >= 2:
+        top_name  = results[0][0]
+        top_count = woty_count.get(top_name, 0)
+        if top_count >= WOTY_MAX_TIMES:
+            # Replace their score with (second place score - tiny epsilon)
+            second_score = results[1][1]
+            demoted = (results[0][0], second_score - 0.0001,) + results[0][2:]
+            results[0] = demoted
+            results.sort(key=lambda x: x[1], reverse=True)
+
     return results[:top_n]
 
 
@@ -688,12 +778,32 @@ def generate_p4p_html(db, cache):
             html += '        </tr>\n'
         html += '    </tbody></table>\n    </details>\n\n'
 
-    # Yearly tables, newest first
-    for year in reversed(years):
+    # Yearly tables, newest first.
+    # woty_count tracks how many times each wrestler has been #1 so far
+    # (iterating oldest→newest so counts are accurate), then we reverse for display.
+    men_woty   = defaultdict(int)
+    women_woty = defaultdict(int)
+    yearly_men   = {}
+    yearly_women = {}
+
+    for year in sorted(years):   # oldest first to build accurate woty_count
         if year >= MENS_P4P_START:
-            html += p4p_table(db, year, "Men", rank_for_year(db, cache, year, men))
+            ranks = rank_for_year(db, cache, year, men, woty_count=men_woty)
+            yearly_men[year] = ranks
+            if ranks:
+                men_woty[ranks[0][0]] += 1   # increment #1 winner's count
+
         if year >= WOMENS_P4P_START:
-            html += p4p_table(db, year, "Women", rank_for_year(db, cache, year, women))
+            ranks = rank_for_year(db, cache, year, women, woty_count=women_woty)
+            yearly_women[year] = ranks
+            if ranks:
+                women_woty[ranks[0][0]] += 1
+
+    for year in reversed(years):
+        if year >= MENS_P4P_START and yearly_men.get(year):
+            html += p4p_table(db, year, "Men", yearly_men[year])
+        if year >= WOMENS_P4P_START and yearly_women.get(year):
+            html += p4p_table(db, year, "Women", yearly_women[year])
 
     return html
 
@@ -783,7 +893,7 @@ def generate_hof_html(db, cache):
     hof_classes, _ = compute_hof_classes(db, cache)
 
     html  = '    <!-- List of PWHOF Members -->\n'
-    html += '    <table class="hof-history">\n'
+    html += '    <table class="champ-history">\n'
     html += '    <tr>\n'
     html += '        <th>No.</th><th>Class</th><th>Ring name</th>'
     html += '<th>Record</th><th>Height</th><th>Titles</th>'
@@ -840,10 +950,13 @@ def compute_highest_ranking(db, cache, name):
         checks.append((women, WOMENS_P4P_START))
 
     for (gset, start_year) in checks:
-        for year in years:
+        woty_count = defaultdict(int)
+        for year in sorted(years):
             if year < start_year:
                 continue
-            rankings = rank_for_year(db, cache, year, gset)
+            rankings = rank_for_year(db, cache, year, gset, woty_count=woty_count)
+            if rankings:
+                woty_count[rankings[0][0]] += 1
             for rank_idx, (n, *_) in enumerate(rankings, 1):
                 if n == name:
                     if best_rank is None or rank_idx < best_rank:

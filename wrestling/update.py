@@ -206,25 +206,6 @@ class WrestlingDatabase:
             if 'weight' in vacancy and 'date' in vacancy:
                 self.vacancies.append(vacancy)
 
-    def parse_tournament_comments(self, html_content):
-        """Parse TOURNAMENT WINNER comments from HTML (Trios only; Open is derived from match data)"""
-        soup = BeautifulSoup(html_content, 'html.parser')
-        comments = soup.find_all(string=lambda text: isinstance(text, Comment))
-        
-        for comment in comments:
-            comment_text = comment.strip()
-            
-            # Parse Trios Tournament
-            if 'TRIOS TOURNAMENT WINNER' in comment_text.upper():
-                winner_match = re.search(r'Winner:\s*([^.]+)', comment_text, re.IGNORECASE)
-                if winner_match:
-                    winner_name = self.clean_name(winner_match.group(1).strip())
-                    self.tournaments['trios'].append(winner_name)
-                    
-                    # Update wrestler stats
-                    wrestler = self.get_wrestler(winner_name)
-                    wrestler['trios_tournament_wins'] += 1
-
     def parse_events(self, html_file, is_weekly=False):
         """Parse all events from HTML file"""
         with open(html_file, 'r', encoding='utf-8') as f:
@@ -233,10 +214,6 @@ class WrestlingDatabase:
         # Parse vacancy comments first (only for PPV)
         if not is_weekly:
             self.parse_vacancy_comments(html_content)
-
-        # Parse tournament comments (only for PPV)
-        if not is_weekly:
-            self.parse_tournament_comments(html_content)
         
         soup = BeautifulSoup(html_content, 'html.parser')
         details = soup.find_all('details')
@@ -389,9 +366,11 @@ class WrestlingDatabase:
             falls = cols[7].get_text().strip() if len(cols) > 7 else ''
             notes = cols[8].get_text().strip() if len(cols) > 8 else ''
 
-            # Handle non-singles matches (Trios, Triple Threat, Fatal Four Way, Battle Royal)
+            # Handle non-singles matches
+            # Match types: Tag, Trios, Three Way, Four Way, Battle Royal, Royal Rumble, Ladder, Gauntlet
             match_type_lower = match_type.lower()
             if match_type_lower != 'singles':
+                is_main_event = (idx == len(match_rows) - 1)
                 self.process_multi_man_match(
                     match_type=match_type,
                     weight_class=weight_class,
@@ -408,7 +387,8 @@ class WrestlingDatabase:
                     event_location=event_location,
                     event_country=event_country,
                     event=event,
-                    is_weekly=is_weekly
+                    is_weekly=is_weekly,
+                    is_main_event=is_main_event
                 )
                 continue
             
@@ -460,13 +440,19 @@ class WrestlingDatabase:
         
         # Record broadcast if it has audience metrics (skip for weekly shows)
         if not is_weekly and audience_metric and broadcast_type:
-            # Get main event info (last singles match)
-            main_event_match = event['matches'][-1] if event['matches'] else None
+            # Get main event info (last match — may be singles or multi-man)
             main_event_text = ""
             main_event_wrestlers = []
-            if main_event_match:
-                main_event_text = f"{main_event_match['fighter1']} vs. {main_event_match['fighter2']}"
-                main_event_wrestlers = [main_event_match['fighter1'], main_event_match['fighter2']]
+            if event['matches']:
+                me = event['matches'][-1]
+                main_event_text = f"{me['fighter1']} vs. {me['fighter2']}"
+                main_event_wrestlers = [me['fighter1'], me['fighter2']]
+            elif event['multi_man_matches']:
+                me = event['multi_man_matches'][-1]
+                if me.get('is_main_event'):
+                    main_event_text = self.format_multi_man_main_event_text(me)
+                    all_fighters = me.get('winners', []) + me.get('losers', [])
+                    main_event_wrestlers = [f['name'] for f in all_fighters]
             
             self.broadcasts.append({
                 'event': event_name,
@@ -551,8 +537,8 @@ class WrestlingDatabase:
     def process_multi_man_match(self, match_type, weight_class, fighter1_cell, result_cell,
                                  fighter2_cell, method, falls, notes, match_num, event_name,
                                  event_date, event_venue, event_location, event_country, event,
-                                 is_weekly=False):
-        """Process a multi-man match (Trios, Triple Threat, Fatal Four Way, Battle Royal).
+                                 is_weekly=False, is_main_event=False):
+        """Process a multi-man match (Tag, Trios, Three Way, Four Way, Battle Royal, etc.).
         Stores in the database but does NOT count toward singles record."""
         
         # Extract fighters from both sides (may have multiple per cell via <div>)
@@ -577,7 +563,8 @@ class WrestlingDatabase:
             'date': event_date,
             'venue': event_venue,
             'location': event_location,
-            'location_country': event_country
+            'location_country': event_country,
+            'is_main_event': is_main_event
         }
         
         # Store in event
@@ -596,6 +583,43 @@ class WrestlingDatabase:
             # Track PPV wrestlers
             if not is_weekly:
                 self.ppv_wrestlers.add(fighter['name'])
+            # Track main event appearances
+            if is_main_event and not is_weekly:
+                w['main_events'] += 1
+                if 'wrestlemania' in event_name.lower():
+                    w['wrestlemania_main_events'] += 1
+                elif 'libremania' in event_name.lower():
+                    w['libremania_main_events'] += 1
+
+    @staticmethod
+    def format_multi_man_main_event_text(multi_match):
+        """Format a multi-man match as main event text for broadcast records.
+        Three Way / Four Way: 'Santo vs. Demon vs. Mascaras'
+        Trios: '<i>Relevos Australianos</i> Trios Match'
+        Tag: '<i>Relevos Increíbles</i> Tag Match'
+        Battle Royal / Royal Rumble / Ladder / Gauntlet: 'TYPE Match'
+        """
+        mt = multi_match['type'].lower()
+        w_names = [f['name'] for f in multi_match.get('winners', [])]
+        l_names = [f['name'] for f in multi_match.get('losers', [])]
+        all_names = w_names + l_names
+
+        if mt in ('three way', 'four way', 'triple threat', 'fatal four way'):
+            return ' vs. '.join(all_names)
+        elif mt == 'trios':
+            return '<i>Relevos Australianos</i> Trios Match'
+        elif mt == 'tag':
+            return '<i>Relevos Increíbles</i> Tag Match'
+        elif mt == 'royal rumble':
+            return 'Royal Rumble Match'
+        elif mt == 'gauntlet':
+            return 'Gauntlet Match'
+        elif mt == 'ladder':
+            return 'Ladder Match'
+        elif mt == 'battle royal':
+            return 'Battle Royal Match'
+        else:
+            return f'{multi_match["type"]} Match'
 
     def parse_battle_royal_eliminations(self, detail, event_name, event_date):
         """Parse battle royal elimination data from <p> tags within a <details> element.
@@ -1317,7 +1341,9 @@ class WrestlingDatabase:
 
     def parse_open_tournament_from_events(self):
         """Derive Open Tournament winners from already-parsed PPV match data.
-        Finds matches where notes contain 'Open Tournament Finals' and records the winner.
+        Finds singles matches where notes contain 'Open Tournament Finals'.
+        Starting in 2020, events may specify 'Men's' or 'Women's' Open;
+        if unspecified, defaults to men's.
         Also sets wrestler['open_tournament_wins'] and populates self.tournaments['open'].
         Stores list of dicts in self.tournaments['open_with_years']."""
         self.tournaments['open_with_years'] = []
@@ -1351,6 +1377,15 @@ class WrestlingDatabase:
                     winner_country = match.get('fighter2_country', 'un')
                     runner_up_country = match.get('fighter1_country', 'un')
                 
+                # Determine gender: "Women's Open Tournament Finals" → women, else men
+                notes_lower = notes.lower()
+                if "women" in notes_lower:
+                    gender = 'women'
+                elif "men" in notes_lower:
+                    gender = 'men'
+                else:
+                    gender = 'men'  # default if unspecified
+                
                 self.tournaments['open_with_years'].append({
                     'winner': winner,
                     'winner_country': winner_country,
@@ -1361,6 +1396,7 @@ class WrestlingDatabase:
                     'venue': event.get('venue', ''),
                     'location': event.get('location', ''),
                     'location_country': event.get('country', 'un'),
+                    'gender': gender,
                 })
                 
                 # Update wrestler stats and legacy list
@@ -1372,14 +1408,70 @@ class WrestlingDatabase:
             years = [t['year'] for t in self.tournaments['open_with_years']]
             print(f"  Open Tournament: found {len(self.tournaments['open_with_years'])} winners from PPV data ({min(years)}–{max(years)})")
 
+    def parse_trios_tournament_from_events(self):
+        """Derive Trios Tournament winners from already-parsed multi-man match data.
+        Finds Trios matches where notes contain 'Trios Finals' (or 'Trios Tournament Finals').
+        Each side has 3 wrestlers. Winners get trios_tournament_wins += 1.
+        Stores list of dicts in self.tournaments['trios_with_years']."""
+        self.tournaments['trios_with_years'] = []
+        
+        # Reset trios_tournament_wins for all wrestlers
+        for w in self.wrestlers.values():
+            w['trios_tournament_wins'] = 0
+        
+        for event in self.events:
+            for mm in event.get('multi_man_matches', []):
+                notes = mm.get('notes', '')
+                if 'trios finals' not in notes.lower() and 'trios tournament finals' not in notes.lower():
+                    continue
+                
+                winners = mm.get('winners', [])
+                losers = mm.get('losers', [])
+                if not winners:
+                    continue
+                
+                date_str = mm.get('date', '')
+                parsed = self.parse_date(date_str)
+                year = parsed.year if parsed else None
+                if not year:
+                    continue
+                
+                self.tournaments['trios_with_years'].append({
+                    'winners': winners,  # list of {name, country} dicts
+                    'losers': losers,
+                    'year': year,
+                    'date': date_str,
+                    'venue': event.get('venue', ''),
+                    'location': event.get('location', ''),
+                    'location_country': event.get('country', 'un'),
+                })
+                
+                # Update wrestler stats
+                for fighter in winners:
+                    w = self.get_wrestler(fighter['name'])
+                    w['trios_tournament_wins'] += 1
+                    self.tournaments['trios'].append(fighter['name'])
+        
+        if self.tournaments['trios_with_years']:
+            years = [t['year'] for t in self.tournaments['trios_with_years']]
+            print(f"  Trios Tournament: found {len(self.tournaments['trios_with_years'])} editions from PPV data ({min(years)}–{max(years)})")
+
     def generate_open_tournament_html(self):
-        """Generate the Open Tournament winners table for wiki.html from parsed data."""
+        """Generate the Open Tournament winners table for wiki.html from parsed data.
+        When both men's and women's finals exist for the same year (same venue),
+        they share a single row number with rowspan=2 on No./Year/Venue/Location."""
         entries = self.tournaments.get('open_with_years', [])
         if not entries:
             return ''
         
-        # Sort by year descending (most recent first), number descending
-        entries_sorted = sorted(entries, key=lambda t: t['year'], reverse=True)
+        # Sort by year descending
+        entries_sorted = sorted(entries, key=lambda t: (-t['year'], t.get('gender', 'men')))
+        
+        # Group by year to detect shared rows
+        from collections import OrderedDict
+        year_groups = OrderedDict()
+        for t in entries_sorted:
+            year_groups.setdefault(t['year'], []).append(t)
         
         html = '    <h2 id="open">The Open</h2>\n\n'
         html += '    <p>The Open Tournament is an openweight tournament.</p>\n\n'
@@ -1396,19 +1488,94 @@ class WrestlingDatabase:
         html += '        </thead>\n'
         html += '        <tbody>\n'
         
+        # Number editions from total down to 1
+        edition_num = len(year_groups)
+        for year, group in year_groups.items():
+            group_size = len(group)
+            # Sort group: men first, then women
+            group.sort(key=lambda t: 0 if t.get('gender', 'men') == 'men' else 1)
+            
+            for row_idx, t in enumerate(group):
+                w_country = t.get('winner_country', 'un')
+                r_country = t.get('runner_up_country', 'un')
+                l_country = t.get('location_country', 'un')
+                location = t.get('location', '')
+                venue = t.get('venue', '')
+                gender = t.get('gender', 'men')
+                
+                # Prefix winner/runner-up label with gender if both exist this year
+                gender_prefix = ''
+                if group_size > 1:
+                    gender_prefix = "Men's " if gender == 'men' else "Women's "
+                
+                html += '            <tr>\n'
+                
+                if row_idx == 0:
+                    # First row in group — include No/Year/Venue/Location (with rowspan if group > 1)
+                    rs = f' rowspan="{group_size}"' if group_size > 1 else ''
+                    html += f'                <th{rs}>{edition_num}</th>\n'
+                    html += f'                <td{rs}>{year}</td>\n'
+                    html += f'                <td>{gender_prefix}<span class="fi fi-{w_country}"></span> {t["winner"]}</td>\n'
+                    html += f'                <td><span class="fi fi-{r_country}"></span> {t["runner_up"]}</td>\n'
+                    html += f'                <td{rs}>{venue}</td>\n'
+                    html += f'                <td{rs}><span class="fi fi-{l_country}"></span> {location}</td>\n'
+                else:
+                    # Subsequent rows in group — only Winner and Runner-Up columns
+                    html += f'                <td>{gender_prefix}<span class="fi fi-{w_country}"></span> {t["winner"]}</td>\n'
+                    html += f'                <td><span class="fi fi-{r_country}"></span> {t["runner_up"]}</td>\n'
+                
+                html += '            </tr>\n'
+            
+            edition_num -= 1
+        
+        html += '        </tbody>\n'
+        html += '    </table>\n'
+        
+        return html
+
+    def generate_trios_tournament_html(self):
+        """Generate the Trios Tournament winners table for wiki.html from parsed data.
+        Each row has 3 winners (in one cell with <br>) and 3 losers."""
+        entries = self.tournaments.get('trios_with_years', [])
+        if not entries:
+            return ''
+        
+        entries_sorted = sorted(entries, key=lambda t: t['year'], reverse=True)
+        
+        html = '    <h2 id="trios">Trios Tournament</h2>\n\n'
+        html += '    <table class="match-card">\n'
+        html += '        <thead>\n'
+        html += '            <tr>\n'
+        html += '                <th>No.</th>\n'
+        html += '                <th>Year</th>\n'
+        html += '                <th>Winners</th>\n'
+        html += '                <th>Runners-Up</th>\n'
+        html += '                <th>Venue</th>\n'
+        html += '                <th>Location</th>\n'
+        html += '            </tr>\n'
+        html += '        </thead>\n'
+        html += '        <tbody>\n'
+        
         for idx, t in enumerate(entries_sorted):
-            num = len(entries_sorted) - idx  # number from total down to 1
-            w_country = t.get('winner_country', 'un')
-            r_country = t.get('runner_up_country', 'un')
+            num = len(entries_sorted) - idx
             l_country = t.get('location_country', 'un')
             location = t.get('location', '')
             venue = t.get('venue', '')
             
+            winners_html = ' <br> '.join(
+                f'<span class="fi fi-{f.get("country", "un")}"></span> {f["name"]}'
+                for f in t['winners']
+            )
+            losers_html = ' <br> '.join(
+                f'<span class="fi fi-{f.get("country", "un")}"></span> {f["name"]}'
+                for f in t['losers']
+            )
+            
             html += '            <tr>\n'
             html += f'                <th>{num}</th>\n'
             html += f'                <td>{t["year"]}</td>\n'
-            html += f'                <td><span class="fi fi-{w_country}"></span> {t["winner"]}</td>\n'
-            html += f'                <td><span class="fi fi-{r_country}"></span> {t["runner_up"]}</td>\n'
+            html += f'                <td>{winners_html}</td>\n'
+            html += f'                <td>{losers_html}</td>\n'
             html += f'                <td>{venue}</td>\n'
             html += f'                <td><span class="fi fi-{l_country}"></span> {location}</td>\n'
             html += '            </tr>\n'
@@ -1453,6 +1620,13 @@ class WrestlingDatabase:
             for t in sorted(open_wins, key=lambda x: x['year']):
                 all_time[('open', f'tournament_{t["year"]}')] = (f"{t['year']} Open Tournament", 1)
         
+        # Include Trios Tournament wins
+        trios_wins = [t for t in self.tournaments.get('trios_with_years', [])
+                      if any(f['name'] == wrestler_name for f in t['winners'])]
+        if trios_wins:
+            for t in sorted(trios_wins, key=lambda x: x['year']):
+                all_time[('trios', f'tournament_{t["year"]}')] = (f"{t['year']} Trios Tournament", 1)
+        
         return current_titles, all_time
 
     def generate_wrestler_page(self, wrestler_name):
@@ -1492,8 +1666,8 @@ class WrestlingDatabase:
             html = "<h3>Titles in Wrestling</h3>\n\n"
             title_parts = []
             for (org, weight), (label, count) in all_time_titles.items():
-                # Open Tournament has year info baked into the label, no "Championship" suffix
-                if org == 'open':
+                # Tournament entries have year info baked into the label, no "Championship" suffix
+                if org in ('open', 'trios'):
                     title_parts.append(label)
                 elif count > 1:
                     title_parts.append(f"{label} Championship ({count}x)")
@@ -3348,6 +3522,13 @@ class WrestlingDatabase:
                 after = content.split('<!-- OPEN_END -->')[1]
                 content = before + '<!-- OPEN_START -->\n' + open_html + '<!-- OPEN_END -->' + after
             
+            # Update Trios Tournament table
+            trios_html = self.generate_trios_tournament_html()
+            if '<!-- TRIOS_START -->' in content and '<!-- TRIOS_END -->' in content:
+                before = content.split('<!-- TRIOS_START -->')[0]
+                after = content.split('<!-- TRIOS_END -->')[1]
+                content = before + '<!-- TRIOS_START -->\n' + trios_html + '<!-- TRIOS_END -->' + after
+            
             # Update apuestas
             apuestas_html = self.generate_apuestas_html()
             if '<!-- APUESTAS_START -->' in content and '<!-- APUESTAS_END -->' in content:
@@ -3568,6 +3749,10 @@ def main():
     # Derive Open Tournament winners from parsed PPV match data
     print("Parsing Open Tournament winners from PPV data...")
     db.parse_open_tournament_from_events()
+    
+    # Derive Trios Tournament winners from parsed multi-man match data
+    print("Parsing Trios Tournament winners from PPV data...")
+    db.parse_trios_tournament_from_events()
     
     # Count multi-man matches and battle royal eliminations
     multi_man_count = sum(len(e.get('multi_man_matches', [])) for e in db.events)

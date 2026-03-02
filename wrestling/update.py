@@ -1473,9 +1473,7 @@ class WrestlingDatabase:
         for t in entries_sorted:
             year_groups.setdefault(t['year'], []).append(t)
         
-        html = '    <h2 id="open">The Open</h2>\n\n'
-        html += '    <p>The Open Tournament is an openweight tournament.</p>\n\n'
-        html += '    <table class="match-card">\n'
+        html = '    <table class="match-card">\n'
         html += '        <thead>\n'
         html += '            <tr>\n'
         html += '                <th>No.</th>\n'
@@ -1542,8 +1540,7 @@ class WrestlingDatabase:
         
         entries_sorted = sorted(entries, key=lambda t: t['year'], reverse=True)
         
-        html = '    <h2 id="trios">Trios Tournament</h2>\n\n'
-        html += '    <table class="match-card">\n'
+        html = '    <table class="match-card">\n'
         html += '        <thead>\n'
         html += '            <tr>\n'
         html += '                <th>No.</th>\n'

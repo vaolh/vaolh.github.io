@@ -920,7 +920,7 @@ def generate_hof_html(db, cache):
     hof_classes, _ = compute_hof_classes(db, cache)
 
     html  = '    <!-- List of PWHOF Members -->\n'
-    html += '    <table class="champ-history">\n'
+    html += '    <table class="hof-history">\n'
     html += '    <tr>\n'
     html += '        <th>No.</th><th>Class</th><th>Ring name</th>'
     html += '<th>Record</th><th>Height</th><th>Titles</th>'
@@ -953,7 +953,6 @@ def generate_hof_html(db, cache):
             row_num += 1
 
     html += '    </table>\n\n'
-    html += '    <p>†: In-Ring Death.</p>\n'
     return html
 
 

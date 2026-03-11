@@ -1,39 +1,15 @@
 [
   {
-    "id": "arrow-1950",
-    "title": "A Difficulty in the Concept of Social Welfare",
-    "authors": ["Kenneth J. Arrow"],
-    "year": 1950,
+    "id": "andrews-1927",
+    "title": "Explorations in Mongolia: a review of the Central Asiatic expeditions of the American Museum of Natural History",
+    "authors": ["Roy Chapman Andrews"],
+    "year": 1927,
     "genre": "econ",
     "favorite": true,
-    "poster": "https://www.journals.uchicago.edu/cms/10.1086/jpe.2026.134.issue-2/asset/19c7cccf-1719-7ccc-d171-c7cccfd1719c/jpe.2026.134.issue-2.cover.png",
+    "poster": "https://rgs-ibg.onlinelibrary.wiley.com/cover/14754959",
     "pdf": "",
-    "rating": 5,
-    "date_read": "2025-12-01",
-    "review": "Arrow's impossibility theorem is one of the most elegant results in social choice theory. The paper demonstrates that no ranked voting system can satisfy a set of seemingly reasonable fairness criteria simultaneously.\n\nFormally, let $N$ be a set of voters and $A$ a set of alternatives with $|A| \\geq 3$. Arrow proves there is no social welfare function $f$ satisfying:\n\n1. **Unrestricted domain**: $f$ is defined for all possible preference profiles.\n2. **Pareto efficiency**: If every voter prefers $x$ to $y$, then the social ranking ranks $x$ above $y$.\n3. **Independence of irrelevant alternatives**: The social preference between $x$ and $y$ depends only on individual preferences between $x$ and $y$.\n4. **Non-dictatorship**: There is no single voter $i$ such that $i$'s preference always determines the social outcome.\n\nThe proof is remarkably concise for such a sweeping result. Arrow constructs a *decisive* set argument, showing that the conjunction of conditions (1)–(3) forces the decisive set to shrink to a single individual, violating (4).\n\n$$\\nexists\\, f: \\mathcal{L}(A)^N \\to \\mathcal{L}(A) \\text{ satisfying (1)–(4)}$$\n\nA foundational paper that reshaped welfare economics and political philosophy in one stroke."
-  },
-  {
-    "id": "coase-1960",
-    "title": "The Problem of Social Cost",
-    "authors": ["Ronald H. Coase"],
-    "year": 1960,
-    "genre": "econ",
-    "poster": "https://www.journals.uchicago.edu/cms/10.1086/599575/asset/14fd1281-ed14-d128-ced1-fd1281ced14f/cover.png",
-    "pdf": "",
-    "rating": 4.5,
-    "date_read": "2025-11-15",
-    "review": "Coase challenges the Pigouvian tradition head-on by arguing that externalities are reciprocal in nature. The so-called Coase Theorem — a label Coase never used himself — states that if transaction costs are zero and property rights are well defined, bargaining will lead to an efficient allocation regardless of the initial assignment of rights.\n\nThe paper is best read not as a policy prescription but as a thought experiment that highlights the critical role of transaction costs. When we observe real-world inefficiencies from externalities, the culprit is not the absence of a tax but the presence of transaction costs that prevent Coasean bargaining.\n\nCoase's numerical examples, particularly the farmer-rancher problem, remain a staple of introductory law and economics courses. The depth of insight packed into what appears to be a straightforward argument is remarkable."
-  },
-  {
-    "id": "nash-1950",
-    "title": "Equilibrium Points in N-Person Games",
-    "authors": ["John F. Nash"],
-    "year": 1950,
-    "genre": "math",
-    "poster": "https://www.pnas.org/cms/asset/48230d34-3cdf-41dc-be75-7f5119dcea3e/pnas.2023.120.issue-52.largecover.png",
-    "pdf": "",
-    "rating": 5,
-    "date_read": "2026-01-20",
-    "review": "A one-page masterpiece. Nash proves that every finite game has at least one equilibrium point in mixed strategies using Kakutani's fixed-point theorem.\n\nLet $\\Gamma = (N, (S_i)_{i \\in N}, (u_i)_{i \\in N})$ be a finite normal-form game. A **Nash equilibrium** is a strategy profile $\\sigma^* = (\\sigma_1^*, \\ldots, \\sigma_n^*)$ such that for every player $i$:\n\n$$u_i(\\sigma_i^*, \\sigma_{-i}^*) \\geq u_i(\\sigma_i, \\sigma_{-i}^*) \\quad \\forall \\sigma_i \\in \\Delta(S_i)$$\n\nThe proof maps the space of mixed strategy profiles into itself via a best-response correspondence and applies Kakutani's theorem to guarantee a fixed point. The brevity and elegance are astonishing — the entire argument fits on a single journal page.\n\nThis paper is the foundation stone of non-cooperative game theory."
+    "rating": 3.5,
+    "date_read": "2026-03-11",
+    "review": "Narrative style account of a 1925 expedition into Mongolia. From Kalgan, via Pekin, they travelled (innovatively using cars) into the north-west region. This expedition was motivated by Henry Osborn's theory that the high plateau of Central Asia was a cradle for many mammalian species. Around 40 people were involved in the interdisciplinary work; moving through the Gobi Desert with 125 camels and 7 cars. Four units focused on specific tasks. \n\n New topographic maps were produced as previous ones were based on unreliable proverbial accounts. They used speedometers as a way to measure distance, and topographers, it seems, were mapping as they were travelling, using cars as reference points for their stadia rods. At the beginning palaeontology was heavily emphasized. The expedition established the region was the home of most dinosaurian reptiles from the Jurassic to Pleistocene periods. This is evidently an outdated assertion to make nowadays. They obtained over a thousand fossil specimens. Andrews highlights a few, and mentions that the dinosaur eggs discovered in this expedition sparked popular interest at the time. \n\n Archaeology is also reviewed. Andrews explains that traces of the presence of prehistoric cultures were found across the expedition's entire route. For example: burial structures, necklaces ornamented with dinosaur egg shells, and so on. The Gobi Desert was inhabited by humans during the Stone Age. For botany, over 500 living plants were collected, and palaeobotanical evidence hinted at the existence of a sequoia forest, although parts of the region were desertic even then. Geologically, results on a giant batholith, climate change, and stratigraphic columns are mentioned. They also stole tens of thousands of animals. \n\n The pictures are quite nice, it really looks like there was a lot of flat terrain (which RCA says made car travel possible), with cliffs and other rocky mountainous surfaces. Quite an enjoyable read, I like how it seems almost mundane compared to how explorers are portrayed in media, although RCA does say that the expedition was described as luxurious. "  
   }
 ]

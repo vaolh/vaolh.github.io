@@ -224,8 +224,8 @@
       metaHtml = '<div class="poster-item-meta"><span class="stars">' + ratingToStars(p.rating) + '</span>' + metaIcons(p) + '</div>';
     }
     el.innerHTML =
-      '<div class="poster-item-img"><img src="' + escapeHtml(p.poster) + '" alt="' + escapeHtml(p.title) + '" loading="lazy"></div>' +
-      hoverTitle + metaHtml;
+      '<div class="poster-item-img"><img src="' + escapeHtml(p.poster) + '" alt="' + escapeHtml(p.title) + '" loading="lazy">' + hoverTitle + '</div>' +
+      metaHtml;
     el.addEventListener('click', function () {
       if (p.review) openReview(p.id);
     });
@@ -245,8 +245,8 @@
       metaHtml = '<div class="poster-card-meta"><span class="stars">' + ratingToStars(p.rating) + '</span>' + metaIcons(p) + '</div>';
     }
     el.innerHTML =
-      '<div class="poster-card-img"><img src="' + escapeHtml(p.poster) + '" alt="' + escapeHtml(p.title) + '" loading="lazy"></div>' +
-      hoverTitle + metaHtml;
+      '<div class="poster-card-img"><img src="' + escapeHtml(p.poster) + '" alt="' + escapeHtml(p.title) + '" loading="lazy">' + hoverTitle + '</div>' +
+      metaHtml;
     el.addEventListener('click', function () {
       if (p.review) openReview(p.id);
     });
@@ -281,24 +281,21 @@
   function renderSidebarHistogram() {
     var container = document.getElementById('sidebar-histogram');
     container.innerHTML = '';
-    // Buckets: 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
     var buckets = {};
     for (var b = 0.5; b <= 5; b += 0.5) buckets[b] = 0;
     papers.forEach(function (p) {
       if (p.rating && buckets[p.rating] !== undefined) buckets[p.rating]++;
     });
     var max = Math.max.apply(null, Object.values(buckets).concat([1]));
+    var maxPx = 52;
     Object.keys(buckets).sort(function (a, b) { return a - b; }).forEach(function (k) {
       var count = buckets[k];
-      var pct = (count / max) * 100;
+      var h = count > 0 ? Math.max(Math.round((count / max) * maxPx), 3) : 2;
       var bar = document.createElement('div');
       bar.className = 'hbar';
-      bar.style.height = '100%';
-      bar.style.position = 'relative';
-      bar.innerHTML =
-        '<div class="hbar-fill" style="height:' + pct + '%"></div>' +
-        '<span class="hbar-label">' + k + '</span>';
-      bar.title = k + '★: ' + count;
+      bar.style.height = h + 'px';
+      bar.innerHTML = '<span class="hbar-label">' + k + '</span>';
+      bar.title = k + '\u2605: ' + count;
       container.appendChild(bar);
     });
   }

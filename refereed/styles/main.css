@@ -52,9 +52,9 @@ img{max-width:100%;display:block}
 .pnav-link.active{color:#00e054;border-bottom:2px solid #00e054;margin-bottom:-1px}
 
 /* Two-column layout */
-.profile-columns{display:flex;gap:32px}
-.profile-main{flex:0 0 68%;min-width:0}
-.profile-sidebar{flex:0 0 30%;min-width:0}
+.profile-columns{display:flex;gap:40px}
+.profile-main{flex:1;min-width:0}
+.profile-sidebar{width:240px;flex-shrink:0;padding-top:28px}
 
 /* Section blocks */
 .section-block{margin-bottom:32px}
@@ -65,7 +65,7 @@ img{max-width:100%;display:block}
 .poster-row.four-up .poster-item{width:150px;flex:0 0 150px}
 
 .poster-item{position:relative;border-radius:4px;overflow:visible;cursor:pointer}
-.poster-item-img{width:150px;height:225px;border-radius:4px;overflow:hidden;background:#2c3440;transition:transform .15s,box-shadow .15s}
+.poster-item-img{width:150px;height:225px;border-radius:4px;overflow:hidden;background:#2c3440;position:relative;transition:transform .15s,box-shadow .15s}
 .poster-item:hover .poster-item-img{transform:scale(1.03);box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .poster-item-img img{width:100%;height:100%;object-fit:cover}
 
@@ -74,10 +74,10 @@ img{max-width:100%;display:block}
 .poster-item:hover .poster-hover-title{opacity:1}
 
 /* Stars under poster — gray, 64x16 strip, left-aligned */
-.poster-item-meta{display:flex;align-items:center;gap:2px;margin-top:4px;height:16px}
-.poster-item-meta .stars{color:#678;font-size:11px;line-height:16px;letter-spacing:0.5px}
-.poster-item-meta .fav-icon{color:#e8960c;display:inline-flex;align-items:center}
-.poster-item-meta .reread-icon{color:#9ab;display:inline-flex;align-items:center;margin-left:2px}
+.poster-item-meta{display:flex;align-items:center;gap:2px;margin-top:4px;height:14px}
+.poster-item-meta .stars{color:#678;font-size:12px;line-height:1;letter-spacing:0.5px}
+.poster-item-meta .fav-icon{color:#678;display:inline-flex;align-items:center}
+.poster-item-meta .reread-icon{color:#678;display:inline-flex;align-items:center;margin-left:1px}
 
 /* In review detail page, stars are green */
 .review-detail-rating .stars{color:#00e054}
@@ -96,7 +96,7 @@ img{max-width:100%;display:block}
    SIDEBAR
    ============================================= */
 
-.sidebar-block{margin-bottom:24px}
+.sidebar-block{margin-bottom:28px}
 .sidebar-block h3{font-size:.82rem;text-transform:uppercase;letter-spacing:.8px;color:#9ab;margin-bottom:10px}
 
 /* Sidebar reader upload */
@@ -126,27 +126,26 @@ img{max-width:100%;display:block}
 .sidebar-diary-item .sdi-meta{color:#678;font-size:.72rem;margin-top:1px}
 
 /* --- Histogram --- */
-.histogram{display:flex;align-items:flex-end;gap:3px;height:80px;padding-top:4px}
-.histogram .hbar{flex:1;background:#2c3440;border-radius:2px 2px 0 0;min-height:2px;position:relative;transition:background .2s}
-.histogram .hbar:hover{background:#3c4a58}
-.histogram .hbar-label{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:.55rem;color:#678;white-space:nowrap}
-.histogram .hbar-fill{position:absolute;bottom:0;left:0;right:0;background:#456;border-radius:2px 2px 0 0}
+.histogram{display:flex;align-items:flex-end;gap:3px;height:52px;overflow:visible}
+.histogram .hbar{flex:1;background:#456;border-radius:2px 2px 0 0;min-height:2px;position:relative;transition:background .15s;cursor:default}
+.histogram .hbar:hover{background:#6a8a9a}
+.histogram .hbar-label{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);font-size:.48rem;color:#678;white-space:nowrap}
 
 /* =============================================
    POSTER GRID (Papers, Watchlist)
    ============================================= */
-.poster-grid{display:grid;grid-template-columns:repeat(12,70px);gap:6px;justify-content:center}
+.poster-grid{display:grid;grid-template-columns:repeat(12,70px);gap:8px 10px;justify-content:center}
 
 .poster-card{position:relative;border-radius:4px;overflow:visible;cursor:pointer}
-.poster-card-img{width:70px;height:105px;border-radius:4px;overflow:hidden;background:#2c3440;transition:transform .15s,box-shadow .15s}
+.poster-card-img{width:70px;height:105px;border-radius:4px;overflow:hidden;background:#2c3440;position:relative;transition:transform .15s,box-shadow .15s}
 .poster-card:hover .poster-card-img{transform:scale(1.05);box-shadow:0 6px 18px rgba(0,0,0,.5)}
 .poster-card-img img{width:100%;height:100%;object-fit:cover}
 .poster-card .poster-hover-title{position:absolute;bottom:0;left:0;right:0;padding:6px 4px 4px;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.55) 60%,transparent 100%);font-size:.6rem;font-weight:600;color:#fff;opacity:0;transition:opacity .2s;pointer-events:none;border-radius:0 0 4px 4px}
 .poster-card:hover .poster-hover-title{opacity:1}
-.poster-card-meta{display:flex;align-items:center;gap:1px;margin-top:2px;height:14px}
-.poster-card-meta .stars{color:#678;font-size:9px;line-height:14px;letter-spacing:0.3px}
-.poster-card-meta .fav-icon{color:#e8960c;display:inline-flex;align-items:center}
-.poster-card-meta .reread-icon{color:#9ab;display:inline-flex;align-items:center}
+.poster-card-meta{display:flex;align-items:center;gap:1px;margin-top:2px;height:12px}
+.poster-card-meta .stars{color:#678;font-size:10px;line-height:1;letter-spacing:0.3px}
+.poster-card-meta .fav-icon{color:#678;display:inline-flex;align-items:center}
+.poster-card-meta .reread-icon{color:#678;display:inline-flex;align-items:center}
 
 /* Watchlist grid: no hover title */
 .watchlist-no-hover .poster-hover-title{display:none!important}
@@ -234,7 +233,8 @@ img{max-width:100%;display:block}
 /* =============================================
    PDF READER PAGE
    ============================================= */
-.reader-page{min-height:calc(100vh - 84px)}
+#page-reader{padding:0;overflow:hidden;height:calc(100vh - 92px)}
+.reader-page{height:100%;display:flex;flex-direction:column;overflow:hidden}
 .reader-upload-area{max-width:500px;margin:40px auto}
 .upload-dropzone{border:2px dashed #2c3440;border-radius:8px;padding:48px;text-align:center;cursor:pointer;color:#9ab;transition:border-color .2s,background .2s}
 .upload-dropzone:hover,.upload-dropzone.dragover{border-color:#00e054;background:rgba(0,224,84,.04)}
@@ -247,11 +247,11 @@ img{max-width:100%;display:block}
 .library-item-delete:hover{color:#ff5050}
 
 /* Active reader layout */
-.reader-active{width:100%}
-.reader-layout{display:flex;gap:0;min-height:calc(100vh - 120px)}
+.reader-active{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
+.reader-layout{display:flex;gap:0;flex:1;overflow:hidden}
 
 /* Left panel */
-.reader-left-panel{width:160px;flex-shrink:0;background:#1b2028;border-right:1px solid #2c3440;padding:16px;display:flex;flex-direction:column;gap:10px}
+.reader-left-panel{width:80px;flex-shrink:0;background:#1b2028;border-right:1px solid #2c3440;padding:12px;display:flex;flex-direction:column;gap:8px;overflow-y:auto}
 .reader-file-info{font-size:.78rem;color:#9ab;word-break:break-all;margin-bottom:4px}
 .btn-reader{padding:10px;border:none;border-radius:4px;background:#00e054;color:#14181c;font-weight:700;font-size:.9rem;cursor:pointer;text-align:center}
 .btn-reader:hover{background:#00c94b}
@@ -264,20 +264,20 @@ img{max-width:100%;display:block}
 .reader-slider-group input[type="range"]{width:100%;accent-color:#00e054}
 
 /* Center area */
-.reader-center{flex:1;display:flex;flex-direction:column;padding:16px}
-.rsvp-display{background:#0d1117;border:1px solid #2c3440;border-radius:8px;text-align:center;padding:48px 24px;margin-bottom:12px;min-height:160px;display:flex;align-items:center;justify-content:center}
+.reader-center{flex:1;display:flex;flex-direction:column;padding:16px;overflow:hidden;min-width:0}
+.rsvp-display{background:#0d1117;border:1px solid #2c3440;border-radius:8px;text-align:center;padding:48px 24px;margin-bottom:12px;min-height:120px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 #rsvp-word{font-size:2.4rem;font-weight:600;color:#fff;letter-spacing:1px}
 #rsvp-word .focus-char{color:#00e054}
-.reader-bar-wrap{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.reader-bar-wrap{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-shrink:0}
 .reader-progress-bar{flex:1;height:6px;background:#2c3440;border-radius:3px;overflow:hidden}
 .reader-progress-fill{height:100%;background:#00e054;border-radius:3px;transition:width .1s}
 .reader-progress-text{font-size:.75rem;color:#678;white-space:nowrap}
-.reader-pages-scroller{display:flex;gap:6px;overflow-x:auto;padding:8px 0;flex-shrink:0}
+.reader-pages-scroller{display:flex;gap:6px;overflow-x:auto;padding:6px 0;flex-shrink:0;max-height:80px}
 .reader-pages-scroller canvas{height:60px;border-radius:3px;border:1px solid #2c3440;cursor:pointer;flex-shrink:0}
 .reader-pages-scroller canvas.active-page{border-color:#00e054}
 
 /* Right panel */
-.reader-right-panel{width:200px;flex-shrink:0;background:#1b2028;border-left:1px solid #2c3440;padding:16px;font-size:.8rem;overflow-y:auto}
+.reader-right-panel{width:180px;flex-shrink:0;background:#1b2028;border-left:1px solid #2c3440;padding:12px;font-size:.8rem;overflow-y:auto}
 .reader-right-panel h4{font-size:.78rem;text-transform:uppercase;color:#9ab;letter-spacing:.5px;margin-bottom:8px}
 .section-item{padding:4px 0;color:#d8d8d8;cursor:pointer;border-bottom:1px solid #1e242c;font-size:.75rem}
 .section-item:hover{color:#00e054}

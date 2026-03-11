@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Refereed — Victor Ortega</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$']],
+        displayMath: [['$$', '$$']]
+      },
+      startup: { typeset: false }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="/refereed/" class="site-logo">Refereed</a>
+      <nav class="main-nav">
+        <a href="#" data-page="profile" class="nav-link active">Profile</a>
+        <a href="#" data-page="activity" class="nav-link">Activity</a>
+        <a href="#" data-page="papers" class="nav-link">Papers</a>
+        <a href="#" data-page="diary" class="nav-link">Diary</a>
+        <a href="#" data-page="reviews" class="nav-link">Reviews</a>
+        <a href="#" data-page="watchlist" class="nav-link">Watchlist</a>
+        <a href="#" data-page="lists" class="nav-link">Lists</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main id="app">
+
+    <!-- Profile Page -->
+    <section id="page-profile" class="page active">
+      <div class="profile-header">
+        <div class="profile-avatar">VO</div>
+        <div class="profile-info">
+          <h1>Victor Ortega</h1>
+          <p class="profile-location">Querétaro</p>
+          <a href="https://x.com/realvolh" target="_blank" rel="noopener noreferrer" class="profile-link">@realvolh</a>
+        </div>
+      </div>
+      <div class="stats-row" id="stats-row">
+        <div class="stat"><span class="stat-number" id="stat-total">0</span><span class="stat-label">Papers</span></div>
+        <div class="stat"><span class="stat-number" id="stat-year">0</span><span class="stat-label">This Year</span></div>
+        <div class="stat"><span class="stat-number" id="stat-watchlist">0</span><span class="stat-label">Watchlist</span></div>
+        <div class="stat"><span class="stat-number" id="stat-genres">0</span><span class="stat-label">Genres</span></div>
+      </div>
+      <div class="section-block">
+        <h2>Favorite Papers</h2>
+        <div class="poster-grid" id="favorites-grid"></div>
+      </div>
+      <div class="section-block">
+        <h2>Recent Activity</h2>
+        <div id="recent-activity"></div>
+      </div>
+    </section>
+
+    <!-- Activity Page -->
+    <section id="page-activity" class="page">
+      <h2>Activity</h2>
+      <div id="activity-feed"></div>
+    </section>
+
+    <!-- Papers Page -->
+    <section id="page-papers" class="page">
+      <h2>Papers</h2>
+      <div class="poster-grid" id="papers-grid"></div>
+    </section>
+
+    <!-- Diary Page -->
+    <section id="page-diary" class="page">
+      <h2>Diary</h2>
+      <div id="diary-entries"></div>
+    </section>
+
+    <!-- Reviews Page -->
+    <section id="page-reviews" class="page">
+      <h2>Reviews</h2>
+      <div id="reviews-list"></div>
+    </section>
+
+    <!-- Watchlist Page -->
+    <section id="page-watchlist" class="page">
+      <h2>Watchlist</h2>
+      <!-- PDF Reader Module -->
+      <div class="reader-module" id="reader-module">
+        <div class="reader-header">
+          <h3>Upload PDF for Reading</h3>
+          <p class="reader-subtitle">Speed-read papers directly in your browser</p>
+        </div>
+        <div class="reader-controls-bar" id="reader-controls-bar" style="display:none;">
+          <div class="reader-file-info">
+            <span id="reader-filename"></span>
+            <button class="btn-small btn-danger" id="reader-close-btn">Close</button>
+          </div>
+          <div class="rsvp-display" id="rsvp-display">
+            <span id="rsvp-word"></span>
+          </div>
+          <div class="reader-controls">
+            <button class="btn-small" id="reader-prev">◀◀</button>
+            <button class="btn-small" id="reader-play">▶ Play</button>
+            <button class="btn-small" id="reader-next">▶▶</button>
+            <label class="speed-label">
+              <span id="reader-wpm-display">300</span> WPM
+              <input type="range" id="reader-wpm" min="100" max="1000" step="25" value="300">
+            </label>
+            <span class="reader-progress" id="reader-progress">0 / 0</span>
+          </div>
+        </div>
+        <div class="reader-upload-area" id="reader-upload-area">
+          <div class="upload-dropzone" id="upload-dropzone">
+            <p>Drop a PDF here or click to select</p>
+            <input type="file" id="pdf-file-input" accept=".pdf" style="display:none;">
+          </div>
+        </div>
+        <div class="reader-library" id="reader-library">
+          <h4>Previously Uploaded</h4>
+          <div id="reader-library-list"></div>
+        </div>
+      </div>
+      <!-- Watchlist Grid -->
+      <div class="poster-grid" id="watchlist-grid"></div>
+    </section>
+
+    <!-- Lists Page -->
+    <section id="page-lists" class="page">
+      <h2>Lists</h2>
+      <div id="lists-container"></div>
+    </section>
+
+    <!-- Review Detail Page (dynamically shown) -->
+    <section id="page-review-detail" class="page">
+      <div id="review-detail-content"></div>
+    </section>
+
+    <!-- List Detail Page -->
+    <section id="page-list-detail" class="page">
+      <div id="list-detail-content"></div>
+    </section>
+
+  </main>
+
+  <script src="scripts/app.js"></script>
+  <script src="scripts/reader.js"></script>
+</body>
+</html>

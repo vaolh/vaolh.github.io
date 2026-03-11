@@ -1,0 +1,47 @@
+[
+  {
+    "id": "harsanyi-1967",
+    "title": "Games with Incomplete Information Played by Bayesian Players, Part I",
+    "authors": ["John C. Harsanyi"],
+    "year": 1967,
+    "genre": "econ",
+    "poster": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/John_Harsanyi.jpg/220px-John_Harsanyi.jpg",
+    "pdf": ""
+  },
+  {
+    "id": "nozick-1974",
+    "title": "Anarchy, State, and Utopia",
+    "authors": ["Robert Nozick"],
+    "year": 1974,
+    "genre": "philosophy",
+    "poster": "https://m.media-amazon.com/images/I/71i3dQBFGbL._AC_UF1000,1000_QL80_.jpg",
+    "pdf": ""
+  },
+  {
+    "id": "blackwell-1953",
+    "title": "Equivalent Comparisons of Experiments",
+    "authors": ["David Blackwell"],
+    "year": 1953,
+    "genre": "math",
+    "poster": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/David_Blackwell_1999.jpeg/220px-David_Blackwell_1999.jpeg",
+    "pdf": ""
+  },
+  {
+    "id": "akerlof-1970",
+    "title": "The Market for Lemons: Quality Uncertainty and the Market Mechanism",
+    "authors": ["George A. Akerlof"],
+    "year": 1970,
+    "genre": "econ",
+    "poster": "https://images.squarespace-cdn.com/content/v1/5d6f31e78e9fa400011ddccd/1590167286181-J3N59R0QN15YXQAL4ERF/Lemons.jpg",
+    "pdf": ""
+  },
+  {
+    "id": "parfit-1984",
+    "title": "Reasons and Persons",
+    "authors": ["Derek Parfit"],
+    "year": 1984,
+    "genre": "philosophy",
+    "poster": "https://m.media-amazon.com/images/I/81XCLE8JBjL._AC_UF1000,1000_QL80_.jpg",
+    "pdf": ""
+  }
+]

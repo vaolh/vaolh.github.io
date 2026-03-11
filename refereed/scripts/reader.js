@@ -378,70 +378,125 @@
       var perPage = [];
 
       pagesContent.forEach(function (content) {
-        // --- Column-aware extraction ---
-        // 1. Collect all items with their x, y, text
-        var items = content.items.map(function (item) {
-          return { x: item.transform[4], y: item.transform[5], fSize: item.transform[0], str: item.str };
-        }).filter(function (it) { return it.str.trim().length > 0; });
+        var rawItems = content.items.map(function (item) {
+          return {
+            x: item.transform[4],
+            y: item.transform[5],
+            fSize: Math.abs(item.transform[0]),
+            w: item.width || 0,
+            str: item.str
+          };
+        }).filter(function (it) { return it.str.length > 0; });
 
-        if (items.length === 0) { perPage.push(''); return; }
+        if (rawItems.length === 0) { perPage.push(''); return; }
 
-        // 2. Detect columns by finding a gap in the x-distribution
-        var xs = items.map(function (it) { return it.x; }).sort(function (a, b) { return a - b; });
-        var pageWidth = xs[xs.length - 1] - xs[0];
-        var midX = xs[0] + pageWidth / 2;
-
-        // Find the largest gap near the middle third of the page
-        var colSplit = null;
-        var maxGap = 0;
-        var lo = xs[0] + pageWidth * 0.3;
-        var hi = xs[0] + pageWidth * 0.7;
-        for (var gi = 1; gi < xs.length; gi++) {
-          var gap = xs[gi] - xs[gi - 1];
-          if (xs[gi - 1] >= lo && xs[gi] <= hi && gap > maxGap) {
-            maxGap = gap;
-            colSplit = (xs[gi - 1] + xs[gi]) / 2;
-          }
+        // --- Scoring: prefer extractions with longer average word length (fewer cut-offs) ---
+        function scoreText(t) {
+          var ws = t.split(/\s+/).filter(function(w){ return w.length > 0; });
+          if (ws.length === 0) return 0;
+          var avgLen = ws.reduce(function(s,w){ return s + w.length; }, 0) / ws.length;
+          // penalise single-char words heavily (sign of mid-word cuts)
+          var singles = ws.filter(function(w){ return w.length === 1 && /[a-z]/.test(w); }).length;
+          return avgLen * t.length - singles * 20;
         }
-        // Only treat as two-column if gap is meaningful (>5% of page width)
-        var isTwoCol = colSplit !== null && maxGap > pageWidth * 0.05;
 
-        // 3. Split items into columns
-        var cols = isTwoCol
-          ? [items.filter(function (it) { return it.x < colSplit; }),
-             items.filter(function (it) { return it.x >= colSplit; })]
-          : [items];
-
-        // 4. For each column, sort by descending Y (top to bottom), group into lines
-        var pageText = '';
-        cols.forEach(function (colItems) {
-          colItems.sort(function (a, b) { return b.y - a.y || a.x - b.x; });
-          var lines = [];
-          var currentLine = [];
-          var lastY = null;
-          colItems.forEach(function (it) {
+        // --- Strategy A: naive Y-sort, no column split (safe for single-col) ---
+        function extractNaive(items) {
+          items = items.slice().sort(function(a,b){ return b.y - a.y || a.x - b.x; });
+          var lines = [], cur = [], lastY = null;
+          items.forEach(function(it){
             if (lastY !== null && Math.abs(it.y - lastY) > 2) {
-              if (currentLine.length > 0) lines.push(currentLine);
-              currentLine = [];
+              if (cur.length) lines.push(cur);
+              cur = [];
             }
-            currentLine.push(it);
+            cur.push(it);
             lastY = it.y;
           });
-          if (currentLine.length > 0) lines.push(currentLine);
-
-          lines.forEach(function (line) {
-            var lineStr = line.map(function (it) { return it.str; }).join(' ').trim();
-            // Section detection
-            var fSize = line[0].fSize;
-            var txt = lineStr.trim();
-            if (txt.length > 0 && txt.length < 80 && (fSize > 13 || (txt === txt.toUpperCase() && txt.length > 3 && /[A-Z]/.test(txt)))) {
-              var currentWordCount = fullText.split(/\s+/).filter(function (w) { return w.length > 0; }).length;
-              if (detectedSections.length === 0 || detectedSections[detectedSections.length - 1].title !== txt) {
-                detectedSections.push({ index: currentWordCount, title: txt });
-              }
+          if (cur.length) lines.push(cur);
+          return lines.map(function(l){
+            var out = '';
+            for (var li = 0; li < l.length; li++) {
+              if (li === 0) { out += l[li].str; continue; }
+              var prev = l[li-1];
+              var cur  = l[li];
+              // Expected x position if items were touching
+              var expectedX = prev.x + (prev.w || prev.fSize * prev.str.length * 0.5);
+              var gap = cur.x - expectedX;
+              // If gap > ~30% of font size, it's a real word space
+              var spaceThreshold = (prev.fSize || 10) * 0.3;
+              out += (gap > spaceThreshold ? ' ' : '') + cur.str;
             }
-            pageText += lineStr + '\n';
-          });
+            return out.trim();
+          }).join('\n');
+        }
+
+        // --- Strategy B: two-column split (good for journal two-col layouts) ---
+        function extractTwoCol(items, split) {
+          var left  = items.filter(function(it){ return it.x <  split; });
+          var right = items.filter(function(it){ return it.x >= split; });
+          return [left, right].map(function(col){
+            col = col.slice().sort(function(a,b){ return b.y - a.y || a.x - b.x; });
+            var lines = [], cur = [], lastY = null;
+            col.forEach(function(it){
+              if (lastY !== null && Math.abs(it.y - lastY) > 2) {
+                if (cur.length) lines.push(cur);
+                cur = [];
+              }
+              cur.push(it);
+              lastY = it.y;
+            });
+            if (cur.length) lines.push(cur);
+            return lines.map(function(l){
+            var out = '';
+            for (var li = 0; li < l.length; li++) {
+              if (li === 0) { out += l[li].str; continue; }
+              var prev = l[li-1];
+              var cur  = l[li];
+              // Expected x position if items were touching
+              var expectedX = prev.x + (prev.w || prev.fSize * prev.str.length * 0.5);
+              var gap = cur.x - expectedX;
+              // If gap > ~30% of font size, it's a real word space
+              var spaceThreshold = (prev.fSize || 10) * 0.3;
+              out += (gap > spaceThreshold ? ' ' : '') + cur.str;
+            }
+            return out.trim();
+          }).join('\n');
+          }).join('\n');
+        }
+
+        // Find best column split candidate
+        var xs = rawItems.map(function(it){ return it.x; }).sort(function(a,b){ return a-b; });
+        var pageWidth = xs[xs.length-1] - xs[0];
+        var lo = xs[0] + pageWidth * 0.3;
+        var hi = xs[0] + pageWidth * 0.7;
+        var bestSplit = null, bestGap = 0;
+        for (var gi = 1; gi < xs.length; gi++) {
+          var gap = xs[gi] - xs[gi-1];
+          if (xs[gi-1] >= lo && xs[gi] <= hi && gap > bestGap) {
+            bestGap = gap;
+            bestSplit = (xs[gi-1] + xs[gi]) / 2;
+          }
+        }
+
+        // Run both strategies, pick winner by score
+        var textA = extractNaive(rawItems);
+        var textB = (bestSplit && bestGap > pageWidth * 0.1)
+          ? extractTwoCol(rawItems, bestSplit)
+          : null;
+
+        var pageText = (!textB || scoreText(textA) >= scoreText(textB)) ? textA : textB;
+
+        // Section detection on winning text
+        pageText.split('\n').forEach(function(line){
+          var txt = line.trim();
+          var fSize = rawItems.find(function(it){ return it.str && txt.indexOf(it.str.trim()) === 0; });
+          fSize = fSize ? fSize.fSize : 0;
+          if (txt.length > 0 && txt.length < 80 && (fSize > 13 || (txt === txt.toUpperCase() && txt.length > 3 && /[A-Z]/.test(txt)))) {
+            var currentWordCount = fullText.split(/\s+/).filter(function(w){ return w.length > 0; }).length;
+            if (detectedSections.length === 0 || detectedSections[detectedSections.length-1].title !== txt) {
+              detectedSections.push({ index: currentWordCount, title: txt });
+            }
+          }
         });
 
         perPage.push(pageText.trim());

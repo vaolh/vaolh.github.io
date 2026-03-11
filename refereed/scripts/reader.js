@@ -45,9 +45,8 @@
   var pctFill = document.getElementById('reader-pct-fill');
   var pctText = document.getElementById('reader-pct-text');
   var libraryList = document.getElementById('reader-library-list');
-  var contextArea = document.getElementById('reader-context-area');
   var pageInfoEl = document.getElementById('reader-page-info');
-  var pageTexts = []; // per-page text for context area
+  var pageTexts = []; // per-page text
 
   // ---- IndexedDB ----
 
@@ -246,11 +245,10 @@
     if (pctFill) pctFill.style.width = pct + '%';
     if (pctText) pctText.textContent = Math.round(pct) + '%';
 
-    // Approximate current page and show context
+    // Approximate current page
     if (pdfDoc && pageTexts.length > 0) {
       var approxPage = Math.min(Math.floor(wordIndex / words.length * pdfDoc.numPages), pdfDoc.numPages - 1);
       pageInfoEl.textContent = 'Page ' + (approxPage + 1) + ' of ' + pdfDoc.numPages;
-      contextArea.innerHTML = '<span class="ctx-page-badge">Pg ' + (approxPage + 1) + '</span><br>' + escapeHtmlStr(pageTexts[approxPage] || '').substring(0, 600);
       // Highlight active thumbnail
       var canvases = pagesScroller.querySelectorAll('canvas');
       canvases.forEach(function (c, i) { c.classList.toggle('active-page', i === approxPage); });
@@ -348,7 +346,6 @@
     progressText.textContent = '0%';
     pagesScroller.innerHTML = '';
     sectionsListEl.innerHTML = '';
-    contextArea.innerHTML = '';
     pageInfoEl.textContent = '';
   }
 

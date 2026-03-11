@@ -180,7 +180,7 @@
       return (b.date_read || '').localeCompare(a.date_read || '');
     });
     sorted.slice(0, 4).forEach(function (p) {
-      grid.appendChild(makePosterItem(p, { showStars: true, showHover: true }));
+      grid.appendChild(makePosterItem(p, { showStars: false, showHover: true }));
     });
   }
 

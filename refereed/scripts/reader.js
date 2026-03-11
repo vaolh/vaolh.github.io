@@ -40,7 +40,6 @@
   var progressFill = document.getElementById('reader-progress-fill');
   var progressText = document.getElementById('reader-progress');
   var pagesScroller = document.getElementById('reader-pages-scroller');
-  var sectionsListEl = document.getElementById('reader-sections-list');
   var wordsReadEl = document.getElementById('reader-words-read');
   var pctFill = document.getElementById('reader-pct-fill');
   var pctText = document.getElementById('reader-pct-text');
@@ -193,33 +192,6 @@
     }
   }
 
-  // ---- Sections List ----
-
-  function renderSectionsList() {
-    sectionsListEl.innerHTML = '';
-    if (sections.length === 0) {
-      sectionsListEl.innerHTML = '<p style="color:#678;font-size:.72rem">No sections detected</p>';
-      return;
-    }
-    // Deduplicate and limit
-    var unique = [];
-    var seen = new Set();
-    sections.forEach(function (s) {
-      var key = s.title.toLowerCase().substring(0, 40);
-      if (!seen.has(key)) { seen.add(key); unique.push(s); }
-    });
-    unique.slice(0, 30).forEach(function (s) {
-      var el = document.createElement('div');
-      el.className = 'section-item';
-      el.textContent = s.title.substring(0, 50);
-      el.addEventListener('click', function () {
-        wordIndex = Math.min(s.index, words.length - 1);
-        showWord();
-      });
-      sectionsListEl.appendChild(el);
-    });
-  }
-
   // ---- RSVP ----
 
   function showWord() {
@@ -253,15 +225,6 @@
       var canvases = pagesScroller.querySelectorAll('canvas');
       canvases.forEach(function (c, i) { c.classList.toggle('active-page', i === approxPage); });
     }
-
-    // Highlight active section
-    var activeIdx = -1;
-    sections.forEach(function (s, i) {
-      if (s.index <= wordIndex) activeIdx = i;
-    });
-    sectionsListEl.querySelectorAll('.section-item').forEach(function (el, i) {
-      el.classList.toggle('active-section', i === activeIdx);
-    });
   }
 
   function escapeHtmlStr(s) {
@@ -301,7 +264,6 @@
       pageTexts = result.pageTexts || [];
       wordIndex = 0;
       showWord();
-      renderSectionsList();
       renderPageThumbnails();
     }).catch(function (err) {
       console.error('PDF extraction failed:', err);
@@ -345,7 +307,6 @@
     progressFill.style.width = '0';
     progressText.textContent = '0%';
     pagesScroller.innerHTML = '';
-    sectionsListEl.innerHTML = '';
     pageInfoEl.textContent = '';
   }
 

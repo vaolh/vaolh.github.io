@@ -60,13 +60,6 @@
 
   function currentYear() { return new Date().getFullYear(); }
 
-  function metaIcons(p) {
-    var s = '';
-    if (p.favorite) s += ' <span class="fav-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>';
-    if (p.reread) s += ' <span class="reread-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg></span>';
-    return s;
-  }
-
   // ---- Navigation ----
 
   var pnavLinks = document.querySelectorAll('.pnav-link');
@@ -203,7 +196,7 @@
         '<div class="mini-review-poster"><img src="' + escapeHtml(p.poster) + '" loading="lazy"></div>' +
         '<div class="mini-review-body">' +
           '<div class="mini-review-title">' + escapeHtml(p.title) + '</div>' +
-          '<div class="mini-review-stars"><span class="stars">' + ratingToStars(p.rating) + '</span>' + metaIcons(p) + '</div>' +
+          '<div class="mini-review-stars"><span class="stars">' + ratingToStars(p.rating) + '</span></div>' +
           '<div class="mini-review-excerpt">' + escapeHtml(excerpt) + '…</div>' +
         '</div>';
       el.addEventListener('click', function () { openReview(p.id); });
@@ -221,7 +214,7 @@
       : '';
     var metaHtml = '';
     if (opts.showStars) {
-      metaHtml = '<div class="poster-item-meta"><span class="stars">' + ratingToStars(p.rating) + '</span>' + metaIcons(p) + '</div>';
+      metaHtml = '<div class="poster-item-meta"><span class="stars">' + ratingToStars(p.rating) + '</span></div>';
     }
     el.innerHTML =
       '<div class="poster-item-img"><img src="' + escapeHtml(p.poster) + '" alt="' + escapeHtml(p.title) + '" loading="lazy">' + hoverTitle + '</div>' +
@@ -242,7 +235,7 @@
       : '';
     var metaHtml = '';
     if (opts.showStars) {
-      metaHtml = '<div class="poster-card-meta"><span class="stars">' + ratingToStars(p.rating) + '</span>' + metaIcons(p) + '</div>';
+      metaHtml = '<div class="poster-card-meta"><span class="stars">' + ratingToStars(p.rating) + '</span></div>';
     }
     el.innerHTML =
       '<div class="poster-card-img"><img src="' + escapeHtml(p.poster) + '" alt="' + escapeHtml(p.title) + '" loading="lazy">' + hoverTitle + '</div>' +
@@ -271,7 +264,7 @@
       el.className = 'sidebar-diary-item';
       el.innerHTML =
         '<div class="sdi-title">' + escapeHtml(p.title) + '</div>' +
-        '<div class="sdi-meta"><span class="stars">' + ratingToStars(p.rating) + '</span>' + metaIcons(p) + ' · ' + formatDate(p.date_read) + '</div>';
+        '<div class="sdi-meta"><span class="stars">' + ratingToStars(p.rating) + '</span> · ' + formatDate(p.date_read) + '</div>';
       el.style.cursor = 'pointer';
       el.addEventListener('click', function () { openReview(p.id); });
       container.appendChild(el);
@@ -296,6 +289,9 @@
       bar.style.height = h + 'px';
       bar.innerHTML = '<span class="hbar-label">' + k + '</span>';
       bar.title = k + '\u2605: ' + count;
+      bar.addEventListener('click', (function (rating) {
+        return function () { openRatingDetail(parseFloat(rating)); };
+      })(k));
       container.appendChild(bar);
     });
   }
@@ -353,7 +349,7 @@
           '<div class="diary-entry-poster"><img src="' + escapeHtml(p.poster) + '" loading="lazy"></div>' +
           '<div class="diary-entry-info">' +
             '<div class="diary-entry-title">' + escapeHtml(p.title) + '</div>' +
-            '<div class="diary-entry-meta"><span class="stars">' + ratingToStars(p.rating) + '</span>' + metaIcons(p) + '</div>' +
+            '<div class="diary-entry-meta"><span class="stars">' + ratingToStars(p.rating) + '</span></div>' +
           '</div>' +
           '<div class="diary-entry-date">' + formatDate(p.date_read) + '</div>';
         entry.addEventListener('click', function () { openReview(p.id); });
@@ -380,7 +376,7 @@
             '<div class="review-card-info">' +
               '<div class="review-card-title">' + escapeHtml(p.title) + '</div>' +
               '<div class="review-card-meta">' + p.year + ' · ' + escapeHtml(p.authors.join(', ')) + '</div>' +
-              '<div class="review-card-rating"><span class="stars">' + ratingToStars(p.rating) + '</span>' + metaIcons(p) + '</div>' +
+              '<div class="review-card-rating"><span class="stars">' + ratingToStars(p.rating) + '</span></div>' +
             '</div>' +
           '</div>' +
           '<div class="review-card-excerpt">' + escapeHtml(excerpt) + '…</div>';
@@ -449,7 +445,7 @@
         '<div class="activity-poster"><img src="' + escapeHtml(p.poster) + '" loading="lazy"></div>' +
         '<div class="activity-text">' +
           '<p><strong>' + escapeHtml(p.title) + '</strong> (' + p.year + ') — ' +
-          '<span class="stars">' + ratingToStars(p.rating) + '</span>' + metaIcons(p) + '</p>' +
+          '<span class="stars">' + ratingToStars(p.rating) + '</span></p>' +
           '<p style="font-size:.78rem;color:#9ab">' + escapeHtml(p.authors.join(', ')) + '</p>' +
           '<div class="activity-date">' + formatDate(p.date_read) + '</div>' +
         '</div>';
@@ -476,8 +472,6 @@
             '<div class="review-detail-authors">' + escapeHtml(p.authors.join(', ')) + '</div>' +
             '<div class="review-detail-genre">' + escapeHtml(p.genre || '') + '</div>' +
             '<div class="review-detail-rating"><span class="stars">' + ratingToStars(p.rating) + '</span>' +
-              (p.favorite ? '<span class="fav-icon"> <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>' : '') +
-              (p.reread ? '<span class="reread-icon"> <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg></span>' : '') +
             '</div>' +
             '<div class="review-detail-date">Read ' + formatDate(p.date_read) + '</div>' +
             (p.pdf ? '<div style="margin-top:8px"><a href="' + escapeHtml(p.pdf) + '" target="_blank" rel="noopener noreferrer" style="font-size:.85rem">View PDF →</a></div>' : '') +
@@ -536,6 +530,37 @@
     document.getElementById('list-back').addEventListener('click', function (e) {
       e.preventDefault();
       showPage('lists');
+    });
+  }
+
+  // ---- Rating Detail (from histogram click) ----
+
+  function openRatingDetail(rating) {
+    var container = document.getElementById('rating-detail-content');
+    var matched = papers.filter(function (p) { return p.rating === rating; });
+    var label = rating + '★';
+
+    container.innerHTML =
+      '<a href="#" class="back-link" id="rating-back">← Back</a>' +
+      '<h2>' + escapeHtml(label) + '</h2>' +
+      '<p style="color:#9ab;margin-bottom:20px;font-size:.9rem">' + matched.length + ' paper' + (matched.length !== 1 ? 's' : '') + '</p>' +
+      '<div class="poster-grid" id="rating-detail-grid"></div>';
+
+    var grid = document.getElementById('rating-detail-grid');
+    matched.forEach(function (p) {
+      grid.appendChild(makePosterCard(p, { showStars: true, noHover: false }));
+    });
+
+    pages.forEach(function (pg) { pg.classList.remove('active'); });
+    pnavLinks.forEach(function (l) { l.classList.remove('active'); });
+    snavLinks.forEach(function (l) { l.classList.remove('active'); });
+    document.getElementById('page-rating-detail').classList.add('active');
+    subpageNav.style.display = 'block';
+    window.scrollTo(0, 0);
+
+    document.getElementById('rating-back').addEventListener('click', function (e) {
+      e.preventDefault();
+      showPage('profile');
     });
   }
 

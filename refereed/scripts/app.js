@@ -5,7 +5,7 @@
   'use strict';
 
   var papers = [];
-  var watchlist = [];
+  var readlist = [];
 
   // ---- Helpers ----
 
@@ -114,10 +114,10 @@
   function loadData() {
     return Promise.all([
       fetch('data/papers.json').then(function (r) { return r.json(); }),
-      fetch('data/watchlist.json').then(function (r) { return r.json(); })
+      fetch('data/readlist.json').then(function (r) { return r.json(); })
     ]).then(function (res) {
       papers = res[0];
-      watchlist = res[1];
+      readlist = res[1];
     });
   }
 
@@ -129,7 +129,7 @@
     list.forEach(function (p, i) {
       var card = document.createElement('div');
       card.className = 'abanico-card';
-      card.style.zIndex = i + 1;
+      card.style.zIndex = list.length - i;
       card.innerHTML = '<img src="' + escapeHtml(p.poster) + '" alt="' + escapeHtml(p.title) + '" loading="lazy">';
       if (p.review) {
         card.addEventListener('click', function () { openReview(p.id); });
@@ -146,10 +146,10 @@
       return p.date_read && p.date_read.startsWith(String(currentYear()));
     }).length;
     document.getElementById('stat-year').textContent = yr;
-    document.getElementById('stat-watchlist').textContent = watchlist.length;
+    document.getElementById('stat-readlist').textContent = readlist.length;
     var genres = new Set();
     papers.forEach(function (p) { if (p.genre) genres.add(p.genre); });
-    watchlist.forEach(function (p) { if (p.genre) genres.add(p.genre); });
+    readlist.forEach(function (p) { if (p.genre) genres.add(p.genre); });
     document.getElementById('stat-genres').textContent = genres.size;
   }
 
@@ -229,7 +229,7 @@
 
   function makePosterCard(p, opts) {
     var el = document.createElement('div');
-    el.className = 'poster-card' + (opts.noHover ? ' watchlist-no-hover' : '');
+    el.className = 'poster-card' + (opts.noHover ? ' readlist-no-hover' : '');
     var hoverTitle = !opts.noHover
       ? '<div class="poster-hover-title">' + escapeHtml(p.title) + '</div>'
       : '';
@@ -248,9 +248,9 @@
 
   // ---- Sidebar ----
 
-  function renderSidebarWatchlist() {
-    var container = document.getElementById('sidebar-watchlist');
-    buildAbanico(container, watchlist, 5);
+  function renderSidebarReadlist() {
+    var container = document.getElementById('sidebar-readlist');
+    buildAbanico(container, readlist, 5);
   }
 
   function renderSidebarDiary() {
@@ -359,38 +359,12 @@
     });
   }
 
-  // ---- Reviews ----
+  // ---- Readlist ----
 
-  function renderReviews() {
-    var container = document.getElementById('reviews-list');
-    container.innerHTML = '';
-    papers.filter(function (p) { return p.review; })
-      .sort(function (a, b) { return (b.date_read || '').localeCompare(a.date_read || ''); })
-      .forEach(function (p) {
-        var card = document.createElement('div');
-        card.className = 'review-card';
-        var excerpt = p.review.substring(0, 250).replace(/\$[^$]*\$/g, '[math]');
-        card.innerHTML =
-          '<div class="review-card-header">' +
-            '<div class="review-card-poster"><img src="' + escapeHtml(p.poster) + '" loading="lazy"></div>' +
-            '<div class="review-card-info">' +
-              '<div class="review-card-title">' + escapeHtml(p.title) + '</div>' +
-              '<div class="review-card-meta">' + p.year + ' · ' + escapeHtml(p.authors.join(', ')) + '</div>' +
-              '<div class="review-card-rating"><span class="stars">' + ratingToStars(p.rating) + '</span></div>' +
-            '</div>' +
-          '</div>' +
-          '<div class="review-card-excerpt">' + escapeHtml(excerpt) + '…</div>';
-        card.addEventListener('click', function () { openReview(p.id); });
-        container.appendChild(card);
-      });
-  }
-
-  // ---- Watchlist ----
-
-  function renderWatchlist() {
-    var grid = document.getElementById('watchlist-grid');
+  function renderReadlist() {
+    var grid = document.getElementById('readlist-grid');
     grid.innerHTML = '';
-    watchlist.forEach(function (p) {
+    readlist.forEach(function (p) {
       grid.appendChild(makePosterCard(p, { showStars: false, noHover: false }));
     });
   }
@@ -407,7 +381,7 @@
       if (!genreMap[g]) genreMap[g] = [];
       genreMap[g].push(p);
     });
-    watchlist.forEach(function (p) {
+    readlist.forEach(function (p) {
       if (!p.genre) return;
       var g = p.genre.toLowerCase();
       if (!genreMap[g]) genreMap[g] = [];
@@ -428,30 +402,6 @@
       var abContainer = listEl.querySelector('.abanico');
       // Need a tiny delay for offsetWidth
       setTimeout(function () { buildAbanico(abContainer, items, 5); }, 0);
-    });
-  }
-
-  // ---- Activity Feed ----
-
-  function renderActivity() {
-    var container = document.getElementById('activity-feed');
-    container.innerHTML = '';
-    papers.slice().sort(function (a, b) {
-      return (b.date_read || '').localeCompare(a.date_read || '');
-    }).forEach(function (p) {
-      var item = document.createElement('div');
-      item.className = 'activity-item';
-      item.innerHTML =
-        '<div class="activity-poster"><img src="' + escapeHtml(p.poster) + '" loading="lazy"></div>' +
-        '<div class="activity-text">' +
-          '<p><strong>' + escapeHtml(p.title) + '</strong> (' + p.year + ') — ' +
-          '<span class="stars">' + ratingToStars(p.rating) + '</span></p>' +
-          '<p style="font-size:.78rem;color:#9ab">' + escapeHtml(p.authors.join(', ')) + '</p>' +
-          '<div class="activity-date">' + formatDate(p.date_read) + '</div>' +
-        '</div>';
-      item.style.cursor = 'pointer';
-      item.addEventListener('click', function () { openReview(p.id); });
-      container.appendChild(item);
     });
   }
 
@@ -504,7 +454,7 @@
     var container = document.getElementById('list-detail-content');
     var allItems = [];
     papers.forEach(function (p) { if (p.genre && p.genre.toLowerCase() === genre) allItems.push(p); });
-    watchlist.forEach(function (p) {
+    readlist.forEach(function (p) {
       if (p.genre && p.genre.toLowerCase() === genre && !allItems.find(function (x) { return x.id === p.id; }))
         allItems.push(p);
     });
@@ -605,14 +555,12 @@
       renderFavorites();
       renderRecentActivity();
       renderRandomReviews();
-      renderSidebarWatchlist();
+      renderSidebarReadlist();
       renderSidebarDiary();
       renderSidebarHistogram();
-      renderActivity();
       renderPapers();
       renderDiary();
-      renderReviews();
-      renderWatchlist();
+      renderReadlist();
       renderLists();
 
       var hash = location.hash.replace('#', '');

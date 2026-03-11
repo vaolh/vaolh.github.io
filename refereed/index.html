@@ -25,11 +25,9 @@
   <nav class="subpage-nav" id="subpage-nav" style="display:none">
     <div class="subpage-nav-inner">
       <a href="#" data-page="profile" class="snav-link">Profile</a>
-      <a href="#" data-page="activity" class="snav-link">Activity</a>
       <a href="#" data-page="papers" class="snav-link">Papers</a>
       <a href="#" data-page="diary" class="snav-link">Diary</a>
-      <a href="#" data-page="reviews" class="snav-link">Reviews</a>
-      <a href="#" data-page="watchlist" class="snav-link">Watchlist</a>
+      <a href="#" data-page="readlist" class="snav-link">Readlist</a>
       <a href="#" data-page="lists" class="snav-link">Lists</a>
       <a href="#" data-page="reader" class="snav-link">Reader</a>
     </div>
@@ -53,7 +51,7 @@
           <div class="stat-divider"></div>
           <div class="stat"><span class="stat-number" id="stat-year">0</span><span class="stat-label">This Year</span></div>
           <div class="stat-divider"></div>
-          <div class="stat"><span class="stat-number" id="stat-watchlist">0</span><span class="stat-label">Watchlist</span></div>
+          <div class="stat"><span class="stat-number" id="stat-readlist">0</span><span class="stat-label">Readlist</span></div>
           <div class="stat-divider"></div>
           <div class="stat"><span class="stat-number" id="stat-genres">0</span><span class="stat-label">Genres</span></div>
         </div>
@@ -61,11 +59,9 @@
 
       <div class="profile-nav" id="profile-nav">
         <a href="#" data-page="profile" class="pnav-link active">Profile</a>
-        <a href="#" data-page="activity" class="pnav-link">Activity</a>
         <a href="#" data-page="papers" class="pnav-link">Papers</a>
         <a href="#" data-page="diary" class="pnav-link">Diary</a>
-        <a href="#" data-page="reviews" class="pnav-link">Reviews</a>
-        <a href="#" data-page="watchlist" class="pnav-link">Watchlist</a>
+        <a href="#" data-page="readlist" class="pnav-link">Readlist</a>
         <a href="#" data-page="lists" class="pnav-link">Lists</a>
         <a href="#" data-page="reader" class="pnav-link">Reader</a>
       </div>
@@ -88,8 +84,8 @@
 
         <div class="profile-sidebar">
           <div class="sidebar-block">
-            <h3>Watchlist</h3>
-            <div class="abanico" id="sidebar-watchlist"></div>
+            <h3>Readlist</h3>
+            <div class="abanico" id="sidebar-readlist"></div>
           </div>
           <div class="sidebar-block">
             <h3>Diary</h3>
@@ -101,12 +97,6 @@
           </div>
         </div>
       </div>
-    </section>
-
-    <!-- ======== ACTIVITY ======== -->
-    <section id="page-activity" class="page">
-      <h2>Activity</h2>
-      <div id="activity-feed"></div>
     </section>
 
     <!-- ======== PAPERS ======== -->
@@ -121,16 +111,10 @@
       <div id="diary-entries"></div>
     </section>
 
-    <!-- ======== REVIEWS ======== -->
-    <section id="page-reviews" class="page">
-      <h2>Reviews</h2>
-      <div id="reviews-list"></div>
-    </section>
-
-    <!-- ======== WATCHLIST ======== -->
-    <section id="page-watchlist" class="page">
-      <h2>Watchlist</h2>
-      <div class="poster-grid" id="watchlist-grid"></div>
+    <!-- ======== READLIST ======== -->
+    <section id="page-readlist" class="page">
+      <h2>Readlist</h2>
+      <div class="poster-grid" id="readlist-grid"></div>
     </section>
 
     <!-- ======== LISTS ======== -->

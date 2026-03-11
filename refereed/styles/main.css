@@ -119,7 +119,7 @@ img{max-width:100%;display:block}
 .abanico .abanico-card img{width:100%;height:100%;object-fit:cover}
 .abanico .abanico-card:hover{transform:translateY(-6px);z-index:20}
 
-/* Sidebar watchlist: fit 5 cards in 240px with deeper overlap */
+/* Sidebar readlist: fit 5 cards in 240px with deeper overlap */
 .profile-sidebar .abanico .abanico-card{margin-right:-32px}
 .profile-sidebar .abanico .abanico-card:last-child{margin-right:0}
 
@@ -135,7 +135,7 @@ img{max-width:100%;display:block}
 .histogram .hbar-label{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);font-size:.48rem;color:#678;white-space:nowrap}
 
 /* =============================================
-   POSTER GRID (Papers, Watchlist)
+   POSTER GRID (Papers, Readlist)
    ============================================= */
 .poster-grid{display:grid;grid-template-columns:repeat(12,70px);gap:10px 12px;justify-content:start}
 
@@ -148,8 +148,8 @@ img{max-width:100%;display:block}
 .poster-card-meta{display:flex;align-items:center;gap:1px;margin-top:2px;height:12px}
 .poster-card-meta .stars{color:#678;font-size:10px;line-height:1;letter-spacing:0.3px}
 
-/* Watchlist grid: no hover title */
-.watchlist-no-hover .poster-hover-title{display:none!important}
+/* Readlist grid: no hover title */
+.readlist-no-hover .poster-hover-title{display:none!important}
 
 /* =============================================
    DIARY PAGE
@@ -213,17 +213,6 @@ img{max-width:100%;display:block}
 .list-item h3{font-size:.95rem;margin-bottom:6px}
 .list-item p{font-size:.78rem;color:#9ab;margin-bottom:8px}
 .list-item .abanico{height:auto}
-
-/* =============================================
-   ACTIVITY FEED
-   ============================================= */
-.activity-item{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #1e242c}
-.activity-poster{width:44px;height:66px;border-radius:4px;overflow:hidden;flex-shrink:0;background:#2c3440}
-.activity-poster img{width:100%;height:100%;object-fit:cover}
-.activity-text{flex:1}
-.activity-text p{font-size:.88rem;line-height:1.45}
-.activity-text .activity-date{font-size:.72rem;color:#678;margin-top:3px}
-.activity-text .stars{color:#678;font-size:11px}
 
 /* =============================================
    PDF READER PAGE — full-viewport fixed layout
@@ -379,10 +368,6 @@ img{max-width:100%;display:block}
 
   /* Lists */
   .lists-two-col{grid-template-columns:1fr;gap:16px}
-
-  /* Activity */
-  .activity-item{gap:10px;padding:10px 0}
-  .activity-poster{width:36px;height:54px}
 
   /* Histogram */
   .histogram{height:40px}

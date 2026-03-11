@@ -13,14 +13,14 @@
 
   var db = null;
   var words = [];
-  var sections = []; // {index, title}
+  var sections = [];
   var wordIndex = 0;
   var playing = false;
   var wpm = 300;
   var fontSize = 76;
   var intervalId = null;
   var currentFileName = '';
-  var pdfDoc = null; // pdf.js document reference
+  var pdfDoc = null;
 
   // DOM
   var uploadArea = document.getElementById('reader-upload-area');
@@ -45,7 +45,7 @@
   var pctText = document.getElementById('reader-pct-text');
   var libraryList = document.getElementById('reader-library-list');
   var pageInfoEl = document.getElementById('reader-page-info');
-  var pageTexts = []; // per-page text
+  var pageTexts = [];
 
   // ---- IndexedDB ----
 
@@ -99,7 +99,6 @@
     });
   }
 
-  // Expose DB operations for app.js sidebar
   window.refereedGetAllPDFs = function () {
     if (!db) return openDB().then(function () { return getAllPDFs(); });
     return getAllPDFs();
@@ -107,6 +106,34 @@
   window.refereedDeletePDF = function (name) {
     return deletePDF(name).then(refreshLibrary);
   };
+
+  // ---- Text Filtering Helpers ----
+
+  function isJournalHeader(line) {
+    return /^\d{1,5}\s{1,4}[A-Z][A-Z\s]{6,}[A-Z]\s+[A-Z][a-z]+\s+\d{4}\s*$/.test(line)
+        || /^[A-Z][A-Z\s]{10,}[A-Z]\s+VOL\.?\s*\d/i.test(line);
+  }
+
+  function isPageNumber(line) {
+    return /^\s*\d{2,4}\s*$/.test(line);
+  }
+
+  function isTableDataRow(line) {
+    var tokens = line.trim().split(/\s+/);
+    if (tokens.length < 3) return false;
+    var numericTokens = tokens.filter(function (t) {
+      return /^-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(t) || /^-?\d+(\.\d+)?$/.test(t);
+    });
+    return numericTokens.length >= 4 && (numericTokens.length / tokens.length) > 0.35;
+  }
+
+  function isNotesLine(line) {
+    return /^\s*Notes?\s*:/i.test(line) || /^\s*Source\s*:/i.test(line);
+  }
+
+  function isTableLabel(line) {
+    return /^\s*(Table|Figure|Appendix Table|Appendix Figure)\s+[A-Z0-9]+(\.\d+)?/i.test(line);
+  }
 
   // ---- PDF Text + Sections Extraction ----
 
@@ -121,7 +148,6 @@
     }).then(function (pagesContent) {
       var fullText = '';
       var detectedSections = [];
-      var wordOffset = 0;
       var perPage = [];
 
       pagesContent.forEach(function (content) {
@@ -129,14 +155,11 @@
         var lastY = null;
         content.items.forEach(function (item) {
           var y = item.transform[5];
-          var fSize = item.transform[0]; // approximate font size
+          var fSize = item.transform[0];
           if (lastY !== null && Math.abs(y - lastY) > 2) pageLines.push('\n');
-          // Detect headers: larger font or all-caps short lines
           var txt = item.str.trim();
           if (txt.length > 0 && txt.length < 80 && (fSize > 13 || (txt === txt.toUpperCase() && txt.length > 3 && /[A-Z]/.test(txt)))) {
-            // Heuristic: possibly a section header
             var currentWordCount = fullText.split(/\s+/).filter(function (w) { return w.length > 0; }).length;
-            // Avoid duplicate consecutive section labels
             if (detectedSections.length === 0 || detectedSections[detectedSections.length - 1].title !== txt) {
               detectedSections.push({ index: currentWordCount + pageLines.join(' ').split(/\s+/).filter(function (w) { return w.length > 0; }).length, title: txt });
             }
@@ -154,8 +177,46 @@
   }
 
   function cleanText(text) {
+    // 1. Basic normalisation
     text = text.replace(/-\s*\n\s*/g, '');
     text = text.replace(/\n{3,}/g, '\n\n');
+
+    // 2. Line-level filtering
+    var lines = text.split('\n');
+    var inNotesBlock = false;
+    var filtered = [];
+
+    lines.forEach(function (line) {
+      var trimmed = line.trim();
+
+      // Start of Notes/Source block — skip until blank line
+      if (isNotesLine(trimmed)) {
+        inNotesBlock = true;
+        return;
+      }
+      if (inNotesBlock) {
+        if (trimmed === '') { inNotesBlock = false; }
+        return;
+      }
+
+      // Drop journal running-heads and bare page numbers
+      if (isJournalHeader(trimmed) || isPageNumber(trimmed)) return;
+
+      // Drop table data rows; keep label lines shortened
+      if (isTableDataRow(trimmed)) {
+        if (isTableLabel(trimmed)) {
+          var label = trimmed.replace(/[—–].*/g, '').replace(/\s{2,}/g, ' ').trim();
+          filtered.push(label);
+        }
+        return;
+      }
+
+      filtered.push(line);
+    });
+
+    text = filtered.join('\n');
+
+    // 3. Final cleanup
     text = text.replace(/^\s*\d+\s*$/gm, '');
     text = text.replace(/\n(?=[a-z])/g, ' ');
     text = text.replace(/\s{2,}/g, ' ');
@@ -180,7 +241,6 @@
           canvas.height = vp.height;
           canvas.title = 'Page ' + pageNum;
           canvas.addEventListener('click', function () {
-            // Jump to approximate word position for this page
             var approxWordIndex = Math.floor((pageNum - 1) / pdfDoc.numPages * words.length);
             wordIndex = approxWordIndex;
             showWord();
@@ -209,7 +269,6 @@
     rsvpWord.innerHTML = before + focus + after;
     rsvpWord.style.fontSize = fontSize + 'px';
 
-    // Progress
     var pct = ((wordIndex + 1) / words.length * 100);
     progressFill.style.width = pct + '%';
     progressText.textContent = Math.round(pct) + '%';
@@ -217,11 +276,9 @@
     if (pctFill) pctFill.style.width = pct + '%';
     if (pctText) pctText.textContent = Math.round(pct) + '%';
 
-    // Approximate current page
     if (pdfDoc && pageTexts.length > 0) {
       var approxPage = Math.min(Math.floor(wordIndex / words.length * pdfDoc.numPages), pdfDoc.numPages - 1);
       pageInfoEl.textContent = 'Page ' + (approxPage + 1) + ' of ' + pdfDoc.numPages;
-      // Highlight active thumbnail
       var canvases = pagesScroller.querySelectorAll('canvas');
       canvases.forEach(function (c, i) { c.classList.toggle('active-page', i === approxPage); });
     }
@@ -285,7 +342,6 @@
     reader.readAsArrayBuffer(file);
   }
 
-  // Expose for sidebar
   window.refereedReaderLoadFile = function (file) { handleFile(file); };
   window.refereedReaderOpenByName = function (name) {
     getPDF(name).then(function (rec) {

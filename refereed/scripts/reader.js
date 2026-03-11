@@ -109,9 +109,133 @@
 
   // ---- Text Filtering Helpers ----
 
+  var ECON_JOURNALS = [
+    // Top general
+    'American Economic Review',
+    'Quarterly Journal of Economics',
+    'Journal of Political Economy',
+    'Review of Economic Studies',
+    'Econometrica',
+    'Journal of Finance',
+    'Review of Financial Studies',
+    'Journal of Financial Economics',
+    'Economic Journal',
+    'Journal of Economic Perspectives',
+    'Journal of Economic Literature',
+    'AEA Papers and Proceedings',
+    'American Economic Journal: Applied Economics',
+    'American Economic Journal: Economic Policy',
+    'American Economic Journal: Macroeconomics',
+    'American Economic Journal: Microeconomics',
+    // Development & growth
+    'Journal of Development Economics',
+    'World Development',
+    'Journal of Economic Growth',
+    'Review of Development Economics',
+    'Economic Development and Cultural Change',
+    'Journal of African Economies',
+    'Journal of Development Studies',
+    'Developing Economies',
+    // Labour & health
+    'Journal of Labor Economics',
+    'Journal of Human Resources',
+    'Labour Economics',
+    'Industrial and Labor Relations Review',
+    'Journal of Health Economics',
+    'Health Economics',
+    'American Journal of Health Economics',
+    // Public & political economy
+    'Journal of Public Economics',
+    'National Tax Journal',
+    'Journal of Policy Analysis and Management',
+    'Public Choice',
+    'Journal of Law and Economics',
+    'Journal of Legal Studies',
+    'American Political Science Review',
+    'Quarterly Journal of Political Science',
+    // Trade & international
+    'Journal of International Economics',
+    'Review of International Economics',
+    'Journal of International Money and Finance',
+    'World Economy',
+    'Open Economies Review',
+    // IO & urban
+    'RAND Journal of Economics',
+    'Journal of Industrial Economics',
+    'International Journal of Industrial Organization',
+    'Journal of Urban Economics',
+    'Regional Science and Urban Economics',
+    'Journal of Regional Science',
+    'Real Estate Economics',
+    // Macro & money
+    'Journal of Monetary Economics',
+    'Journal of Money, Credit and Banking',
+    'Journal of Economic Dynamics and Control',
+    'Macroeconomic Dynamics',
+    'Review of Economic Dynamics',
+    'European Economic Review',
+    'Journal of the European Economic Association',
+    'Economic Policy',
+    // Econometrics & methods
+    'Journal of Econometrics',
+    'Review of Economics and Statistics',
+    'Econometric Theory',
+    'Journal of Applied Econometrics',
+    'Journal of Business and Economic Statistics',
+    'Quantitative Economics',
+    'Journal of Financial Econometrics',
+    // Experimental & behavioural
+    'Experimental Economics',
+    'Journal of Economic Behavior and Organization',
+    'Games and Economic Behavior',
+    'Journal of Economic Theory',
+    'Theoretical Economics',
+    'Journal of Mathematical Economics',
+    // Environment & agriculture
+    'Journal of Environmental Economics and Management',
+    'Environmental and Resource Economics',
+    'American Journal of Agricultural Economics',
+    'Journal of Agricultural Economics',
+    'Land Economics',
+    // History
+    'Journal of Economic History',
+    'Explorations in Economic History',
+    'European Review of Economic History',
+    // Other notable
+    'Economic Inquiry',
+    'Southern Economic Journal',
+    'Oxford Economic Papers',
+    'Oxford Bulletin of Economics and Statistics',
+    'Scandinavian Journal of Economics',
+    'Canadian Journal of Economics',
+    'Journal of Economics',
+    'B.E. Journal of Economic Analysis and Policy',
+    'Economics Letters',
+    'Economics of Education Review',
+    'Journal of Housing Economics',
+    'Journal of Banking and Finance',
+    'Journal of Corporate Finance',
+    'Journal of Financial Intermediation',
+    'Journal of Financial and Quantitative Analysis',
+    'Journal of Risk and Uncertainty',
+    'Journal of Population Economics',
+    'Demography',
+    'Journal of Economic Inequality',
+  ];
+
   function isJournalHeader(line) {
-    return /^\d{1,5}\s{1,4}[A-Z][A-Z\s]{6,}[A-Z]\s+[A-Z][a-z]+\s+\d{4}\s*$/.test(line)
-        || /^[A-Z][A-Z\s]{10,}[A-Z]\s+VOL\.?\s*\d/i.test(line);
+    var t = line.trim();
+    // ALL CAPS running head: "3130 THE AMERICAN ECONOMIC REVIEW OCTOBER 2024"
+    if (/^\d{1,5}\s{1,4}[A-Z][A-Z\s]{6,}[A-Z]\s+[A-Z][a-z]+\s+\d{4}\s*$/.test(t)) return true;
+    // ALL CAPS + VOL
+    if (/^[A-Z][A-Z\s]{10,}[A-Z]\s+VOL\.?\s*\d/i.test(t)) return true;
+    // DOI line
+    if (/^https?:\/\/(dx\.)?doi\.org\//.test(t)) return true;
+    // Named journal citation: "American Economic Review 2024, 114(10): 3119-3160"
+    for (var i = 0; i < ECON_JOURNALS.length; i++) {
+      if (t.indexOf(ECON_JOURNALS[i]) === 0 && /\d{4}/.test(t)) return true;
+    }
+    return false;
   }
 
   function isPageNumber(line) {

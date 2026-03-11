@@ -378,24 +378,74 @@
       var perPage = [];
 
       pagesContent.forEach(function (content) {
-        var pageLines = [];
-        var lastY = null;
-        content.items.forEach(function (item) {
-          var y = item.transform[5];
-          var fSize = item.transform[0];
-          if (lastY !== null && Math.abs(y - lastY) > 2) pageLines.push('\n');
-          var txt = item.str.trim();
-          if (txt.length > 0 && txt.length < 80 && (fSize > 13 || (txt === txt.toUpperCase() && txt.length > 3 && /[A-Z]/.test(txt)))) {
-            var currentWordCount = fullText.split(/\s+/).filter(function (w) { return w.length > 0; }).length;
-            if (detectedSections.length === 0 || detectedSections[detectedSections.length - 1].title !== txt) {
-              detectedSections.push({ index: currentWordCount + pageLines.join(' ').split(/\s+/).filter(function (w) { return w.length > 0; }).length, title: txt });
-            }
+        // --- Column-aware extraction ---
+        // 1. Collect all items with their x, y, text
+        var items = content.items.map(function (item) {
+          return { x: item.transform[4], y: item.transform[5], fSize: item.transform[0], str: item.str };
+        }).filter(function (it) { return it.str.trim().length > 0; });
+
+        if (items.length === 0) { perPage.push(''); return; }
+
+        // 2. Detect columns by finding a gap in the x-distribution
+        var xs = items.map(function (it) { return it.x; }).sort(function (a, b) { return a - b; });
+        var pageWidth = xs[xs.length - 1] - xs[0];
+        var midX = xs[0] + pageWidth / 2;
+
+        // Find the largest gap near the middle third of the page
+        var colSplit = null;
+        var maxGap = 0;
+        var lo = xs[0] + pageWidth * 0.3;
+        var hi = xs[0] + pageWidth * 0.7;
+        for (var gi = 1; gi < xs.length; gi++) {
+          var gap = xs[gi] - xs[gi - 1];
+          if (xs[gi - 1] >= lo && xs[gi] <= hi && gap > maxGap) {
+            maxGap = gap;
+            colSplit = (xs[gi - 1] + xs[gi]) / 2;
           }
-          pageLines.push(item.str);
-          lastY = y;
+        }
+        // Only treat as two-column if gap is meaningful (>5% of page width)
+        var isTwoCol = colSplit !== null && maxGap > pageWidth * 0.05;
+
+        // 3. Split items into columns
+        var cols = isTwoCol
+          ? [items.filter(function (it) { return it.x < colSplit; }),
+             items.filter(function (it) { return it.x >= colSplit; })]
+          : [items];
+
+        // 4. For each column, sort by descending Y (top to bottom), group into lines
+        var pageText = '';
+        cols.forEach(function (colItems) {
+          colItems.sort(function (a, b) { return b.y - a.y || a.x - b.x; });
+          var lines = [];
+          var currentLine = [];
+          var lastY = null;
+          colItems.forEach(function (it) {
+            if (lastY !== null && Math.abs(it.y - lastY) > 2) {
+              if (currentLine.length > 0) lines.push(currentLine);
+              currentLine = [];
+            }
+            currentLine.push(it);
+            lastY = it.y;
+          });
+          if (currentLine.length > 0) lines.push(currentLine);
+
+          lines.forEach(function (line) {
+            var lineStr = line.map(function (it) { return it.str; }).join(' ').trim();
+            // Section detection
+            var fSize = line[0].fSize;
+            var txt = lineStr.trim();
+            if (txt.length > 0 && txt.length < 80 && (fSize > 13 || (txt === txt.toUpperCase() && txt.length > 3 && /[A-Z]/.test(txt)))) {
+              var currentWordCount = fullText.split(/\s+/).filter(function (w) { return w.length > 0; }).length;
+              if (detectedSections.length === 0 || detectedSections[detectedSections.length - 1].title !== txt) {
+                detectedSections.push({ index: currentWordCount, title: txt });
+              }
+            }
+            pageText += lineStr + '\n';
+          });
         });
-        perPage.push(pageLines.join(' ').trim());
-        fullText += pageLines.join(' ') + '\n\n';
+
+        perPage.push(pageText.trim());
+        fullText += pageText + '\n\n';
       });
 
       fullText = cleanText(fullText);

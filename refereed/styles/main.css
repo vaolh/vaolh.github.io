@@ -113,14 +113,15 @@ img{max-width:100%;display:block}
 .library-item-mini-del:hover{color:#ff5050}
 
 /* --- Abanico (horizontal overlapping posters) --- */
-.abanico{display:flex;align-items:flex-start;padding:0}
+.abanico{display:flex;align-items:flex-start;padding:0;overflow:hidden}
 .abanico .abanico-card{width:70px;height:105px;border-radius:4px;overflow:hidden;box-shadow:2px 2px 10px rgba(0,0,0,.5);transition:transform .2s;background:#2c3440;cursor:pointer;flex-shrink:0;margin-right:-20px;position:relative}
 .abanico .abanico-card:last-child{margin-right:0}
 .abanico .abanico-card img{width:100%;height:100%;object-fit:cover}
 .abanico .abanico-card:hover{transform:translateY(-6px);z-index:20}
 
-/* Sidebar watchlist: taller cards to match uploader box */
-.profile-sidebar .sidebar-block .abanico .abanico-card{height:157px;width:105px}
+/* Sidebar watchlist: fit 5 cards in 240px with deeper overlap */
+.profile-sidebar .abanico .abanico-card{margin-right:-32px}
+.profile-sidebar .abanico .abanico-card:last-child{margin-right:0}
 
 /* --- Sidebar Diary --- */
 .sidebar-diary-item{padding:5px 0;border-bottom:1px solid #1e242c;font-size:.8rem;color:#d8d8d8}
@@ -297,18 +298,120 @@ img{max-width:100%;display:block}
 /* =============================================
    RESPONSIVE
    ============================================= */
+
+/* ---- Tablet (≤900px) ---- */
 @media(max-width:900px){
   .profile-columns{flex-direction:column}
-  .profile-main,.profile-sidebar{flex:0 0 100%}
+  .profile-main,.profile-sidebar{flex:0 0 100%;width:100%}
+  .profile-sidebar{padding-top:0}
   .profile-top-row{flex-direction:column;gap:16px;align-items:flex-start}
   .lists-two-col{grid-template-columns:1fr}
+  .poster-grid{grid-template-columns:repeat(auto-fill,minmax(65px,1fr));justify-content:start}
+  .poster-card-img{width:100%;height:auto;aspect-ratio:2/3}
+  .poster-card .poster-hover-title{display:none}
+  .review-detail-top{flex-direction:column;gap:16px}
+  .review-detail-poster{width:120px}
+
+  /* Reader: stack panels */
   .reader-layout{flex-direction:column}
-  .reader-left-panel,.reader-right-panel{width:100%;flex-direction:row;flex-wrap:wrap;border:none;border-bottom:1px solid #2c3440}
+  .reader-left-panel{width:100%;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:12px;padding:8px 12px;border-right:none;border-bottom:1px solid #2c3440}
+  .reader-right-panel{width:100%;flex-direction:row;flex-wrap:wrap;gap:16px;border-left:none;border-top:1px solid #2c3440;padding:12px}
+  .rlp-slider{writing-mode:horizontal-tb;direction:ltr;height:6px;width:80px}
+  .rlp-spacer{display:none}
+  .rlp-bottom-btn{width:auto;padding:6px 12px}
 }
-@media(max-width:480px){
-  .poster-grid{grid-template-columns:repeat(auto-fill,minmax(60px,1fr))}
-  .poster-row{flex-wrap:wrap}
-  .poster-row.four-up .poster-item{max-width:48%;flex:0 0 48%}
-  .main-nav{overflow-x:auto}
-  .nav-link{padding:6px 8px;font-size:.72rem}
+
+/* ---- Phone (≤600px) ---- */
+@media(max-width:600px){
+  /* Header: not sticky on phone for more space */
+  .site-header{position:relative}
+
+  /* Subpage nav: horizontal scroll */
+  .subpage-nav-inner{overflow-x:auto;-webkit-overflow-scrolling:touch;gap:0}
+  .snav-link{white-space:nowrap;flex-shrink:0;padding:4px 10px;font-size:.72rem}
+
+  /* Pages */
+  .page{padding:20px 16px}
+
+  /* Profile top row */
+  .profile-top-row{padding:14px 0}
+  .profile-left{gap:14px}
+  .profile-avatar{width:56px;height:56px}
+  .profile-info h1{font-size:1.2rem}
+
+  /* Profile stats: 2×2 grid */
+  .profile-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+  .stat{padding:8px 0;border:1px solid #2c3440;border-radius:6px}
+  .stat-number{font-size:1.2rem}
+  .stat-divider{display:none}
+
+  /* Profile nav: scroll horizontally */
+  .profile-nav{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+  .pnav-link{white-space:nowrap;flex-shrink:0;padding:10px 12px;font-size:.75rem}
+
+  /* Poster row: 4 items fill width, 2×2 grid */
+  .poster-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
+  .poster-row.four-up .poster-item{width:100%;flex:none}
+  .poster-item-img{width:100%;height:auto;aspect-ratio:2/3}
+  .poster-item .poster-hover-title{display:none}
+
+  /* Sidebar: full width, tighter padding */
+  .profile-sidebar{width:100%;padding-top:8px}
+  .profile-sidebar .sidebar-block .abanico .abanico-card{height:auto;width:auto;aspect-ratio:2/3;flex:1;min-width:0}
+  .sidebar-reader{padding:12px}
+
+  /* Poster grid: fill available columns */
+  .poster-grid{grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px 6px}
+
+  /* Diary */
+  .diary-entry{gap:10px;padding:8px 0}
+  .diary-entry-poster{width:36px;height:54px}
+  .diary-entry-title{font-size:.85rem}
+
+  /* Reviews */
+  .review-card-poster{width:44px;height:66px}
+  .review-card-title{font-size:.92rem}
+
+  /* Review detail */
+  .review-detail-top{flex-direction:column;gap:12px;align-items:flex-start}
+  .review-detail-poster{width:100px}
+  .review-detail-info h1{font-size:1.2rem}
+
+  /* Lists */
+  .lists-two-col{grid-template-columns:1fr;gap:16px}
+
+  /* Activity */
+  .activity-item{gap:10px;padding:10px 0}
+  .activity-poster{width:36px;height:54px}
+
+  /* Histogram */
+  .histogram{height:40px}
+
+  /* Reader: full height calc includes only header (not sticky) */
+  #page-reader.active{height:calc(100vh - 52px)}
+  .reader-top-bar{padding:4px 10px;gap:6px;flex-wrap:wrap}
+  .rtb-filename{max-width:160px;font-size:.7rem}
+  .rtb-page{font-size:.7rem}
+  .rtb-btn{padding:3px 8px;font-size:.68rem}
+  #rsvp-word{font-size:2.5rem}
+  .reader-bar-wrap{padding:0 16px}
+  .reader-pages-scroller{min-height:48px;padding:4px 4px}
+  .reader-pages-scroller canvas{height:40px}
+  .reader-left-panel{padding:6px 8px;gap:8px}
+  .rlp-value{font-size:1rem}
+  .rlp-slider{width:60px;height:6px}
+  .rlp-play-btn{width:36px;height:36px;margin:4px 0}
+  .rlp-play-btn::after{border-width:6px 0 6px 10px}
+  .rlp-bottom-btn{font-size:.68rem;padding:4px 8px}
+}
+
+/* ---- Small phone (≤380px) ---- */
+@media(max-width:380px){
+  .page{padding:16px 10px}
+  .poster-row{grid-template-columns:1fr 1fr;gap:6px}
+  .poster-grid{grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:4px 4px}
+  .profile-info h1{font-size:1.05rem}
+  .stat-number{font-size:1rem}
+  .stat-label{font-size:.6rem}
+  #rsvp-word{font-size:1.8rem}
 }

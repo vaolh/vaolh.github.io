@@ -9,6 +9,7 @@
     "pdf": "",
     "rating": 5,
     "favorite": true,
+    "reread": true,
     "date_read": "2025-12-01",
     "review": "Arrow's impossibility theorem is one of the most elegant results in social choice theory. The paper demonstrates that no ranked voting system can satisfy a set of seemingly reasonable fairness criteria simultaneously.\n\nFormally, let $N$ be a set of voters and $A$ a set of alternatives with $|A| \\geq 3$. Arrow proves there is no social welfare function $f$ satisfying:\n\n1. **Unrestricted domain**: $f$ is defined for all possible preference profiles.\n2. **Pareto efficiency**: If every voter prefers $x$ to $y$, then the social ranking ranks $x$ above $y$.\n3. **Independence of irrelevant alternatives**: The social preference between $x$ and $y$ depends only on individual preferences between $x$ and $y$.\n4. **Non-dictatorship**: There is no single voter $i$ such that $i$'s preference always determines the social outcome.\n\nThe proof is remarkably concise for such a sweeping result. Arrow constructs a *decisive* set argument, showing that the conjunction of conditions (1)–(3) forces the decisive set to shrink to a single individual, violating (4).\n\n$$\\nexists\\, f: \\mathcal{L}(A)^N \\to \\mathcal{L}(A) \\text{ satisfying (1)–(4)}$$\n\nA foundational paper that reshaped welfare economics and political philosophy in one stroke."
   },

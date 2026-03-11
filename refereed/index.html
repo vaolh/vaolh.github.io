@@ -7,21 +7,15 @@
   <link rel="stylesheet" href="styles/main.css">
   <script>
     window.MathJax = {
-      tex: {
-        inlineMath: [['$', '$']],
-        displayMath: [['$$', '$$']]
-      },
+      tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },
       startup: { typeset: false }
     };
   </script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  </script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 </head>
 <body>
-  <!-- Header -->
   <header class="site-header">
     <div class="header-inner">
       <a href="/refereed/" class="site-logo">Refereed</a>
@@ -33,118 +27,187 @@
         <a href="#" data-page="reviews" class="nav-link">Reviews</a>
         <a href="#" data-page="watchlist" class="nav-link">Watchlist</a>
         <a href="#" data-page="lists" class="nav-link">Lists</a>
+        <a href="#" data-page="reader" class="nav-link">Reader</a>
       </nav>
     </div>
   </header>
 
-  <!-- Main Content Area -->
   <main id="app">
 
-    <!-- Profile Page -->
+    <!-- ======== PROFILE ======== -->
     <section id="page-profile" class="page active">
-      <div class="profile-header">
-        <div class="profile-avatar">VO</div>
-        <div class="profile-info">
-          <h1>Victor Ortega</h1>
-          <p class="profile-location">Querétaro</p>
-          <a href="https://x.com/realvolh" target="_blank" rel="noopener noreferrer" class="profile-link">@realvolh</a>
+      <div class="profile-top-row">
+        <div class="profile-left">
+          <img src="/docs/profilepic.jpg" alt="Victor Ortega" class="profile-avatar">
+          <div class="profile-info">
+            <h1>Victor Ortega</h1>
+            <p class="profile-location">Querétaro</p>
+            <a href="https://x.com/realvolh" target="_blank" rel="noopener noreferrer" class="profile-link">@realvolh</a>
+          </div>
+        </div>
+        <div class="profile-stats">
+          <div class="stat"><span class="stat-number" id="stat-total">0</span><span class="stat-label">Papers</span></div>
+          <div class="stat-divider"></div>
+          <div class="stat"><span class="stat-number" id="stat-year">0</span><span class="stat-label">This Year</span></div>
+          <div class="stat-divider"></div>
+          <div class="stat"><span class="stat-number" id="stat-watchlist">0</span><span class="stat-label">Watchlist</span></div>
+          <div class="stat-divider"></div>
+          <div class="stat"><span class="stat-number" id="stat-genres">0</span><span class="stat-label">Genres</span></div>
         </div>
       </div>
-      <div class="stats-row" id="stats-row">
-        <div class="stat"><span class="stat-number" id="stat-total">0</span><span class="stat-label">Papers</span></div>
-        <div class="stat"><span class="stat-number" id="stat-year">0</span><span class="stat-label">This Year</span></div>
-        <div class="stat"><span class="stat-number" id="stat-watchlist">0</span><span class="stat-label">Watchlist</span></div>
-        <div class="stat"><span class="stat-number" id="stat-genres">0</span><span class="stat-label">Genres</span></div>
+
+      <div class="profile-tabs">
+        <a href="#" data-page="profile" class="ptab active">Profile</a>
+        <a href="#" data-page="activity" class="ptab">Activity</a>
+        <a href="#" data-page="papers" class="ptab">Papers</a>
       </div>
-      <div class="section-block">
-        <h2>Favorite Papers</h2>
-        <div class="poster-grid" id="favorites-grid"></div>
-      </div>
-      <div class="section-block">
-        <h2>Recent Activity</h2>
-        <div id="recent-activity"></div>
+
+      <div class="profile-columns">
+        <div class="profile-main">
+          <div class="section-block">
+            <h2>Favorite Papers</h2>
+            <div class="poster-row four-up" id="favorites-grid"></div>
+          </div>
+          <div class="section-block">
+            <h2>Recent Activity</h2>
+            <div class="poster-row four-up" id="recent-activity"></div>
+          </div>
+          <div class="section-block">
+            <h2>Random Reviews</h2>
+            <div id="random-reviews"></div>
+          </div>
+        </div>
+
+        <div class="profile-sidebar">
+          <div class="sidebar-block sidebar-reader-block">
+            <div class="sidebar-reader" id="sidebar-reader">
+              <div class="upload-dropzone-mini" id="sidebar-upload-dropzone">
+                <span class="upload-icon">📄</span>
+                <p>Upload PDF</p>
+                <input type="file" id="sidebar-pdf-input" accept=".pdf" style="display:none;">
+              </div>
+              <div id="sidebar-library-list"></div>
+            </div>
+          </div>
+          <div class="sidebar-block">
+            <h3>Watchlist</h3>
+            <div class="abanico" id="sidebar-watchlist"></div>
+          </div>
+          <div class="sidebar-block">
+            <h3>Diary</h3>
+            <div id="sidebar-diary"></div>
+          </div>
+          <div class="sidebar-block">
+            <h3>Ratings</h3>
+            <div class="histogram" id="sidebar-histogram"></div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- Activity Page -->
+    <!-- ======== ACTIVITY ======== -->
     <section id="page-activity" class="page">
       <h2>Activity</h2>
       <div id="activity-feed"></div>
     </section>
 
-    <!-- Papers Page -->
+    <!-- ======== PAPERS ======== -->
     <section id="page-papers" class="page">
       <h2>Papers</h2>
       <div class="poster-grid" id="papers-grid"></div>
     </section>
 
-    <!-- Diary Page -->
+    <!-- ======== DIARY ======== -->
     <section id="page-diary" class="page">
       <h2>Diary</h2>
       <div id="diary-entries"></div>
     </section>
 
-    <!-- Reviews Page -->
+    <!-- ======== REVIEWS ======== -->
     <section id="page-reviews" class="page">
       <h2>Reviews</h2>
       <div id="reviews-list"></div>
     </section>
 
-    <!-- Watchlist Page -->
+    <!-- ======== WATCHLIST ======== -->
     <section id="page-watchlist" class="page">
       <h2>Watchlist</h2>
-      <!-- PDF Reader Module -->
-      <div class="reader-module" id="reader-module">
-        <div class="reader-header">
-          <h3>Upload PDF for Reading</h3>
-          <p class="reader-subtitle">Speed-read papers directly in your browser</p>
-        </div>
-        <div class="reader-controls-bar" id="reader-controls-bar" style="display:none;">
-          <div class="reader-file-info">
-            <span id="reader-filename"></span>
-            <button class="btn-small btn-danger" id="reader-close-btn">Close</button>
-          </div>
-          <div class="rsvp-display" id="rsvp-display">
-            <span id="rsvp-word"></span>
-          </div>
-          <div class="reader-controls">
-            <button class="btn-small" id="reader-prev">◀◀</button>
-            <button class="btn-small" id="reader-play">▶ Play</button>
-            <button class="btn-small" id="reader-next">▶▶</button>
-            <label class="speed-label">
-              <span id="reader-wpm-display">300</span> WPM
-              <input type="range" id="reader-wpm" min="100" max="1000" step="25" value="300">
-            </label>
-            <span class="reader-progress" id="reader-progress">0 / 0</span>
-          </div>
-        </div>
+      <div class="poster-grid" id="watchlist-grid"></div>
+    </section>
+
+    <!-- ======== LISTS ======== -->
+    <section id="page-lists" class="page">
+      <h2>Lists</h2>
+      <div class="lists-two-col" id="lists-container"></div>
+    </section>
+
+    <!-- ======== READER ======== -->
+    <section id="page-reader" class="page">
+      <div class="reader-page">
         <div class="reader-upload-area" id="reader-upload-area">
           <div class="upload-dropzone" id="upload-dropzone">
             <p>Drop a PDF here or click to select</p>
             <input type="file" id="pdf-file-input" accept=".pdf" style="display:none;">
           </div>
+          <div class="reader-library" id="reader-library">
+            <h4>Previously Uploaded</h4>
+            <div id="reader-library-list"></div>
+          </div>
         </div>
-        <div class="reader-library" id="reader-library">
-          <h4>Previously Uploaded</h4>
-          <div id="reader-library-list"></div>
+
+        <div class="reader-active" id="reader-active" style="display:none;">
+          <div class="reader-layout">
+            <div class="reader-left-panel">
+              <div class="reader-file-info">
+                <span id="reader-filename"></span>
+              </div>
+              <button class="btn-reader" id="reader-play">▶ Play</button>
+              <button class="btn-small" id="reader-prev">◀◀</button>
+              <button class="btn-small" id="reader-next">▶▶</button>
+              <div class="reader-slider-group">
+                <label>WPM</label>
+                <input type="range" id="reader-wpm" min="100" max="1000" step="25" value="300" class="vertical-slider">
+                <span id="reader-wpm-display">300</span>
+              </div>
+              <div class="reader-slider-group">
+                <label>Size</label>
+                <input type="range" id="reader-fontsize" min="16" max="72" step="2" value="36" class="vertical-slider">
+                <span id="reader-fontsize-display">36px</span>
+              </div>
+              <button class="btn-small btn-danger" id="reader-close-btn">Close PDF</button>
+            </div>
+
+            <div class="reader-center">
+              <div class="rsvp-display" id="rsvp-display">
+                <span id="rsvp-word"></span>
+              </div>
+              <div class="reader-bar-wrap">
+                <div class="reader-progress-bar"><div class="reader-progress-fill" id="reader-progress-fill"></div></div>
+                <span class="reader-progress-text" id="reader-progress">0 / 0</span>
+              </div>
+              <div class="reader-pages-scroller" id="reader-pages-scroller"></div>
+            </div>
+
+            <div class="reader-right-panel">
+              <h4>Sections</h4>
+              <div id="reader-sections-list"></div>
+              <div class="reader-words-info">
+                <div><strong id="reader-words-read">0</strong> words read</div>
+                <div class="reader-pct-bar"><div class="reader-pct-fill" id="reader-pct-fill"></div></div>
+                <div id="reader-pct-text">0%</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <!-- Watchlist Grid -->
-      <div class="poster-grid" id="watchlist-grid"></div>
     </section>
 
-    <!-- Lists Page -->
-    <section id="page-lists" class="page">
-      <h2>Lists</h2>
-      <div id="lists-container"></div>
-    </section>
-
-    <!-- Review Detail Page (dynamically shown) -->
+    <!-- ======== REVIEW DETAIL ======== -->
     <section id="page-review-detail" class="page">
       <div id="review-detail-content"></div>
     </section>
 
-    <!-- List Detail Page -->
+    <!-- ======== LIST DETAIL ======== -->
     <section id="page-list-detail" class="page">
       <div id="list-detail-content"></div>
     </section>

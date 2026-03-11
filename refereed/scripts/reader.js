@@ -221,6 +221,103 @@
     'Journal of Population Economics',
     'Demography',
     'Journal of Economic Inequality',
+    // Geography & regional
+    'Annals of the American Association of Geographers',
+    'Annals of the Association of American Geographers',
+    'Economic Geography',
+    'Journal of Economic Geography',
+    'Transactions of the Institute of British Geographers',
+    'Progress in Human Geography',
+    'Environment and Planning A',
+    'Environment and Planning B',
+    'Environment and Planning C',
+    'Regional Studies',
+    'Urban Studies',
+    'Urban Geography',
+    'Geographical Analysis',
+    'International Journal of Geographical Information Science',
+    'Political Geography',
+    'Global Networks',
+    'Area',
+    'Geoforum',
+    'Antipode',
+    'Geography Compass',
+    'Geographical Journal',
+    'Professional Geographer',
+    'Spatial Economic Analysis',
+    // Mathematics
+    'Annals of Mathematics',
+    'Journal of the American Mathematical Society',
+    'Inventiones Mathematicae',
+    'Acta Mathematica',
+    'Mathematische Annalen',
+    'Duke Mathematical Journal',
+    'Journal of the European Mathematical Society',
+    'Geometric and Functional Analysis',
+    'Advances in Mathematics',
+    'Journal fur die reine und angewandte Mathematik',
+    'Transactions of the American Mathematical Society',
+    'American Journal of Mathematics',
+    'Mathematische Zeitschrift',
+    'Probability Theory and Related Fields',
+    'Annals of Probability',
+    'Annals of Statistics',
+    'Journal of the Royal Statistical Society',
+    'Biometrika',
+    'Stochastic Processes and their Applications',
+    'Mathematics of Operations Research',
+    'SIAM Journal on Applied Mathematics',
+    'SIAM Journal on Numerical Analysis',
+    'Numerische Mathematik',
+    // History
+    'American Historical Review',
+    'Journal of Modern History',
+    'Past and Present',
+    'Journal of World History',
+    'Economic History Review',
+    'Business History Review',
+    'Journal of Social History',
+    'History and Theory',
+    'Comparative Studies in Society and History',
+    'Journal of Interdisciplinary History',
+    'Historical Journal',
+    'English Historical Review',
+    'French Historical Studies',
+    'Central European History',
+    'Journal of Latin American Studies',
+    'Journal of African History',
+    'International Journal of Middle East Studies',
+    'Journal of Asian Studies',
+    'Technology and Culture',
+    'History of Political Economy',
+    'History of Political Thought',
+    'History of Science',
+    // Philosophy
+    'Journal of Philosophy',
+    'Mind',
+    'Nous',
+    'Ethics',
+    'Philosophy and Public Affairs',
+    'Philosophical Review',
+    'Philosophical Studies',
+    'Analysis',
+    'Synthese',
+    'British Journal for the Philosophy of Science',
+    'Philosophy of Science',
+    'Erkenntnis',
+    'Australasian Journal of Philosophy',
+    'Canadian Journal of Philosophy',
+    'European Journal of Philosophy',
+    'Philosophers Imprint',
+    'Philosophy and Phenomenological Research',
+    'Journal of Political Philosophy',
+    'Social Philosophy and Policy',
+    'Economics and Philosophy',
+    'Philosophy and Economics',
+    'Episteme',
+    'Philosophical Quarterly',
+    'Philosophical Perspectives',
+    'Legal Theory',
   ];
 
   function isJournalHeader(line) {
@@ -251,8 +348,14 @@
     return numericTokens.length >= 4 && (numericTokens.length / tokens.length) > 0.35;
   }
 
-  function isNotesLine(line) {
-    return /^\s*Notes?\s*:/i.test(line) || /^\s*Source\s*:/i.test(line);
+
+
+  function isJSTORWatermark(line) {
+    var t = line.trim();
+    if (/^This content downloaded from/i.test(t)) return true;
+    if (/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\s+on\s+/i.test(t)) return true;
+    if (/^All use subject to https?:\/\/about\.jstor\.org/i.test(t)) return true;
+    return false;
   }
 
   function isTableLabel(line) {
@@ -307,24 +410,14 @@
 
     // 2. Line-level filtering
     var lines = text.split('\n');
-    var inNotesBlock = false;
     var filtered = [];
 
     lines.forEach(function (line) {
       var trimmed = line.trim();
 
       // Start of Notes/Source block — skip until blank line
-      if (isNotesLine(trimmed)) {
-        inNotesBlock = true;
-        return;
-      }
-      if (inNotesBlock) {
-        if (trimmed === '') { inNotesBlock = false; }
-        return;
-      }
-
       // Drop journal running-heads and bare page numbers
-      if (isJournalHeader(trimmed) || isPageNumber(trimmed)) return;
+      if (isJournalHeader(trimmed) || isPageNumber(trimmed) || isJSTORWatermark(trimmed)) return;
 
       // Drop table data rows; keep label lines shortened
       if (isTableDataRow(trimmed)) {

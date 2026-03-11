@@ -171,7 +171,7 @@
     for (var i = 1; i <= Math.min(pdfDoc.numPages, 50); i++) {
       (function (pageNum) {
         pdfDoc.getPage(pageNum).then(function (page) {
-          var vp = page.getViewport({ scale: 0.2 });
+          var vp = page.getViewport({ scale: 0.12 });
           var canvas = document.createElement('canvas');
           canvas.width = vp.width;
           canvas.height = vp.height;

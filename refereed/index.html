@@ -19,18 +19,21 @@
   <header class="site-header">
     <div class="header-inner">
       <a href="/refereed/" class="site-logo">Refereed</a>
-      <nav class="main-nav">
-        <a href="#" data-page="profile" class="nav-link active">Profile</a>
-        <a href="#" data-page="activity" class="nav-link">Activity</a>
-        <a href="#" data-page="papers" class="nav-link">Papers</a>
-        <a href="#" data-page="diary" class="nav-link">Diary</a>
-        <a href="#" data-page="reviews" class="nav-link">Reviews</a>
-        <a href="#" data-page="watchlist" class="nav-link">Watchlist</a>
-        <a href="#" data-page="lists" class="nav-link">Lists</a>
-        <a href="#" data-page="reader" class="nav-link">Reader</a>
-      </nav>
     </div>
   </header>
+
+  <nav class="subpage-nav" id="subpage-nav" style="display:none">
+    <div class="subpage-nav-inner">
+      <a href="#" data-page="profile" class="snav-link">Profile</a>
+      <a href="#" data-page="activity" class="snav-link">Activity</a>
+      <a href="#" data-page="papers" class="snav-link">Papers</a>
+      <a href="#" data-page="diary" class="snav-link">Diary</a>
+      <a href="#" data-page="reviews" class="snav-link">Reviews</a>
+      <a href="#" data-page="watchlist" class="snav-link">Watchlist</a>
+      <a href="#" data-page="lists" class="snav-link">Lists</a>
+      <a href="#" data-page="reader" class="snav-link">Reader</a>
+    </div>
+  </nav>
 
   <main id="app">
 
@@ -56,10 +59,15 @@
         </div>
       </div>
 
-      <div class="profile-tabs">
-        <a href="#" data-page="profile" class="ptab active">Profile</a>
-        <a href="#" data-page="activity" class="ptab">Activity</a>
-        <a href="#" data-page="papers" class="ptab">Papers</a>
+      <div class="profile-nav" id="profile-nav">
+        <a href="#" data-page="profile" class="pnav-link active">Profile</a>
+        <a href="#" data-page="activity" class="pnav-link">Activity</a>
+        <a href="#" data-page="papers" class="pnav-link">Papers</a>
+        <a href="#" data-page="diary" class="pnav-link">Diary</a>
+        <a href="#" data-page="reviews" class="pnav-link">Reviews</a>
+        <a href="#" data-page="watchlist" class="pnav-link">Watchlist</a>
+        <a href="#" data-page="lists" class="pnav-link">Lists</a>
+        <a href="#" data-page="reader" class="pnav-link">Reader</a>
       </div>
 
       <div class="profile-columns">
@@ -142,7 +150,7 @@
     </section>
 
     <!-- ======== READER ======== -->
-    <section id="page-reader" class="page">
+    <div id="page-reader" class="page">
       <div class="reader-page">
         <div class="reader-upload-area" id="reader-upload-area">
           <div class="upload-dropzone" id="upload-dropzone">
@@ -200,7 +208,7 @@
           </div>
         </div>
       </div>
-    </section>
+    </div>
 
     <!-- ======== REVIEW DETAIL ======== -->
     <section id="page-review-detail" class="page">

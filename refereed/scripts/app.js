@@ -62,27 +62,33 @@
 
   function metaIcons(p) {
     var s = '';
-    if (p.favorite) s += ' <span class="fav-icon">♥</span>';
-    if (p.reread) s += ' <span class="reread-icon">⏪</span>';
+    if (p.favorite) s += ' <span class="fav-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>';
+    if (p.reread) s += ' <span class="reread-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg></span>';
     return s;
   }
 
   // ---- Navigation ----
 
-  var navLinks = document.querySelectorAll('.nav-link');
-  var ptabs = document.querySelectorAll('.ptab');
+  var pnavLinks = document.querySelectorAll('.pnav-link');
+  var snavLinks = document.querySelectorAll('.snav-link');
   var pages = document.querySelectorAll('.page');
+  var subpageNav = document.getElementById('subpage-nav');
 
   function showPage(name) {
     pages.forEach(function (p) { p.classList.remove('active'); });
-    navLinks.forEach(function (l) { l.classList.remove('active'); });
-    ptabs.forEach(function (t) { t.classList.remove('active'); });
+    pnavLinks.forEach(function (l) { l.classList.remove('active'); });
+    snavLinks.forEach(function (l) { l.classList.remove('active'); });
     var target = document.getElementById('page-' + name);
     if (target) target.classList.add('active');
-    var link = document.querySelector('.nav-link[data-page="' + name + '"]');
-    if (link) link.classList.add('active');
-    var tab = document.querySelector('.ptab[data-page="' + name + '"]');
-    if (tab) tab.classList.add('active');
+    if (name === 'profile') {
+      subpageNav.style.display = 'none';
+    } else {
+      subpageNav.style.display = 'block';
+    }
+    var plink = document.querySelector('.pnav-link[data-page="' + name + '"]');
+    if (plink) plink.classList.add('active');
+    var slink = document.querySelector('.snav-link[data-page="' + name + '"]');
+    if (slink) slink.classList.add('active');
     window.scrollTo(0, 0);
     if (window.MathJax && window.MathJax.typesetPromise) {
       window.MathJax.typesetPromise().catch(function () {});
@@ -92,23 +98,18 @@
   // Expose showPage globally for reader.js
   window.refereedShowPage = showPage;
 
-  navLinks.forEach(function (link) {
-    link.addEventListener('click', function (e) {
-      e.preventDefault();
-      var page = this.getAttribute('data-page');
-      showPage(page);
-      history.pushState({ page: page }, '', '#' + page);
+  function attachNavListeners(links) {
+    links.forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        var page = this.getAttribute('data-page');
+        showPage(page);
+        history.pushState({ page: page }, '', '#' + page);
+      });
     });
-  });
-
-  ptabs.forEach(function (tab) {
-    tab.addEventListener('click', function (e) {
-      e.preventDefault();
-      var page = this.getAttribute('data-page');
-      showPage(page);
-      history.pushState({ page: page }, '', '#' + page);
-    });
-  });
+  }
+  attachNavListeners(pnavLinks);
+  attachNavListeners(snavLinks);
 
   window.addEventListener('popstate', function (e) {
     if (e.state && e.state.page) showPage(e.state.page);
@@ -132,28 +133,10 @@
   function buildAbanico(container, items, maxItems) {
     container.innerHTML = '';
     var list = items.slice(0, maxItems || 5);
-    var total = list.length;
-    // Card width
-    var cardW = 85;
-    // Total fan width = container width, overlap so they fan out
-    var containerW = container.offsetWidth || 260;
-    var spacing;
-    if (total <= 1) {
-      spacing = 0;
-    } else {
-      spacing = Math.min(40, (containerW - cardW) / (total - 1));
-    }
-    var totalFanW = (total - 1) * spacing + cardW;
-    var startX = (containerW - totalFanW) / 2;
-
     list.forEach(function (p, i) {
       var card = document.createElement('div');
       card.className = 'abanico-card';
-      card.style.left = (startX + i * spacing) + 'px';
       card.style.zIndex = i + 1;
-      // Slight rotation for fan effect
-      var angle = total <= 1 ? 0 : -6 + (12 / (total - 1)) * i;
-      card.style.transform = 'rotate(' + angle + 'deg)';
       card.innerHTML = '<img src="' + escapeHtml(p.poster) + '" alt="' + escapeHtml(p.title) + '" loading="lazy">';
       if (p.review) {
         card.addEventListener('click', function () { openReview(p.id); });
@@ -496,8 +479,8 @@
             '<div class="review-detail-authors">' + escapeHtml(p.authors.join(', ')) + '</div>' +
             '<div class="review-detail-genre">' + escapeHtml(p.genre || '') + '</div>' +
             '<div class="review-detail-rating"><span class="stars">' + ratingToStars(p.rating) + '</span>' +
-              (p.favorite ? '<span class="fav-icon"> ♥</span>' : '') +
-              (p.reread ? '<span class="reread-icon"> ⏪</span>' : '') +
+              (p.favorite ? '<span class="fav-icon"> <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>' : '') +
+              (p.reread ? '<span class="reread-icon"> <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg></span>' : '') +
             '</div>' +
             '<div class="review-detail-date">Read ' + formatDate(p.date_read) + '</div>' +
             (p.pdf ? '<div style="margin-top:8px"><a href="' + escapeHtml(p.pdf) + '" target="_blank" rel="noopener noreferrer" style="font-size:.85rem">View PDF →</a></div>' : '') +
@@ -507,9 +490,10 @@
       '</div>';
 
     pages.forEach(function (pg) { pg.classList.remove('active'); });
-    navLinks.forEach(function (l) { l.classList.remove('active'); });
-    ptabs.forEach(function (t) { t.classList.remove('active'); });
+    pnavLinks.forEach(function (l) { l.classList.remove('active'); });
+    snavLinks.forEach(function (l) { l.classList.remove('active'); });
     document.getElementById('page-review-detail').classList.add('active');
+    subpageNav.style.display = 'block';
     window.scrollTo(0, 0);
 
     document.getElementById('review-back').addEventListener('click', function (e) {
@@ -546,9 +530,10 @@
     });
 
     pages.forEach(function (pg) { pg.classList.remove('active'); });
-    navLinks.forEach(function (l) { l.classList.remove('active'); });
-    ptabs.forEach(function (t) { t.classList.remove('active'); });
+    pnavLinks.forEach(function (l) { l.classList.remove('active'); });
+    snavLinks.forEach(function (l) { l.classList.remove('active'); });
     document.getElementById('page-list-detail').classList.add('active');
+    subpageNav.style.display = 'block';
     window.scrollTo(0, 0);
 
     document.getElementById('list-back').addEventListener('click', function (e) {
@@ -607,16 +592,6 @@
       renderReviews();
       renderWatchlist();
       renderLists();
-
-      // Re-render abanicos on resize
-      var resizeTimer;
-      window.addEventListener('resize', function () {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function () {
-          renderSidebarWatchlist();
-          renderLists();
-        }, 200);
-      });
 
       var hash = location.hash.replace('#', '');
       if (hash) showPage(hash);

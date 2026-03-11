@@ -13,16 +13,18 @@ img{max-width:100%;display:block}
 
 /* --- Header / Nav --- */
 .site-header{background:#1b2028;border-bottom:1px solid #2c3440;position:sticky;top:0;z-index:100}
-.header-inner{max-width:1200px;margin:0 auto;padding:0 24px;height:52px;display:flex;align-items:center;gap:32px}
+.header-inner{max-width:950px;margin:0 auto;padding:0 24px;height:52px;display:flex;align-items:center}
 .site-logo{font-size:1.2rem;font-weight:700;color:#00e054;letter-spacing:1px;text-transform:uppercase}
 .site-logo:hover{color:#fff}
-.main-nav{display:flex;gap:4px}
-.nav-link{padding:6px 14px;border-radius:4px;font-size:.85rem;font-weight:500;color:#9ab;text-transform:uppercase;letter-spacing:.5px;transition:background .15s,color .15s}
-.nav-link:hover{background:#2c3440;color:#fff}
-.nav-link.active{background:#00e054;color:#14181c}
+/* Subpage compact nav bar */
+.subpage-nav{background:#1b2028;border-bottom:1px solid #2c3440}
+.subpage-nav-inner{max-width:950px;margin:0 auto;padding:0 24px;display:flex;gap:2px;height:40px;align-items:center}
+.snav-link{padding:4px 12px;border-radius:4px;font-size:.78rem;font-weight:500;color:#9ab;text-transform:uppercase;letter-spacing:.5px;transition:background .15s,color .15s}
+.snav-link:hover{background:#2c3440;color:#fff}
+.snav-link.active{color:#00e054}
 
 /* --- Pages --- */
-.page{display:none;max-width:1200px;margin:0 auto;padding:32px 24px}
+.page{display:none;max-width:950px;margin:0 auto;padding:32px 24px}
 .page.active{display:block}
 
 /* =============================================
@@ -43,11 +45,11 @@ img{max-width:100%;display:block}
 .stat-label{display:block;font-size:.7rem;color:#9ab;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
 .stat-divider{width:1px;height:36px;background:#2c3440}
 
-/* Sub-tabs (Profile / Activity / Papers) – top+bottom borders, no left/right */
-.profile-tabs{display:flex;gap:0;border-top:1px solid #2c3440;border-bottom:1px solid #2c3440;margin-bottom:24px}
-.ptab{padding:10px 20px;font-size:.82rem;font-weight:500;color:#9ab;text-transform:uppercase;letter-spacing:.5px;transition:color .15s}
-.ptab:hover{color:#fff}
-.ptab.active{color:#00e054;border-bottom:2px solid #00e054;margin-bottom:-1px}
+/* Profile nav (full navigation under profile area) */
+.profile-nav{display:flex;gap:0;border-top:1px solid #2c3440;border-bottom:1px solid #2c3440;margin-bottom:24px}
+.pnav-link{padding:10px 16px;font-size:.82rem;font-weight:500;color:#9ab;text-transform:uppercase;letter-spacing:.5px;transition:color .15s}
+.pnav-link:hover{color:#fff}
+.pnav-link.active{color:#00e054;border-bottom:2px solid #00e054;margin-bottom:-1px}
 
 /* Two-column layout */
 .profile-columns{display:flex;gap:32px}
@@ -60,22 +62,22 @@ img{max-width:100%;display:block}
 
 /* Poster row (4 items) */
 .poster-row{display:flex;gap:12px}
-.poster-row.four-up .poster-item{flex:1;min-width:0;max-width:25%}
+.poster-row.four-up .poster-item{width:150px;flex:0 0 150px}
 
-.poster-item{position:relative;border-radius:6px;overflow:visible;cursor:pointer}
-.poster-item-img{aspect-ratio:2/3;border-radius:6px;overflow:hidden;background:#2c3440;transition:transform .15s,box-shadow .15s}
+.poster-item{position:relative;border-radius:4px;overflow:visible;cursor:pointer}
+.poster-item-img{width:150px;height:225px;border-radius:4px;overflow:hidden;background:#2c3440;transition:transform .15s,box-shadow .15s}
 .poster-item:hover .poster-item-img{transform:scale(1.03);box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .poster-item-img img{width:100%;height:100%;object-fit:cover}
 
-/* Hover-only title overlay */
-.poster-item .poster-hover-title{position:absolute;bottom:0;left:0;right:0;padding:6px 8px;background:linear-gradient(transparent,rgba(0,0,0,.9));font-size:.7rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .2s;pointer-events:none;border-radius:0 0 6px 6px}
+/* Hover-only title overlay — gradient from bottom, full title */
+.poster-item .poster-hover-title{position:absolute;bottom:0;left:0;right:0;padding:8px 8px 6px;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.55) 60%,transparent 100%);font-size:.7rem;font-weight:600;color:#fff;opacity:0;transition:opacity .2s;pointer-events:none;border-radius:0 0 4px 4px}
 .poster-item:hover .poster-hover-title{opacity:1}
 
-/* Stars under poster — gray by default */
-.poster-item-meta{text-align:center;margin-top:4px;font-size:.72rem;line-height:1.2}
-.poster-item-meta .stars{color:#678;letter-spacing:1px}
-.poster-item-meta .fav-icon{color:#e8960c}
-.poster-item-meta .reread-icon{color:#9ab;margin-left:2px}
+/* Stars under poster — gray, 64x16 strip, left-aligned */
+.poster-item-meta{display:flex;align-items:center;gap:2px;margin-top:4px;height:16px}
+.poster-item-meta .stars{color:#678;font-size:11px;line-height:16px;letter-spacing:0.5px}
+.poster-item-meta .fav-icon{color:#e8960c;display:inline-flex;align-items:center}
+.poster-item-meta .reread-icon{color:#9ab;display:inline-flex;align-items:center;margin-left:2px}
 
 /* In review detail page, stars are green */
 .review-detail-rating .stars{color:#00e054}
@@ -87,7 +89,7 @@ img{max-width:100%;display:block}
 .mini-review-poster img{width:100%;height:100%;object-fit:cover}
 .mini-review-body{flex:1;min-width:0}
 .mini-review-title{font-weight:600;color:#fff;font-size:.9rem;margin-bottom:2px}
-.mini-review-stars{font-size:.75rem;color:#678;margin-bottom:4px}
+.mini-review-stars{font-size:11px;color:#678;margin-bottom:4px;display:flex;align-items:center;gap:2px}
 .mini-review-excerpt{font-size:.8rem;color:#9ab;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 
 /* =============================================
@@ -111,13 +113,12 @@ img{max-width:100%;display:block}
 .library-item-mini-del{color:#678;cursor:pointer}
 .library-item-mini-del:hover{color:#ff5050}
 
-/* --- Abanico (overlapping poster fan) --- */
-.abanico{position:relative;height:140px;width:100%;margin:4px 0 8px}
-.abanico .abanico-card{position:absolute;width:85px;height:128px;border-radius:5px;overflow:hidden;box-shadow:2px 2px 10px rgba(0,0,0,.5);transition:transform .2s,z-index 0s;background:#2c3440;cursor:pointer}
+/* --- Abanico (horizontal overlapping posters) --- */
+.abanico{display:flex;align-items:flex-start;padding:4px 0 8px}
+.abanico .abanico-card{width:70px;height:105px;border-radius:4px;overflow:hidden;box-shadow:2px 2px 10px rgba(0,0,0,.5);transition:transform .2s;background:#2c3440;cursor:pointer;flex-shrink:0;margin-right:-20px;position:relative}
+.abanico .abanico-card:last-child{margin-right:0}
 .abanico .abanico-card img{width:100%;height:100%;object-fit:cover}
-.abanico .abanico-card:hover{transform:translateY(-6px) !important;z-index:20!important}
-
-/* 5-card fan positioning - generated via JS, but default CSS offsets */
+.abanico .abanico-card:hover{transform:translateY(-6px);z-index:20}
 
 /* --- Sidebar Diary --- */
 .sidebar-diary-item{padding:5px 0;border-bottom:1px solid #1e242c;font-size:.8rem;color:#d8d8d8}
@@ -134,18 +135,18 @@ img{max-width:100%;display:block}
 /* =============================================
    POSTER GRID (Papers, Watchlist)
    ============================================= */
-.poster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.poster-grid{display:grid;grid-template-columns:repeat(12,70px);gap:6px;justify-content:center}
 
-.poster-card{position:relative;border-radius:6px;overflow:visible;cursor:pointer}
-.poster-card-img{aspect-ratio:2/3;border-radius:6px;overflow:hidden;background:#2c3440;transition:transform .15s,box-shadow .15s}
-.poster-card:hover .poster-card-img{transform:scale(1.03);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.poster-card{position:relative;border-radius:4px;overflow:visible;cursor:pointer}
+.poster-card-img{width:70px;height:105px;border-radius:4px;overflow:hidden;background:#2c3440;transition:transform .15s,box-shadow .15s}
+.poster-card:hover .poster-card-img{transform:scale(1.05);box-shadow:0 6px 18px rgba(0,0,0,.5)}
 .poster-card-img img{width:100%;height:100%;object-fit:cover}
-.poster-card .poster-hover-title{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:flex-end;padding:8px;background:linear-gradient(transparent 50%,rgba(0,0,0,.85));font-size:.72rem;font-weight:600;color:#fff;opacity:0;transition:opacity .2s;pointer-events:none;border-radius:6px}
+.poster-card .poster-hover-title{position:absolute;bottom:0;left:0;right:0;padding:6px 4px 4px;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.55) 60%,transparent 100%);font-size:.6rem;font-weight:600;color:#fff;opacity:0;transition:opacity .2s;pointer-events:none;border-radius:0 0 4px 4px}
 .poster-card:hover .poster-hover-title{opacity:1}
-.poster-card-meta{text-align:center;margin-top:4px;font-size:.72rem}
-.poster-card-meta .stars{color:#678;letter-spacing:1px}
-.poster-card-meta .fav-icon{color:#e8960c}
-.poster-card-meta .reread-icon{color:#9ab}
+.poster-card-meta{display:flex;align-items:center;gap:1px;margin-top:2px;height:14px}
+.poster-card-meta .stars{color:#678;font-size:9px;line-height:14px;letter-spacing:0.3px}
+.poster-card-meta .fav-icon{color:#e8960c;display:inline-flex;align-items:center}
+.poster-card-meta .reread-icon{color:#9ab;display:inline-flex;align-items:center}
 
 /* Watchlist grid: no hover title */
 .watchlist-no-hover .poster-hover-title{display:none!important}
@@ -163,9 +164,9 @@ img{max-width:100%;display:block}
 .diary-entry-info{flex:1}
 .diary-entry-title{font-weight:600;color:#fff;font-size:.92rem}
 .diary-entry-meta{font-size:.78rem;color:#9ab;margin-top:2px}
-.diary-entry-meta .stars{color:#678}
-.diary-entry-meta .fav-icon{color:#e8960c}
-.diary-entry-meta .reread-icon{color:#9ab}
+.diary-entry-meta .stars{color:#678;font-size:11px}
+.diary-entry-meta .fav-icon{color:#e8960c;display:inline-flex;align-items:center}
+.diary-entry-meta .reread-icon{color:#9ab;display:inline-flex;align-items:center}
 .diary-entry-date{margin-left:auto;font-size:.78rem;color:#678;white-space:nowrap}
 
 /* =============================================
@@ -179,8 +180,8 @@ img{max-width:100%;display:block}
 .review-card-info{flex:1}
 .review-card-title{font-weight:600;color:#fff;font-size:1rem;margin-bottom:2px}
 .review-card-meta{font-size:.78rem;color:#9ab;margin-bottom:3px}
-.review-card-rating .stars{color:#678}
-.review-card-rating .fav-icon{color:#e8960c}
+.review-card-rating .stars{color:#678;font-size:11px}
+.review-card-rating .fav-icon{color:#e8960c;display:inline-flex;align-items:center}
 .review-card-excerpt{color:#9ab;font-size:.82rem;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 
 /* =============================================
@@ -215,7 +216,7 @@ img{max-width:100%;display:block}
 .list-item:hover{opacity:.85}
 .list-item h3{font-size:.95rem;margin-bottom:6px}
 .list-item p{font-size:.78rem;color:#9ab;margin-bottom:8px}
-.list-item .abanico{height:140px}
+.list-item .abanico{height:auto}
 
 /* =============================================
    ACTIVITY FEED
@@ -226,9 +227,9 @@ img{max-width:100%;display:block}
 .activity-text{flex:1}
 .activity-text p{font-size:.88rem;line-height:1.45}
 .activity-text .activity-date{font-size:.72rem;color:#678;margin-top:3px}
-.activity-text .stars{color:#678}
-.activity-text .fav-icon{color:#e8960c}
-.activity-text .reread-icon{color:#9ab}
+.activity-text .stars{color:#678;font-size:11px}
+.activity-text .fav-icon{color:#e8960c;display:inline-flex;align-items:center}
+.activity-text .reread-icon{color:#9ab;display:inline-flex;align-items:center}
 
 /* =============================================
    PDF READER PAGE
@@ -271,8 +272,8 @@ img{max-width:100%;display:block}
 .reader-progress-bar{flex:1;height:6px;background:#2c3440;border-radius:3px;overflow:hidden}
 .reader-progress-fill{height:100%;background:#00e054;border-radius:3px;transition:width .1s}
 .reader-progress-text{font-size:.75rem;color:#678;white-space:nowrap}
-.reader-pages-scroller{display:flex;gap:8px;overflow-x:auto;padding:8px 0;flex-shrink:0}
-.reader-pages-scroller canvas{height:120px;border-radius:3px;border:1px solid #2c3440;cursor:pointer;flex-shrink:0}
+.reader-pages-scroller{display:flex;gap:6px;overflow-x:auto;padding:8px 0;flex-shrink:0}
+.reader-pages-scroller canvas{height:60px;border-radius:3px;border:1px solid #2c3440;cursor:pointer;flex-shrink:0}
 .reader-pages-scroller canvas.active-page{border-color:#00e054}
 
 /* Right panel */
@@ -297,7 +298,7 @@ img{max-width:100%;display:block}
   .reader-left-panel,.reader-right-panel{width:100%;flex-direction:row;flex-wrap:wrap;border:none;border-bottom:1px solid #2c3440}
 }
 @media(max-width:480px){
-  .poster-grid{grid-template-columns:repeat(auto-fill,minmax(80px,1fr))}
+  .poster-grid{grid-template-columns:repeat(auto-fill,minmax(60px,1fr))}
   .poster-row{flex-wrap:wrap}
   .poster-row.four-up .poster-item{max-width:48%;flex:0 0 48%}
   .main-nav{overflow-x:auto}

@@ -17,7 +17,7 @@
   var wordIndex = 0;
   var playing = false;
   var wpm = 300;
-  var fontSize = 36;
+  var fontSize = 76;
   var intervalId = null;
   var currentFileName = '';
   var pdfDoc = null; // pdf.js document reference
@@ -45,6 +45,9 @@
   var pctFill = document.getElementById('reader-pct-fill');
   var pctText = document.getElementById('reader-pct-text');
   var libraryList = document.getElementById('reader-library-list');
+  var contextArea = document.getElementById('reader-context-area');
+  var pageInfoEl = document.getElementById('reader-page-info');
+  var pageTexts = []; // per-page text for context area
 
   // ---- IndexedDB ----
 
@@ -121,6 +124,7 @@
       var fullText = '';
       var detectedSections = [];
       var wordOffset = 0;
+      var perPage = [];
 
       pagesContent.forEach(function (content) {
         var pageLines = [];
@@ -142,11 +146,12 @@
           pageLines.push(item.str);
           lastY = y;
         });
+        perPage.push(pageLines.join(' ').trim());
         fullText += pageLines.join(' ') + '\n\n';
       });
 
       fullText = cleanText(fullText);
-      return { text: fullText, sections: detectedSections };
+      return { text: fullText, sections: detectedSections, pageTexts: perPage };
     });
   }
 
@@ -226,7 +231,6 @@
       return;
     }
     var w = words[wordIndex];
-    // Highlight the "ORP" (Optimal Recognition Point) — roughly at 1/3 of word
     var orp = Math.max(0, Math.floor(w.length / 3));
     var before = escapeHtmlStr(w.substring(0, orp));
     var focus = '<span class="focus-char">' + escapeHtmlStr(w.charAt(orp)) + '</span>';
@@ -237,10 +241,20 @@
     // Progress
     var pct = ((wordIndex + 1) / words.length * 100);
     progressFill.style.width = pct + '%';
-    progressText.textContent = (wordIndex + 1) + ' / ' + words.length;
+    progressText.textContent = Math.round(pct) + '%';
     wordsReadEl.textContent = wordIndex + 1;
-    pctFill.style.width = pct + '%';
-    pctText.textContent = Math.round(pct) + '%';
+    if (pctFill) pctFill.style.width = pct + '%';
+    if (pctText) pctText.textContent = Math.round(pct) + '%';
+
+    // Approximate current page and show context
+    if (pdfDoc && pageTexts.length > 0) {
+      var approxPage = Math.min(Math.floor(wordIndex / words.length * pdfDoc.numPages), pdfDoc.numPages - 1);
+      pageInfoEl.textContent = 'Page ' + (approxPage + 1) + ' of ' + pdfDoc.numPages;
+      contextArea.innerHTML = '<span class="ctx-page-badge">Pg ' + (approxPage + 1) + '</span><br>' + escapeHtmlStr(pageTexts[approxPage] || '').substring(0, 600);
+      // Highlight active thumbnail
+      var canvases = pagesScroller.querySelectorAll('canvas');
+      canvases.forEach(function (c, i) { c.classList.toggle('active-page', i === approxPage); });
+    }
 
     // Highlight active section
     var activeIdx = -1;
@@ -259,7 +273,7 @@
   function play() {
     if (words.length === 0) return;
     playing = true;
-    playBtn.textContent = '⏸ Pause';
+    playBtn.classList.add('playing');
     clearInterval(intervalId);
     var delay = 60000 / wpm;
     intervalId = setInterval(function () {
@@ -271,7 +285,7 @@
 
   function pause() {
     playing = false;
-    playBtn.textContent = '▶ Play';
+    playBtn.classList.remove('playing');
     clearInterval(intervalId);
   }
 
@@ -286,6 +300,7 @@
     extractTextAndSections(arrayBuffer).then(function (result) {
       words = tokenize(result.text);
       sections = result.sections;
+      pageTexts = result.pageTexts || [];
       wordIndex = 0;
       showWord();
       renderSectionsList();
@@ -322,6 +337,7 @@
     pause();
     words = [];
     sections = [];
+    pageTexts = [];
     wordIndex = 0;
     currentFileName = '';
     pdfDoc = null;
@@ -329,9 +345,11 @@
     uploadArea.style.display = 'block';
     rsvpWord.textContent = '';
     progressFill.style.width = '0';
-    progressText.textContent = '0 / 0';
+    progressText.textContent = '0%';
     pagesScroller.innerHTML = '';
     sectionsListEl.innerHTML = '';
+    contextArea.innerHTML = '';
+    pageInfoEl.textContent = '';
   }
 
   // ---- Library ----
@@ -392,7 +410,7 @@
   if (fontSlider) {
     fontSlider.addEventListener('input', function () {
       fontSize = parseInt(this.value, 10);
-      fontDisplay.textContent = fontSize + 'px';
+      fontDisplay.textContent = fontSize;
       rsvpWord.style.fontSize = fontSize + 'px';
     });
   }

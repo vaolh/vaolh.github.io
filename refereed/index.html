@@ -165,46 +165,66 @@
 
         <div class="reader-active" id="reader-active" style="display:none;">
           <div class="reader-layout">
+
+            <!-- LEFT PANEL -->
             <div class="reader-left-panel">
-              <div class="reader-file-info">
-                <span id="reader-filename"></span>
+              <div class="rlp-control">
+                <span class="rlp-value" id="reader-wpm-display">300</span>
+                <span class="rlp-label">WPM</span>
               </div>
-              <button class="btn-reader" id="reader-play">▶ Play</button>
-              <button class="btn-small" id="reader-prev">◀◀</button>
-              <button class="btn-small" id="reader-next">▶▶</button>
-              <div class="reader-slider-group">
-                <label>WPM</label>
-                <input type="range" id="reader-wpm" min="100" max="1000" step="25" value="300" class="vertical-slider">
-                <span id="reader-wpm-display">300</span>
+              <input type="range" id="reader-wpm" min="100" max="1000" step="25" value="300" orient="vertical" class="rlp-slider">
+              <div class="rlp-control">
+                <span class="rlp-value" id="reader-fontsize-display">76</span>
+                <span class="rlp-label">PX</span>
               </div>
-              <div class="reader-slider-group">
-                <label>Size</label>
-                <input type="range" id="reader-fontsize" min="16" max="72" step="2" value="36" class="vertical-slider">
-                <span id="reader-fontsize-display">36px</span>
-              </div>
-              <button class="btn-small btn-danger" id="reader-close-btn">Close PDF</button>
+              <input type="range" id="reader-fontsize" min="16" max="120" step="2" value="76" orient="vertical" class="rlp-slider">
+              <button class="rlp-play-btn" id="reader-play"></button>
+              <div class="rlp-spacer"></div>
+              <button class="rlp-bottom-btn" id="reader-close-btn">← Back</button>
+              <button class="rlp-bottom-btn" id="reader-settings-btn">⚙ Settings</button>
             </div>
 
+            <!-- CENTER -->
             <div class="reader-center">
+              <div class="reader-top-bar">
+                <span class="rtb-filename" id="reader-filename"></span>
+                <span class="rtb-page" id="reader-page-info">Page 0 of 0</span>
+                <button class="rtb-btn" id="reader-prev">◁ Recap</button>
+                <button class="rtb-btn" id="reader-next">◉ Focus</button>
+              </div>
+              <div class="reader-context-area" id="reader-context-area"></div>
               <div class="rsvp-display" id="rsvp-display">
+                <div class="rsvp-pip rsvp-pip-top"></div>
                 <span id="rsvp-word"></span>
+                <div class="rsvp-pip rsvp-pip-bottom"></div>
               </div>
               <div class="reader-bar-wrap">
                 <div class="reader-progress-bar"><div class="reader-progress-fill" id="reader-progress-fill"></div></div>
-                <span class="reader-progress-text" id="reader-progress">0 / 0</span>
               </div>
+              <div class="reader-pct-text" id="reader-progress">0%</div>
               <div class="reader-pages-scroller" id="reader-pages-scroller"></div>
             </div>
 
+            <!-- RIGHT PANEL -->
             <div class="reader-right-panel">
-              <h4>Sections</h4>
+              <div class="rrp-section">
+                <div class="rrp-header">
+                  <span>SUMMARY</span>
+                  <button class="rrp-generate-btn" disabled>Generate</button>
+                </div>
+                <p class="rrp-hint">Add OpenRouter API key in settings to enable summaries.</p>
+              </div>
+              <div class="rrp-words">
+                <span class="rrp-words-num" id="reader-words-read">0</span>
+                <span class="rrp-words-label">words read</span>
+              </div>
               <div id="reader-sections-list"></div>
-              <div class="reader-words-info">
-                <div><strong id="reader-words-read">0</strong> words read</div>
+              <div style="display:none">
                 <div class="reader-pct-bar"><div class="reader-pct-fill" id="reader-pct-fill"></div></div>
-                <div id="reader-pct-text">0%</div>
+                <div id="reader-pct-text"></div>
               </div>
             </div>
+
           </div>
         </div>
       </div>

@@ -41,8 +41,8 @@
     html = html.replace(/\n{2,}/g, '</p><p>');
     html = '<p>' + html + '</p>';
     html = html.replace(/<p>\s*<\/p>/g, '');
-    displayMath.forEach(function (m, i) { html = html.replace('%%DM' + i + '%%', '$$' + m + '$$'); });
-    inlineMath.forEach(function (m, i) { html = html.replace('%%IM' + i + '%%', '$' + m + '$'); });
+    displayMath.forEach(function (m, i) { html = html.replace('%%DM' + i + '%%', '\\[' + m + '\\]'); });
+    inlineMath.forEach(function (m, i) { html = html.replace('%%IM' + i + '%%', '\\(' + m + '\\)'); });
     return html;
   }
 

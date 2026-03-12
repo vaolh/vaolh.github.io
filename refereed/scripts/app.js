@@ -31,7 +31,7 @@
       displayMath.push(m); return '%%DM' + (displayMath.length - 1) + '%%';
     });
     var inlineMath = [];
-    html = html.replace(/\$([^\$\n]+?)\$/g, function (_, m) {
+    html = html.replace(/\$(?!\d)([^\$\n]+?)\$/g, function (_, m) {
       inlineMath.push(m); return '%%IM' + (inlineMath.length - 1) + '%%';
     });
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');

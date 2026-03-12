@@ -8,5 +8,15 @@
     "journal": "The Review of Economic Studies",
     "poster": "https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/restud/Issue/93/2/1/m_restud_93_2cover.jpeg?Expires=1776289498&Signature=2v0q0M2QiA3yMA-jl~yOwmh0oz-x5zZvftuc~qonj2wpGt1VDoHtozotnciyeuMDZv1GMjgrRlLNEndFMDZusm0RN2SmRGrAZQRFPsOIfAG2IeRExI1ST54wV3G1l5VHCArAQG9k-zfdZXiMNjZ84F2pktZ2UMnyeFP8D74ubxT8DIqbihjzLrsDDlvmkCJpceuSjidg~qIUMaPTP3rBMIlI3LfuVlVTmNaXc6vBlWWCJm1mXWftAdIWIzKsEd1P3RA6YRkTjSkgDEEQXbB1MKMfTrPJOJg-tzPB1qIsqtkV0kouOhx9D7T~-Fwp~dSoKM1O2~mzgiSjKti0qIChDw__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA",
     "pdf": "https://doi.org/10.1093/restud/rdag004"
+  },
+  {
+    "id": "shapiro-stiglitz-1984",
+    "title": "Equilibrium Unemployment as a Worker Discipline Device",
+    "authors": ["Carl Shapiro", "Joseph E. Stiglitz"],
+    "year": 1984,
+    "genre": "microeconomics",
+    "journal": "The American Economic Review",
+    "poster": "https://vaolh.github.io/refereed/assets/aer.png",
+    "pdf": "https://www.jstor.org/stable/pdf/1804018"
   }
 ]

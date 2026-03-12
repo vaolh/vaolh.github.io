@@ -146,11 +146,10 @@
       return p.date_read && p.date_read.startsWith(String(currentYear()));
     }).length;
     document.getElementById('stat-year').textContent = yr;
-    document.getElementById('stat-readlist').textContent = readlist.length;
-    var genres = new Set();
-    papers.forEach(function (p) { if (p.genre) genres.add(p.genre); });
-    readlist.forEach(function (p) { if (p.genre) genres.add(p.genre); });
-    document.getElementById('stat-genres').textContent = genres.size;
+    var allAuthors = new Set();
+    papers.forEach(function (p) { if (p.authors) p.authors.forEach(function (a) { allAuthors.add(a); }); });
+    document.getElementById('stat-authors').textContent = allAuthors.size;
+    document.getElementById('stat-toread').textContent = readlist.length;
   }
 
   // ---- Favorites (4 posters, no stars) ----
@@ -419,7 +418,8 @@
           '<div class="review-detail-info">' +
             '<h1>' + escapeHtml(p.title) + '</h1>' +
             '<div class="review-detail-year">' + p.year + '</div>' +
-            '<div class="review-detail-authors">' + escapeHtml(p.authors.join(', ')) + '</div>' +
+            '<div class="review-detail-authors" id="review-detail-authors-links"></div>' +
+            (p.journal ? '<div class="review-detail-journal"><a href="#" class="journal-link" data-journal="' + escapeHtml(p.journal) + '">' + escapeHtml(p.journal) + '</a>' + (p.detail ? ' ' + escapeHtml(p.detail) : '') + '</div>' : '') +
             '<div class="review-detail-genre">' + escapeHtml(p.genre || '') + '</div>' +
             '<div class="review-detail-rating"><span class="stars">' + ratingToStars(p.rating) + '</span>' +
             '</div>' +
@@ -441,6 +441,35 @@
       e.preventDefault();
       history.back();
     });
+
+    // Make authors clickable
+    var authorsContainer = document.getElementById('review-detail-authors-links');
+    if (authorsContainer && p.authors) {
+      authorsContainer.innerHTML = '';
+      p.authors.forEach(function (author, idx) {
+        var link = document.createElement('a');
+        link.href = '#';
+        link.className = 'author-link';
+        link.textContent = author;
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          openAuthorDetail(author);
+        });
+        authorsContainer.appendChild(link);
+        if (idx < p.authors.length - 1) {
+          authorsContainer.appendChild(document.createTextNode(', '));
+        }
+      });
+    }
+
+    // Make journal clickable
+    var journalLink = container.querySelector('.journal-link');
+    if (journalLink) {
+      journalLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        openJournalDetail(this.getAttribute('data-journal'));
+      });
+    }
 
     if (window.MathJax && window.MathJax.typesetPromise) {
       window.MathJax.typesetPromise().catch(function () {});
@@ -514,6 +543,157 @@
     });
   }
 
+  // ---- Author Detail (from clickable author names) ----
+
+  function openAuthorDetail(author) {
+    var container = document.getElementById('author-detail-content');
+    var matched = papers.filter(function (p) {
+      return p.authors && p.authors.indexOf(author) !== -1;
+    });
+
+    container.innerHTML =
+      '<a href="#" class="back-link" id="author-back">&larr; Back</a>' +
+      '<h2>' + escapeHtml(author) + '</h2>' +
+      '<p style="color:#9ab;margin-bottom:20px;font-size:.9rem">' + matched.length + ' paper' + (matched.length !== 1 ? 's' : '') + '</p>' +
+      '<div class="poster-grid" id="author-detail-grid"></div>';
+
+    var grid = document.getElementById('author-detail-grid');
+    matched.forEach(function (p) {
+      grid.appendChild(makePosterCard(p, { showStars: true, noHover: false }));
+    });
+
+    pages.forEach(function (pg) { pg.classList.remove('active'); });
+    pnavLinks.forEach(function (l) { l.classList.remove('active'); });
+    snavLinks.forEach(function (l) { l.classList.remove('active'); });
+    document.getElementById('page-author-detail').classList.add('active');
+    subpageNav.style.display = 'block';
+    window.scrollTo(0, 0);
+
+    document.getElementById('author-back').addEventListener('click', function (e) {
+      e.preventDefault();
+      history.back();
+    });
+  }
+
+  // ---- Journal Detail (from clickable journal names) ----
+
+  function openJournalDetail(journal) {
+    var container = document.getElementById('journal-detail-content');
+    var matched = papers.filter(function (p) {
+      return p.journal === journal;
+    });
+
+    container.innerHTML =
+      '<a href="#" class="back-link" id="journal-back">&larr; Back</a>' +
+      '<h2>' + escapeHtml(journal) + '</h2>' +
+      '<p style="color:#9ab;margin-bottom:20px;font-size:.9rem">' + matched.length + ' paper' + (matched.length !== 1 ? 's' : '') + '</p>' +
+      '<div class="poster-grid" id="journal-detail-grid"></div>';
+
+    var grid = document.getElementById('journal-detail-grid');
+    matched.forEach(function (p) {
+      grid.appendChild(makePosterCard(p, { showStars: true, noHover: false }));
+    });
+
+    pages.forEach(function (pg) { pg.classList.remove('active'); });
+    pnavLinks.forEach(function (l) { l.classList.remove('active'); });
+    snavLinks.forEach(function (l) { l.classList.remove('active'); });
+    document.getElementById('page-journal-detail').classList.add('active');
+    subpageNav.style.display = 'block';
+    window.scrollTo(0, 0);
+
+    document.getElementById('journal-back').addEventListener('click', function (e) {
+      e.preventDefault();
+      history.back();
+    });
+  }
+
+  // ---- Search ----
+
+  function initSearch() {
+    var input = document.getElementById('search-input');
+    var grid = document.getElementById('search-results');
+    if (!input || !grid) return;
+    input.addEventListener('input', function () {
+      var q = this.value.toLowerCase().trim();
+      grid.innerHTML = '';
+      if (!q) return;
+      var all = papers.concat(readlist);
+      var seen = {};
+      var results = [];
+      all.forEach(function (p) {
+        if (seen[p.id]) return;
+        var haystack = (p.title + ' ' + (p.authors || []).join(' ') + ' ' + (p.journal || '') + ' ' + (p.genre || '')).toLowerCase();
+        if (haystack.indexOf(q) !== -1) {
+          seen[p.id] = true;
+          results.push(p);
+        }
+      });
+      results.forEach(function (p) {
+        grid.appendChild(makePosterCard(p, { showStars: true, noHover: false }));
+      });
+    });
+  }
+
+  // ---- Stats Page (top 10 journals, top 10 authors) ----
+
+  function renderStatsPage() {
+    // Top journals
+    var journalCounts = {};
+    papers.forEach(function (p) {
+      if (!p.journal) return;
+      journalCounts[p.journal] = (journalCounts[p.journal] || 0) + 1;
+    });
+    var topJournals = Object.keys(journalCounts).map(function (j) {
+      return { name: j, count: journalCounts[j] };
+    }).sort(function (a, b) { return b.count - a.count; }).slice(0, 10);
+
+    var jContainer = document.getElementById('stats-journals');
+    jContainer.innerHTML = '';
+    var jMax = topJournals.length > 0 ? topJournals[0].count : 1;
+    topJournals.forEach(function (item) {
+      var row = document.createElement('div');
+      row.className = 'stats-bar-row';
+      row.innerHTML =
+        '<span class="stats-bar-label">' + escapeHtml(item.name) + '</span>' +
+        '<div class="stats-bar-track"><div class="stats-bar-fill" style="width:' + Math.round((item.count / jMax) * 100) + '%"></div></div>' +
+        '<span class="stats-bar-count">' + item.count + '</span>';
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', (function (name) {
+        return function () { openJournalDetail(name); };
+      })(item.name));
+      jContainer.appendChild(row);
+    });
+
+    // Top authors
+    var authorCounts = {};
+    papers.forEach(function (p) {
+      if (!p.authors) return;
+      p.authors.forEach(function (a) {
+        authorCounts[a] = (authorCounts[a] || 0) + 1;
+      });
+    });
+    var topAuthors = Object.keys(authorCounts).map(function (a) {
+      return { name: a, count: authorCounts[a] };
+    }).sort(function (a, b) { return b.count - a.count; }).slice(0, 10);
+
+    var aContainer = document.getElementById('stats-authors');
+    aContainer.innerHTML = '';
+    var aMax = topAuthors.length > 0 ? topAuthors[0].count : 1;
+    topAuthors.forEach(function (item) {
+      var row = document.createElement('div');
+      row.className = 'stats-bar-row';
+      row.innerHTML =
+        '<span class="stats-bar-label">' + escapeHtml(item.name) + '</span>' +
+        '<div class="stats-bar-track"><div class="stats-bar-fill" style="width:' + Math.round((item.count / aMax) * 100) + '%"></div></div>' +
+        '<span class="stats-bar-count">' + item.count + '</span>';
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', (function (name) {
+        return function () { openAuthorDetail(name); };
+      })(item.name));
+      aContainer.appendChild(row);
+    });
+  }
+
   // ---- Sidebar library (previously uploaded PDFs) ----
 
   function renderSidebarLibrary() {
@@ -562,6 +742,8 @@
       renderDiary();
       renderReadlist();
       renderLists();
+      renderStatsPage();
+      initSearch();
 
       var hash = location.hash.replace('#', '');
       if (hash) showPage(hash);

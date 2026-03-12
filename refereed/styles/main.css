@@ -215,6 +215,35 @@ img{max-width:100%;display:block}
 .list-item .abanico{height:auto}
 
 /* =============================================
+   SEARCH PAGE
+   ============================================= */
+.search-bar{margin-bottom:20px}
+.search-bar input{width:100%;max-width:500px;padding:10px 14px;background:#1b2028;border:1px solid #2c3440;border-radius:6px;color:#d8d8d8;font-size:.9rem;outline:none;transition:border-color .2s}
+.search-bar input:focus{border-color:#ff6b35}
+.search-bar input::placeholder{color:#678}
+
+/* =============================================
+   STATS PAGE
+   ============================================= */
+.stats-columns{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.stats-col h3{font-size:.85rem;text-transform:uppercase;letter-spacing:1px;color:#9ab;margin-bottom:14px;border-bottom:1px solid #2c3440;padding-bottom:6px}
+.stats-bar-row{display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer;transition:background .1s;border-radius:4px}
+.stats-bar-row:hover{background:#1b2028}
+.stats-bar-label{flex:0 0 180px;font-size:.82rem;color:#d8d8d8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stats-bar-track{flex:1;height:8px;background:#2c3440;border-radius:4px;overflow:hidden}
+.stats-bar-fill{height:100%;background:#ff6b35;border-radius:4px}
+.stats-bar-count{flex:0 0 28px;font-size:.78rem;color:#9ab;text-align:right}
+
+/* =============================================
+   CLICKABLE AUTHOR / JOURNAL LINKS
+   ============================================= */
+.author-link{color:#9ab;font-size:.9rem;transition:font-weight .15s}
+.author-link:hover{font-weight:700;color:#9ab}
+.review-detail-journal{font-size:.85rem;color:#9ab;margin:4px 0}
+.review-detail-journal .journal-link{color:#9ab;transition:font-weight .15s}
+.review-detail-journal .journal-link:hover{font-weight:700;color:#9ab}
+
+/* =============================================
    PDF READER PAGE — full-viewport fixed layout
    ============================================= */
 #page-reader{padding:0;overflow:hidden;max-width:100%}
@@ -295,6 +324,7 @@ img{max-width:100%;display:block}
   .profile-sidebar{padding-top:0}
   .profile-top-row{flex-direction:column;gap:16px;align-items:flex-start}
   .lists-two-col{grid-template-columns:1fr}
+  .stats-columns{grid-template-columns:1fr}
   .poster-grid{grid-template-columns:repeat(auto-fill,minmax(65px,1fr));justify-content:start}
   .poster-card-img{width:100%;height:auto;aspect-ratio:2/3}
   .poster-card .poster-hover-title{display:none}
@@ -368,6 +398,8 @@ img{max-width:100%;display:block}
 
   /* Lists */
   .lists-two-col{grid-template-columns:1fr;gap:16px}
+  .stats-columns{grid-template-columns:1fr;gap:20px}
+  .stats-bar-label{flex:0 0 120px;font-size:.75rem}
 
   /* Histogram */
   .histogram{height:40px}

@@ -31,6 +31,8 @@
       <a href="#" data-page="diary" class="snav-link">Diary</a>
       <a href="#" data-page="readlist" class="snav-link">Readlist</a>
       <a href="#" data-page="lists" class="snav-link">Lists</a>
+      <a href="#" data-page="stats" class="snav-link">Stats</a>
+      <a href="#" data-page="search" class="snav-link">Search</a>
       <a href="#" data-page="reader" class="snav-link">Reader</a>
     </div>
   </nav>
@@ -53,9 +55,9 @@
           <div class="stat-divider"></div>
           <div class="stat"><span class="stat-number" id="stat-year">0</span><span class="stat-label">This Year</span></div>
           <div class="stat-divider"></div>
-          <div class="stat"><span class="stat-number" id="stat-readlist">0</span><span class="stat-label">Readlist</span></div>
+          <div class="stat"><span class="stat-number" id="stat-authors">0</span><span class="stat-label">Authors</span></div>
           <div class="stat-divider"></div>
-          <div class="stat"><span class="stat-number" id="stat-genres">0</span><span class="stat-label">Genres</span></div>
+          <div class="stat"><span class="stat-number" id="stat-toread">0</span><span class="stat-label">To Read</span></div>
         </div>
       </div>
 
@@ -65,6 +67,8 @@
         <a href="#" data-page="diary" class="pnav-link">Diary</a>
         <a href="#" data-page="readlist" class="pnav-link">Readlist</a>
         <a href="#" data-page="lists" class="pnav-link">Lists</a>
+        <a href="#" data-page="stats" class="pnav-link">Stats</a>
+        <a href="#" data-page="search" class="pnav-link">Search</a>
         <a href="#" data-page="reader" class="pnav-link">Reader</a>
       </div>
 
@@ -123,6 +127,40 @@
     <section id="page-lists" class="page">
       <h2>Lists</h2>
       <div class="lists-two-col" id="lists-container"></div>
+    </section>
+
+    <!-- ======== STATS ======== -->
+    <section id="page-stats" class="page">
+      <h2>Stats</h2>
+      <div class="stats-columns">
+        <div class="stats-col">
+          <h3>Top Journals</h3>
+          <div id="stats-journals"></div>
+        </div>
+        <div class="stats-col">
+          <h3>Top Authors</h3>
+          <div id="stats-authors"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== SEARCH ======== -->
+    <section id="page-search" class="page">
+      <h2>Search</h2>
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Search papers by title, author, journal…" autocomplete="off">
+      </div>
+      <div class="poster-grid" id="search-results"></div>
+    </section>
+
+    <!-- ======== AUTHOR DETAIL ======== -->
+    <section id="page-author-detail" class="page">
+      <div id="author-detail-content"></div>
+    </section>
+
+    <!-- ======== JOURNAL DETAIL ======== -->
+    <section id="page-journal-detail" class="page">
+      <div id="journal-detail-content"></div>
     </section>
 
     <!-- ======== READER ======== -->

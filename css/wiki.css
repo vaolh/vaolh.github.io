@@ -1,8 +1,8 @@
 body {
-    max-width: 1450px;
+    max-width: 960px;
     font-family: 'Helvetica', 'Arial', sans-serif;
-    margin-left: max(20px, calc((100vw - 1450px) / 2));
-    margin-right: max(20px, calc((100vw - 1450px) / 2));
+    margin-left: max(20px, calc((100vw - 960px) / 2));
+    margin-right: max(20px, calc((100vw - 960px) / 2));
     background-color: #ffffff;
 }
 

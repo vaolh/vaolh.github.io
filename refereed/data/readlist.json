@@ -18,5 +18,16 @@
     "journal": "The American Economic Review",
     "poster": "https://vaolh.github.io/refereed/assets/aer.png",
     "pdf": "https://www.jstor.org/stable/pdf/1804018"
+  },
+  {
+  "id": "CheGaleKimREStud2013",
+  "title": "Assigning Resources to Budget-Constrained Agents",
+  "authors": ["Yeon-Koo Che", "Ian Gale", "Jinwoo Kim"],
+  "year": 2013,
+  "genre": "microeconomics",
+  "journal": "Review of Economic Studies",
+  "detail": "114(10), 3119-3160",
+  "poster": "[https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/restud/Issue/80/1/cover.jpeg](https://oup.silverchair-cdn.com/oup/backfile/Content_public/Journal/restud/Issue/80/1/cover.jpeg)",
+  "pdf": "[https://static1.squarespace.com/static/5e56e1139e190014f1116cac/t/5e5c9864e6c06e061fcee4b8/1583126629197/nonmarket.pdf](https://static1.squarespace.com/static/5e56e1139e190014f1116cac/t/5e5c9864e6c06e061fcee4b8/1583126629197/nonmarket.pdf)"
   }
 ]

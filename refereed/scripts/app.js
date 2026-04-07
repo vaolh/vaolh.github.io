@@ -389,7 +389,6 @@
           '<div class="diary-entry-info">' +
             '<div class="diary-entry-title">' + escapeHtml(p.title) + '</div>' +
             (subHtml ? '<div class="diary-entry-sub">' + subHtml + '</div>' : '') +
-            (p.genre ? '<div class="diary-entry-badge">' + escapeHtml(p.genre) + '</div>' : '') +
             (p.rating ? '<div class="diary-entry-stars">' + escapeHtml(ratingToStars(p.rating)) + '</div>' : '') +
             pdfHtml +
           '</div>';

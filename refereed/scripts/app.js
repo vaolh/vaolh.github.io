@@ -103,6 +103,10 @@
       else if (segment === 'journal') openJournalDetail(decodeURIComponent(param));
       else if (segment === 'list') openListDetail(decodeURIComponent(param));
       else if (segment === 'rating') openRatingDetail(parseFloat(param));
+      else if (segment === 'toread') {
+        var rlItem = readlist.find(function (x) { return x.id === decodeURIComponent(param); });
+        if (rlItem) openReadlistDetail(rlItem);
+      }
       else if (segment) showPage(segment);
       else showPage('profile');
     } finally {
@@ -258,12 +262,11 @@
       '<div class="poster-card-img"><img src="' + escapeHtml(p.poster) + '" alt="' + escapeHtml(p.title) + '" loading="lazy">' + hoverTitle + '</div>' +
       metaHtml;
     el.addEventListener('click', function () {
-      if (p.review) openReview(p.id);
+      if (opts.onClick) { opts.onClick(p); }
+      else if (p.review) { openReview(p.id); }
     });
     return el;
   }
-
-  // ---- Sidebar ----
 
   function renderSidebarReadlist() {
     var container = document.getElementById('sidebar-readlist');
@@ -336,44 +339,70 @@
   function renderPapers() {
     var grid = document.getElementById('papers-grid');
     grid.innerHTML = '';
-    papers.forEach(function (p) {
+    var sorted = papers.slice().sort(function (a, b) {
+      return (b.date_read || '').localeCompare(a.date_read || '');
+    });
+    sorted.forEach(function (p) {
       grid.appendChild(makePosterCard(p, { showStars: true, noHover: false }));
     });
   }
 
-  // ---- Diary ----
-
   function renderDiary() {
     var container = document.getElementById('diary-entries');
-    container.innerHTML = '';
-    var sorted = papers.slice().sort(function (a, b) {
-      return (b.date_read || '').localeCompare(a.date_read || '');
-    });
-    var groups = {};
-    sorted.forEach(function (p) {
-      var mk = monthKey(p.date_read);
-      if (!groups[mk]) groups[mk] = [];
-      groups[mk].push(p);
-    });
-    Object.keys(groups).forEach(function (mk) {
-      var sec = document.createElement('div');
-      sec.className = 'diary-month';
-      sec.innerHTML = '<h3>' + mk + '</h3>';
-      groups[mk].forEach(function (p) {
+    var sortSel = document.getElementById('diary-sort');
+
+    function buildEntries() {
+      container.innerHTML = '';
+      var sortVal = sortSel ? sortSel.value : 'date-desc';
+      var list = papers.slice();
+      if (sortVal === 'date-desc')  list.sort(function (a, b) { return (b.date_read || '').localeCompare(a.date_read || ''); });
+      else if (sortVal === 'date-asc')   list.sort(function (a, b) { return (a.date_read || '').localeCompare(b.date_read || ''); });
+      else if (sortVal === 'rating-desc') list.sort(function (a, b) { return (b.rating || 0) - (a.rating || 0); });
+      else if (sortVal === 'rating-asc')  list.sort(function (a, b) { return (a.rating || 0) - (b.rating || 0); });
+      else if (sortVal === 'title-asc')   list.sort(function (a, b) { return (a.title || '').localeCompare(b.title || ''); });
+
+      list.forEach(function (p) {
+        var d = p.date_read ? new Date(p.date_read + 'T00:00:00') : null;
+        var dayStr  = d ? d.getDate() : '–';
+        var monStr  = d ? d.toLocaleDateString('en-US', { month: 'short' }) : '';
+        var yearStr = d ? d.getFullYear() : '';
+
+        var subParts = [];
+        if (p.year) subParts.push(p.year);
+        if (p.journal) subParts.push(p.journal);
+        if (p.detail) subParts.push(p.detail);
+        var subHtml = subParts.map(function (s) { return escapeHtml(String(s)); }).join(' · ');
+
+        var pdfHtml = p.pdf
+          ? '<a href="' + escapeHtml(p.pdf) + '" target="_blank" rel="noopener noreferrer" class="diary-entry-pdf" onclick="event.stopPropagation()">View PDF →</a>'
+          : '';
+
         var entry = document.createElement('div');
         entry.className = 'diary-entry';
         entry.innerHTML =
+          '<div class="diary-entry-date">' +
+            '<span class="diary-entry-date-day">' + escapeHtml(String(dayStr)) + '</span>' +
+            '<span class="diary-entry-date-month">' + escapeHtml(monStr) + '</span>' +
+            '<span class="diary-entry-date-year">' + escapeHtml(String(yearStr)) + '</span>' +
+          '</div>' +
           '<div class="diary-entry-poster"><img src="' + escapeHtml(p.poster) + '" loading="lazy"></div>' +
           '<div class="diary-entry-info">' +
             '<div class="diary-entry-title">' + escapeHtml(p.title) + '</div>' +
-            '<div class="diary-entry-meta"><span class="stars">' + ratingToStars(p.rating) + '</span></div>' +
-          '</div>' +
-          '<div class="diary-entry-date">' + formatDate(p.date_read) + '</div>';
+            (subHtml ? '<div class="diary-entry-sub">' + subHtml + '</div>' : '') +
+            (p.genre ? '<div class="diary-entry-badge">' + escapeHtml(p.genre) + '</div>' : '') +
+            (p.rating ? '<div class="diary-entry-stars">' + escapeHtml(ratingToStars(p.rating)) + '</div>' : '') +
+            pdfHtml +
+          '</div>';
         entry.addEventListener('click', function () { openReview(p.id); });
-        sec.appendChild(entry);
+        container.appendChild(entry);
       });
-      container.appendChild(sec);
-    });
+    }
+
+    buildEntries();
+    if (sortSel && !sortSel._diaryBound) {
+      sortSel._diaryBound = true;
+      sortSel.addEventListener('change', buildEntries);
+    }
   }
 
   // ---- Readlist ----
@@ -382,7 +411,7 @@
     var grid = document.getElementById('readlist-grid');
     grid.innerHTML = '';
     readlist.forEach(function (p) {
-      grid.appendChild(makePosterCard(p, { showStars: false, noHover: false }));
+      grid.appendChild(makePosterCard(p, { showStars: false, noHover: false, onClick: function (item) { openReadlistDetail(item); } }));
     });
   }
 
@@ -531,6 +560,51 @@
     }
 
     document.getElementById('list-back').addEventListener('click', function (e) {
+      e.preventDefault();
+      history.back();
+    });
+  }
+
+  // ---- Readlist Item Preview ----
+
+  function openReadlistDetail(p) {
+    var container = document.getElementById('toread-detail-content');
+    var authorHtml = (p.authors || []).map(function (a) { return escapeHtml(a); }).join(', ');
+    var journalHtml = p.journal
+      ? escapeHtml(p.journal) + (p.detail ? ' <span style="color:#678">' + escapeHtml(p.detail) + '</span>' : '')
+      : '';
+    var pdfHtml = p.pdf
+      ? '<div style="margin-top:8px"><a href="' + escapeHtml(p.pdf) + '" target="_blank" rel="noopener noreferrer" style="font-size:.85rem">View PDF \u2192</a></div>'
+      : '';
+
+    container.innerHTML =
+      '<a href="#" class="back-link" id="toread-back">\u2190 Back</a>' +
+      '<div class="readlist-preview">' +
+        '<div class="readlist-preview-top">' +
+          '<div class="review-detail-poster"><img src="' + escapeHtml(p.poster) + '" alt=""></div>' +
+          '<div class="review-detail-info">' +
+            '<h1>' + escapeHtml(p.title) + '</h1>' +
+            '<div class="review-detail-year">' + (p.year || '') + '</div>' +
+            (authorHtml ? '<div class="readlist-preview-authors">' + authorHtml + '</div>' : '') +
+            (journalHtml ? '<div class="readlist-preview-journal">' + journalHtml + '</div>' : '') +
+            (p.genre ? '<div class="review-detail-genre">' + escapeHtml(p.genre) + '</div>' : '') +
+            pdfHtml +
+          '</div>' +
+        '</div>' +
+        '<p class="readlist-preview-note">On your read list \u2014 no review yet.</p>' +
+      '</div>';
+
+    pages.forEach(function (pg) { pg.classList.remove('active'); });
+    pnavLinks.forEach(function (l) { l.classList.remove('active'); });
+    snavLinks.forEach(function (l) { l.classList.remove('active'); });
+    document.getElementById('page-toread-detail').classList.add('active');
+    subpageNav.style.display = 'block';
+    window.scrollTo(0, 0);
+    if (!restoring) {
+      history.pushState({ page: 'toread', id: p.id }, '', '#toread/' + encodeURIComponent(p.id));
+    }
+
+    document.getElementById('toread-back').addEventListener('click', function (e) {
       e.preventDefault();
       history.back();
     });

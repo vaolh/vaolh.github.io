@@ -114,6 +114,15 @@
     <!-- ======== DIARY ======== -->
     <section id="page-diary" class="page">
       <h2>Diary</h2>
+      <div class="diary-controls">
+        <select id="diary-sort" class="diary-sort-select">
+          <option value="date-desc">Date Read (Newest first)</option>
+          <option value="date-asc">Date Read (Oldest first)</option>
+          <option value="rating-desc">Rating (Highest first)</option>
+          <option value="rating-asc">Rating (Lowest first)</option>
+          <option value="title-asc">Title (A→Z)</option>
+        </select>
+      </div>
       <div id="diary-entries"></div>
     </section>
 
@@ -248,6 +257,11 @@
     <!-- ======== RATING DETAIL ======== -->
     <section id="page-rating-detail" class="page">
       <div id="rating-detail-content"></div>
+    </section>
+
+    <!-- ======== READLIST ITEM PREVIEW ======== -->
+    <section id="page-toread-detail" class="page">
+      <div id="toread-detail-content"></div>
     </section>
 
   </main>

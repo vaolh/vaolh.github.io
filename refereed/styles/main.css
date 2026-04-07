@@ -154,19 +154,34 @@ img{max-width:100%;display:block}
 /* =============================================
    DIARY PAGE
    ============================================= */
-.diary-month{margin-bottom:28px}
-.diary-month h3{font-size:.85rem;text-transform:uppercase;letter-spacing:1px;color:#9ab;margin-bottom:10px;border-bottom:1px solid #2c3440;padding-bottom:6px}
-.diary-month:first-child{margin-top:8px}
+.diary-controls{margin-bottom:16px}
+.diary-sort-select{background:#1b2028;border:1px solid #2c3440;color:#9ab;font-size:.82rem;padding:6px 12px;border-radius:4px;outline:none;cursor:pointer;transition:border-color .15s}
+.diary-sort-select:focus,.diary-sort-select:hover{border-color:#ff6b35;color:#fff}
 
-.diary-entry{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #1e242c;cursor:pointer;transition:background .1s}
+.diary-entry{display:flex;align-items:flex-start;gap:14px;padding:10px 12px;border-bottom:1px solid #1e242c;cursor:pointer;transition:background .1s;border-radius:4px}
 .diary-entry:hover{background:#1b2028}
-.diary-entry-poster{width:44px;height:66px;border-radius:4px;overflow:hidden;flex-shrink:0;background:#2c3440}
+.diary-entry-date{flex:0 0 38px;text-align:center;padding-top:3px;flex-shrink:0}
+.diary-entry-date-day{display:block;font-size:1.15rem;font-weight:700;color:#fff;line-height:1}
+.diary-entry-date-month{display:block;font-size:.68rem;color:#9ab;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.diary-entry-date-year{display:block;font-size:.65rem;color:#678;margin-top:1px}
+.diary-entry-poster{width:52px;height:78px;border-radius:4px;overflow:hidden;flex-shrink:0;background:#2c3440}
 .diary-entry-poster img{width:100%;height:100%;object-fit:cover}
-.diary-entry-info{flex:1}
-.diary-entry-title{font-weight:600;color:#fff;font-size:.92rem}
-.diary-entry-meta{font-size:.78rem;color:#9ab;margin-top:2px}
-.diary-entry-meta .stars{color:#678;font-size:11px}
-.diary-entry-date{margin-left:auto;font-size:.78rem;color:#678;white-space:nowrap}
+.diary-entry-info{flex:1;min-width:0}
+.diary-entry-title{font-weight:600;color:#fff;font-size:.92rem;margin-bottom:3px}
+.diary-entry-sub{font-size:.75rem;color:#9ab;margin-bottom:5px}
+.diary-entry-badge{display:inline-block;padding:2px 8px;background:#2c3440;border-radius:20px;font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;color:#9ab;margin-bottom:5px}
+.diary-entry-stars{font-size:.88rem;color:#ff6b35;margin-bottom:4px}
+.diary-entry-pdf{display:inline-block;font-size:.75rem;color:#ff6b35;margin-top:1px}
+.diary-entry-pdf:hover{color:#fff}
+
+/* =============================================
+   READLIST ITEM PREVIEW
+   ============================================= */
+.readlist-preview{max-width:720px;margin:0 auto}
+.readlist-preview-top{display:flex;gap:24px;margin-bottom:20px}
+.readlist-preview-note{font-size:.82rem;color:#678;font-style:italic;margin:0 0 20px;padding:8px 12px;background:#1b2028;border-radius:4px;border-left:2px solid #2c3440}
+.readlist-preview-authors{font-size:.9rem;color:#9ab;margin:6px 0}
+.readlist-preview-journal{font-size:.85rem;color:#9ab;margin:4px 0}
 
 /* =============================================
    REVIEWS LIST
@@ -383,8 +398,10 @@ img{max-width:100%;display:block}
   .poster-grid{grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px 6px}
 
   /* Diary */
-  .diary-entry{gap:10px;padding:8px 0}
-  .diary-entry-poster{width:36px;height:54px}
+  .diary-entry{gap:10px;padding:8px 10px}
+  .diary-entry-date{flex:0 0 32px}
+  .diary-entry-date-day{font-size:1rem}
+  .diary-entry-poster{width:40px;height:60px}
   .diary-entry-title{font-size:.85rem}
 
   /* Reviews */

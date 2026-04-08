@@ -75,11 +75,11 @@
     </div>
     <div class="sched-legend-item">
         <span class="sched-legend-swatch sw-T"></span>
-        Shows 8 &amp; 24 — Tournament
+        Shows 16 &amp; 30 — Tournament
     </div>
     <div class="sched-legend-item">
         <span class="sched-legend-swatch sw-WM"></span>
-        Show 11 — WrestleMania
+        Show 9 — WrestleMania
     </div>
     <div class="sched-legend-item">
         <span class="sched-legend-swatch sw-LM"></span>
@@ -90,7 +90,7 @@
 <script>
 const TOTAL_SHOWS  = 32;
 const TOURNAMENT   = new Set([16, 30]);
-const WRESTLEMANIA = 10;  
+const WRESTLEMANIA = 9;  
 const LIBREMANIA   = 23; 
 const N            = 30;
 
@@ -182,7 +182,10 @@ belts.forEach((belt, b) => {
             if (s === WRESTLEMANIA && belt.org === 'wwf') type = 'D';
             // LibreMania: all WWO belts defended
             if (s === LIBREMANIA   && belt.org === 'wwo') type = 'D';
-            if (type) { td.textContent = type; td.className = `cell-${type}`; }
+            // Apply column background first, then override with match colour if present
+            if (s === WRESTLEMANIA) td.classList.add('td-wrestlemania');
+            if (s === LIBREMANIA)   td.classList.add('td-libremania');
+            if (type) { td.textContent = type; td.classList.add(`cell-${type}`); }
         }
         tr.appendChild(td);
     }

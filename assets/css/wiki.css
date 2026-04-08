@@ -515,6 +515,14 @@ table.matchesum td {
     font-size: 0.75em;
 }
 
+.td-wrestlemania {
+    background-color: #fff5d6 !important;
+}
+
+.td-libremania {
+    background-color: #d6f5db !important;
+}
+
 /* No border/frame on the scroll wrapper */
 .sched-wrap {
     overflow-x: auto;
@@ -738,6 +746,14 @@ table#sched .belt-label-head {
         color: #555;
     }
 
+    .td-wrestlemania {
+        background-color: #2e2000 !important;
+    }
+
+    .td-libremania {
+        background-color: #0d2610 !important;
+    }
+
     .cell-M {
         background-color: #2e1a45 !important;
         color: #d8b8f8 !important;
@@ -763,8 +779,10 @@ table#sched .belt-label-head {
         color: #c8c8c8;
     }
 
-    .sched-legend-swatch.sw-M { background: #2e1a45; border-color: #666; }
-    .sched-legend-swatch.sw-C { background: #252545; border-color: #666; }
-    .sched-legend-swatch.sw-D { background: #3a3a10; border-color: #666; }
-    .sched-legend-swatch.sw-T { background: #3d2645; border-color: #666; }
+    .sched-legend-swatch.sw-M  { background: #2e1a45; border-color: #666; }
+    .sched-legend-swatch.sw-C  { background: #252545; border-color: #666; }
+    .sched-legend-swatch.sw-D  { background: #3a3a10; border-color: #666; }
+    .sched-legend-swatch.sw-T  { background: #3d2645; border-color: #666; }
+    .sched-legend-swatch.sw-WM { background: #5a4000; border-color: #666; }
+    .sched-legend-swatch.sw-LM { background: #1a4520; border-color: #666; }
 }

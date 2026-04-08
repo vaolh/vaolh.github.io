@@ -77,14 +77,22 @@
         <span class="sched-legend-swatch sw-T"></span>
         Shows 8 &amp; 24 — Tournament
     </div>
-    <div class="sched-legend-item" style="margin-left:8px">
+    <div class="sched-legend-item">
+        <span class="sched-legend-swatch sw-WM"></span>
+        Show 11 — WrestleMania
+    </div>
+    <div class="sched-legend-item">
+        <span class="sched-legend-swatch sw-LM"></span>
+        Show 23 — LibreMania
     </div>
 </div>
 
 <script>
-const TOTAL_SHOWS = 32;
-const TOURNAMENT  = new Set([8, 24]);
-const N           = 30;
+const TOTAL_SHOWS  = 32;
+const TOURNAMENT   = new Set([16, 30]);
+const WRESTLEMANIA = 10;  
+const LIBREMANIA   = 23; 
+const N            = 30;
 
 const activeShows = [];
 for (let s = 1; s <= TOTAL_SHOWS; s++)
@@ -135,7 +143,9 @@ hRow.appendChild(thB);
 for (let s = 1; s <= TOTAL_SHOWS; s++) {
     const th = document.createElement('th');
     th.textContent = s;
-    if (TOURNAMENT.has(s)) th.classList.add('th-tournament');
+    if (TOURNAMENT.has(s))        th.classList.add('th-tournament');
+    else if (s === WRESTLEMANIA)   th.classList.add('th-wrestlemania');
+    else if (s === LIBREMANIA)     th.classList.add('th-libremania');
     hRow.appendChild(th);
 }
 thead.appendChild(hRow);
@@ -167,7 +177,11 @@ belts.forEach((belt, b) => {
             td.className   = 'td-tournament';
             td.textContent = '—';
         } else {
-            const type = schedule[b][s];
+            let type = schedule[b][s];
+            // WrestleMania: all WWF belts defended
+            if (s === WRESTLEMANIA && belt.org === 'wwf') type = 'D';
+            // LibreMania: all WWO belts defended
+            if (s === LIBREMANIA   && belt.org === 'wwo') type = 'D';
             if (type) { td.textContent = type; td.className = `cell-${type}`; }
         }
         tr.appendChild(td);

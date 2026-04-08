@@ -585,10 +585,22 @@ table#sched .belt-label-head {
     flex-shrink: 0;
 }
 
-.sched-legend-swatch.sw-M { background: #E8D5FF; }
-.sched-legend-swatch.sw-C { background: #CFCFFF; }
-.sched-legend-swatch.sw-D { background: #FFFFBF; }
-.sched-legend-swatch.sw-T { background: #EFCFFF; border: 1px solid #aaa; }
+.sched-legend-swatch.sw-M  { background: #E8D5FF; }
+.sched-legend-swatch.sw-C  { background: #CFCFFF; }
+.sched-legend-swatch.sw-D  { background: #FFFFBF; }
+.sched-legend-swatch.sw-T  { background: #EFCFFF; border: 1px solid #aaa; }
+.sched-legend-swatch.sw-WM { background: #FFEAB0; border: 1px solid #aaa; }
+.sched-legend-swatch.sw-LM { background: #B8EABF; border: 1px solid #aaa; }
+
+.th-wrestlemania {
+    background-color: #FFEAB0 !important;
+    color: #222 !important;
+}
+
+.th-libremania {
+    background-color: #B8EABF !important;
+    color: #222 !important;
+}
 
 
 /* ============================================================
@@ -709,6 +721,16 @@ table#sched .belt-label-head {
     .th-tournament {
         background-color: #3d2645 !important;
         color: #e8c8f8 !important;
+    }
+
+    .th-wrestlemania {
+        background-color: #5a4000 !important;
+        color: #ffe8a0 !important;
+    }
+
+    .th-libremania {
+        background-color: #1a4520 !important;
+        color: #a0e8a8 !important;
     }
 
     .td-tournament {

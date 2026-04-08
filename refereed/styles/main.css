@@ -137,7 +137,7 @@ img{max-width:100%;display:block}
 /* =============================================
    POSTER GRID (Papers, Readlist)
    ============================================= */
-.poster-grid{display:grid;grid-template-columns:repeat(12,70px);gap:10px 12px;justify-content:start}
+.poster-grid{display:grid;grid-template-columns:repeat(11,70px);gap:10px 12px;justify-content:start}
 
 .poster-card{position:relative;border-radius:4px;overflow:visible;cursor:pointer}
 .poster-card-img{width:70px;height:105px;border-radius:4px;overflow:hidden;background:#2c3440;position:relative;transition:transform .15s,box-shadow .15s}

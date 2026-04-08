@@ -421,16 +421,13 @@
     container.innerHTML = '';
     var genreMap = {};
     papers.forEach(function (p) {
-      if (!p.genre) return;
+      if (!p.genre || !p.rating) return;
       var g = p.genre.toLowerCase();
       if (!genreMap[g]) genreMap[g] = [];
       genreMap[g].push(p);
     });
-    readlist.forEach(function (p) {
-      if (!p.genre) return;
-      var g = p.genre.toLowerCase();
-      if (!genreMap[g]) genreMap[g] = [];
-      if (!genreMap[g].find(function (x) { return x.id === p.id; })) genreMap[g].push(p);
+    Object.keys(genreMap).forEach(function (g) {
+      genreMap[g].sort(function (a, b) { return (b.date_read || '').localeCompare(a.date_read || ''); });
     });
     Object.keys(genreMap).sort().forEach(function (genre) {
       var items = genreMap[genre];
@@ -530,12 +527,9 @@
   function openListDetail(genre) {
     var label = genre.charAt(0).toUpperCase() + genre.slice(1);
     var container = document.getElementById('list-detail-content');
-    var allItems = [];
-    papers.forEach(function (p) { if (p.genre && p.genre.toLowerCase() === genre) allItems.push(p); });
-    readlist.forEach(function (p) {
-      if (p.genre && p.genre.toLowerCase() === genre && !allItems.find(function (x) { return x.id === p.id; }))
-        allItems.push(p);
-    });
+    var allItems = papers.filter(function (p) {
+      return p.genre && p.genre.toLowerCase() === genre && p.rating;
+    }).sort(function (a, b) { return (b.date_read || '').localeCompare(a.date_read || ''); });
 
     container.innerHTML =
       '<a href="#" class="back-link" id="list-back">← Back to Lists</a>' +

@@ -3687,11 +3687,10 @@ class WrestlingDatabase:
 
         # 4. Create/update wrestlers index page (ONLY PPV wrestlers)
         index_path = 'wrestling/wrestlers/index.html'
-        # Filter: must be in PPV AND have 7+ total matches
+        # Filter: must appear in PPV list
         sorted_wrestlers = sorted([
             name for name in self.wrestlers.keys() 
-            if name in self.ppv_wrestlers and 
-            (self.wrestlers[name]['wins'] + self.wrestlers[name]['losses'] + self.wrestlers[name]['draws']) >= 7
+            if name in self.ppv_wrestlers
         ])
 
         index_html = HTML_HEADER

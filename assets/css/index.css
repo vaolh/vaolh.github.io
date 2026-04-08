@@ -1,0 +1,267 @@
+/* 
+
+html {
+  font-family: 'EB Garamond', serif;
+  font-weight: normal;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+body {
+    background-color: #fff1e5;
+}
+
+a {
+    color: #8B4513;
+    text-decoration: none;
+}
+
+a:visited {
+    color: #8B4513;
+}
+
+*/
+
+@font-face {
+  font-family: 'EB Garamond';
+  src: url('garamond.ttf') format('truetype');
+  font-weight: 100 700;
+  font-style: normal;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #ffffff;
+  --text: #1a1a1a;
+  --link: #005eff;
+  --link-hover: #003fbd;
+  --date-color: #666;
+  --heading-color: #1a1a1a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a1a;
+    --text: #d4d4d4;
+    --link: #6ba3ff;
+    --link-hover: #91bfff;
+    --date-color: #999;
+    --heading-color: #e0e0e0;
+  }
+}
+
+[data-theme="dark"] {
+  --bg: #1a1a1a;
+  --text: #d4d4d4;
+  --link: #6ba3ff;
+  --link-hover: #91bfff;
+  --date-color: #999;
+  --heading-color: #e0e0e0;
+}
+
+html {
+  font-family: -apple-system, 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+main {
+  width: 90%;
+  max-width: 800px;
+  margin: auto;
+  padding: 0 0 3rem 0;
+}
+.directory {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 1rem;
+  margin: 2rem 0 2rem 0;
+  padding: 0;
+}
+
+.directory li {
+  font-size: 1rem;
+}
+
+.directory .active-item {
+  font-size: 1rem;
+}
+
+.directory li a {
+  color: var(--link);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.directory li a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+.container {
+  width: 100%;
+  font-size: 1.05rem;
+  line-height: 1.5rem;
+}
+
+.intro {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.intro p {
+  margin: 0 0 1.25rem 0;
+}
+
+.links-list p {
+  margin: 0.15rem 0;   
+  font-size: 1rem;
+  line-height: 1.2rem;
+  white-space: normal;  
+  text-overflow: clip;
+  overflow: visible;
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+h1, h2, h3 {
+  font-weight: 400;
+  margin: 2rem 0 1rem 0;
+  color: var(--heading-color);
+}
+
+h1 {
+  font-size: 1.5rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+h3 {
+  font-size: 1.1rem;
+}
+
+@media (max-width: 800px) {
+  main {
+    width: 92%;
+    padding: 0 0.75rem 2rem 0.75rem;
+  }
+
+  .directory {
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .directory li {
+    font-size: 0.95rem;
+  }
+
+  .container {
+    font-size: 1rem;
+    line-height: 1.45rem;
+  }
+}
+div.picture-container {
+    width: 100%;
+    max-width: 390px;
+}
+img {
+    width: 100%;
+}
+@media (max-width: 500px) {
+  main {
+    width: 95%;
+    padding: 0 0.5rem 2rem 0.5rem;
+  }
+
+  .directory {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .directory li {
+    font-size: 0.9rem;
+  }
+}
+p.title {
+    margin-bottom: 0
+}
+p.desc {
+    margin-top: 0;
+    margin-bottom: 0
+}
+p.links {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size: .95rem;
+}
+div.links-list p {
+    margin: .3rem auto;
+    font-size: 1rem;
+    line-height: 1.2rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+span.date {
+    font-family: monospace;
+    font-size: .8rem;
+    position: relative;
+    bottom: 1px;
+    margin-right: 1rem;
+    color: var(--date-color);
+}
+
+/* Theme toggle */
+#theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  color: var(--link);
+  transition: color 0.2s ease;
+}
+
+#theme-toggle:hover {
+  color: var(--link-hover);
+}
+
+#theme-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.icon-sun { display: none; }
+
+[data-theme="dark"] .icon-sun { display: inline; }
+[data-theme="dark"] .icon-moon { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .icon-sun { display: inline; }
+  :root:not([data-theme="light"]) .icon-moon { display: none; }
+}

@@ -107,6 +107,61 @@
   "detail": "22(3), 265-290",
   "poster": "https://vaolh.github.io/refereed/assets/ecma.jpg",
   "pdf": "https://web.stanford.edu/class/msande311/arrow-debreu.pdf"
-}
+  },
+  {
+    "id": "CorneoJeanneJPE1997",
+    "title": "Conspicuous Consumption, Snobbism and Conformism",
+    "authors": ["Giacomo Corneo", "Olivier Jeanne"],
+    "year": 1997,
+    "genre": "microeconomics",
+    "journal": "Journal of Public Economics",
+    "detail": "66(1), 55-71",
+    "poster": "https://vaolh.github.io/refereed/assets/CorneoJeanneJPE1997.jpg",
+    "pdf": "https://www.sciencedirect.com/science/article/pii/S0047272797000169"
+  },
+  {
+  "id": "HarsanyiJPE1955",
+  "title": "Cardinal Welfare, Individualistic Ethics, and Interpersonal Comparisons of Utility",
+  "authors": ["John C. Harsanyi"],
+  "year": 1955,
+  "genre": "microeconomics",
+  "journal": "Journal of Political Economy",
+  "detail": "63(4), 309-321",
+  "poster": "https://vaolh.github.io/refereed/assets/HarsanyiJPE1955.webp",
+  "pdf": "https://www.journals.uchicago.edu/doi/abs/10.1086/257678"
+  },
+  {
+    "id": "HarsanyiSR1977",
+    "title": "Morality and the Theory of Rational Behavior",
+    "authors": ["John C. Harsanyi"],
+    "year": 1977,
+    "genre": "microeconomics",
+    "journal": "Social Research",
+    "detail": "44(4), 623-656",
+    "poster": "https://vaolh.github.io/refereed/assets/HarsanyiSR1977.png",
+    "pdf": "https://www.jstor.org/stable/40971169"
+  },
+  {
+  "id": "HarsanyiAPSR1975",
+  "title": "Can the Maximin Principle Serve as a Basis for Morality? A Critique of John Rawls's Theory",
+  "authors": ["John C. Harsanyi"],
+  "year": 1975,
+  "genre": "political philosophy",
+  "journal": "American Political Science Review",
+  "detail": "69(2), 594-606",
+  "poster": "https://vaolh.github.io/refereed/assets/HarsanyiAPSR1975.jpg",
+  "pdf": "https://doi.org/10.2307/1959090"
+  },
+  {
+    "id": "HarsanyiAER1978",
+    "title": "Bayesian Decision Theory and Utilitarian Ethics",
+    "authors": ["John C. Harsanyi"],
+    "year": 1978,
+    "genre": "microeconomics",
+    "journal": "The American Economic Review",
+    "detail": "68(2), 223-228",
+    "poster": "https://vaolh.github.io/refereed/assets/aer.png",
+    "pdf": "https://www.jstor.org/stable/1816692"
+  }
 
 ]

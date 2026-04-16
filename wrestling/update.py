@@ -443,13 +443,19 @@ class WrestlingDatabase:
             # Get main event info (last match — may be singles or multi-man)
             main_event_text = ""
             main_event_wrestlers = []
-            if event['matches']:
+            last_singles_num = event['matches'][-1]['match_num'] if event['matches'] else -1
+            last_multi_num = event['multi_man_matches'][-1]['match_num'] if event['multi_man_matches'] else -1
+            if last_singles_num >= last_multi_num and event['matches']:
                 me = event['matches'][-1]
                 main_event_text = f"{me['fighter1']} vs. {me['fighter2']}"
                 main_event_wrestlers = [me['fighter1'], me['fighter2']]
             elif event['multi_man_matches']:
                 me = event['multi_man_matches'][-1]
-                if me.get('is_main_event'):
+                me_type = me.get('type', '').lower()
+                if me_type in ('battle royal', 'royal rumble'):
+                    # Use notes as main event text; don't credit wrestlers for drawing power
+                    main_event_text = me.get('notes', '') or self.format_multi_man_main_event_text(me)
+                else:
                     main_event_text = self.format_multi_man_main_event_text(me)
                     all_fighters = me.get('winners', []) + me.get('losers', [])
                     main_event_wrestlers = [f['name'] for f in all_fighters]

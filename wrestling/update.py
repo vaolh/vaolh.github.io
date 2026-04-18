@@ -3583,10 +3583,7 @@ class WrestlingDatabase:
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <link rel="apple-touch-icon" sizes="180x180" href="/assets/img/icons/wts/apple-touch-icon.png">
-            <link rel="icon" type="image/png" sizes="32x32" href="/assets/img/icons/wts/favicon-32x32.png">
-            <link rel="icon" type="image/png" sizes="16x16" href="/assets/img/icons/wts/favicon-16x16.png">
-            <link rel="manifest" href="/assets/img/icons/wts/site.webmanifest">
+            <script>(function(){var f=['iwb','wwf','wwo'][Math.floor(Math.random()*3)],b='/assets/img/icons/'+f+'/';[['apple-touch-icon','180x180','apple-touch-icon.png'],['icon','32x32','favicon-32x32.png'],['icon','16x16','favicon-16x16.png']].forEach(function(i){var l=document.createElement('link');l.rel=i[0];l.sizes=i[1];l.href=b+i[2];document.head.appendChild(l);});var m=document.createElement('link');m.rel='manifest';m.href=b+'site.webmanifest';document.head.appendChild(m);})();</script>
             <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.3.2/css/flag-icons.min.css">
             <title>Wrestling PPV List</title>
             <link rel="stylesheet" href="/assets/css/wiki.css">
@@ -3627,13 +3624,13 @@ class WrestlingDatabase:
                     # Look for the Record row in infobox and update it
                     import re
                     content = re.sub(
-                        r'(<th>Record</th>\s*<td>)[^<]*(</td>)',
+                        r'(<th>(?:Career )?Record</th>\s*<td>)[^<]*(</td>)',
                         r'\g<1>' + record + r'\g<2>',
                         content
                     )
                     
                     # Update or add/remove Titles row — only if infobox exists
-                    has_infobox = '<th>Record</th>' in content
+                    has_infobox = '<th>Record</th>' in content or '<th>Career Record</th>' in content
                     if has_infobox:
                         current_titles, _ = self.get_wrestler_titles(wrestler_name)
                         titles_row_exists = '<th>Titles</th>' in content
@@ -3649,7 +3646,7 @@ class WrestlingDatabase:
                                 )
                             else:
                                 content = re.sub(
-                                    r'(<th>Record</th>\s*<td>[^<]*</td>\s*</tr>)',
+                                    r'(<th>(?:Career )?Record</th>\s*<td>[^<]*</td>\s*</tr>)',
                                     r'\g<1>\n                <tr>\n                    <th>Titles</th>\n                    <td>' + titles_content + '</td>\n                </tr>',
                                     content
                                 )

@@ -1927,8 +1927,8 @@ class WrestlingDatabase:
             for reign in self.championships[org][weight]:
                 champ = reign['champion']
                 wrestler_org_stats[champ]['total_reigns'] += 1
-                wrestler_org_stats[champ]['total_defenses'] += reign.get('defenses', 0)
-                wrestler_org_stats[champ]['total_days'] += reign.get('days', 0)
+                wrestler_org_stats[champ]['total_defenses'] += reign.get('defenses') or 0
+                wrestler_org_stats[champ]['total_days'] += reign.get('days') or 0
                 wrestler_org_stats[champ]['country'] = reign.get('country', 'un')
         
         # Count title bouts for this org
@@ -2073,8 +2073,8 @@ class WrestlingDatabase:
                     for reign in self.championships[org][weight]:
                         if reign['champion'] == w['name']:
                             reigns_count += 1
-                            total_defenses += reign.get('defenses', 0)
-                            total_days += reign.get('days', 0)
+                            total_defenses += reign.get('defenses') or 0
+                            total_days += reign.get('days') or 0
             
             # Count title bouts from matches
             for match in w['matches']:
@@ -2160,7 +2160,7 @@ class WrestlingDatabase:
             for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
                 for reign in self.championships[org][weight]:
                     champ = reign['champion']
-                    defenses = reign.get('defenses', 0)
+                    defenses = reign.get('defenses') or 0
                     if champ not in max_consecutive_defenses or defenses > max_consecutive_defenses[champ]['max_defenses']:
                         max_consecutive_defenses[champ] = {
                             'max_defenses': defenses,
@@ -2173,7 +2173,7 @@ class WrestlingDatabase:
             for weight in ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']:
                 for reign in self.championships[org][weight]:
                     champ = reign['champion']
-                    days = reign.get('days', 0)
+                    days = reign.get('days') or 0
                     if champ not in max_consecutive_days or days > max_consecutive_days[champ]['max_days']:
                         max_consecutive_days[champ] = {
                             'max_days': days,
@@ -2433,7 +2433,7 @@ class WrestlingDatabase:
             html += '            <th>Notes</th>\n'
             html += '        </tr>\n'
             
-            max_defenses = max((reign.get('defenses', 0) for reign in reigns), default=0)
+            max_defenses = max(((reign.get('defenses') or 0) for reign in reigns), default=0)
             
             for idx, reign in enumerate(reigns):
                 country = reign.get('country', 'un')
@@ -2450,7 +2450,7 @@ class WrestlingDatabase:
                     else:
                         days = 0
                 
-                def_count = reign.get('defenses', 0)
+                def_count = reign.get('defenses') or 0
                 def_tag = 'th' if def_count == max_defenses and max_defenses > 0 else 'td'
                 
                 # Get event and location
@@ -2582,11 +2582,11 @@ class WrestlingDatabase:
                 for reign in self.championships[org][weight]:
                     champ = reign['champion']
                     if champ in self.wrestlers:
-                        if reign['defenses'] > max_cons_defenses[champ]['max_defenses']:
-                            max_cons_defenses[champ]['max_defenses'] = reign['defenses']
+                        if (reign['defenses'] or 0) > max_cons_defenses[champ]['max_defenses']:
+                            max_cons_defenses[champ]['max_defenses'] = reign['defenses'] or 0
                             max_cons_defenses[champ]['country'] = reign['country']
-                        if reign.get('days', 0) > max_cons_days[champ]['max_days']:
-                            max_cons_days[champ]['max_days'] = reign.get('days', 0)
+                        if (reign.get('days') or 0) > max_cons_days[champ]['max_days']:
+                            max_cons_days[champ]['max_days'] = reign.get('days') or 0
                             max_cons_days[champ]['country'] = reign['country']
         
         # Top 5 lists

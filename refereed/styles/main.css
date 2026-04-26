@@ -16,11 +16,6 @@ img{max-width:100%;display:block}
 .header-inner{max-width:950px;margin:0 auto;padding:0 24px;height:52px;display:flex;align-items:center}
 .site-logo{font-size:2rem;font-weight:100;color:#ff6b35;letter-spacing:1px;text-transform:lowercase}
 .site-logo:hover{color:#fff}
-.header-inner{justify-content:space-between}
-.header-profile{display:flex;align-items:center;gap:8px;text-decoration:none}
-.header-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover}
-.header-username{font-size:.82rem;color:#9ab;font-weight:500}
-.header-profile:hover .header-username{color:#fff}
 /* Subpage compact nav bar */
 .subpage-nav{background:#1b2028;border-bottom:1px solid #2c3440}
 .subpage-nav-inner{max-width:950px;margin:0 auto;padding:0 24px;display:flex;gap:2px;height:40px;align-items:center}
@@ -73,7 +68,7 @@ img{max-width:100%;display:block}
 .poster-item{position:relative;border-radius:4px;overflow:visible;cursor:pointer}
 .poster-item-img{width:130px;height:195px;border-radius:4px;overflow:hidden;background:#2c3440;position:relative;transition:transform .15s,box-shadow .15s}
 .poster-item:hover .poster-item-img{transform:scale(1.03);box-shadow:0 8px 24px rgba(0,0,0,.5)}
-.poster-item-img img{width:100%;height:100%;object-fit:contain}
+.poster-item-img img{width:100%;height:100%;object-fit:fill}
 
 /* Hover-only title overlay — gradient from bottom, full title */
 .poster-item .poster-hover-title{position:absolute;bottom:0;left:0;right:0;padding:8px 8px 6px;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.55) 60%,transparent 100%);font-size:.7rem;font-weight:600;color:#fff;opacity:0;transition:opacity .2s;pointer-events:none;border-radius:0 0 4px 4px}
@@ -147,7 +142,7 @@ img{max-width:100%;display:block}
 .poster-card{position:relative;border-radius:4px;overflow:visible;cursor:pointer}
 .poster-card-img{width:70px;height:105px;border-radius:4px;overflow:hidden;background:#2c3440;position:relative;transition:transform .15s,box-shadow .15s}
 .poster-card:hover .poster-card-img{transform:scale(1.05);box-shadow:0 6px 18px rgba(0,0,0,.5)}
-.poster-card-img img{width:100%;height:100%;object-fit:contain}
+.poster-card-img img{width:100%;height:100%;object-fit:fill}
 .poster-card .poster-hover-title{position:absolute;bottom:0;left:0;right:0;padding:6px 4px 4px;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.55) 60%,transparent 100%);font-size:.6rem;font-weight:600;color:#fff;opacity:0;transition:opacity .2s;pointer-events:none;border-radius:0 0 4px 4px}
 .poster-card:hover .poster-hover-title{opacity:1}
 .poster-card-meta{display:flex;align-items:center;gap:1px;margin-top:2px;height:12px}
@@ -208,7 +203,7 @@ img{max-width:100%;display:block}
 .review-detail{max-width:720px;margin:0 auto}
 .review-detail-top{display:flex;gap:24px;margin-bottom:24px}
 .review-detail-poster{width:180px;flex-shrink:0;border-radius:6px;overflow:hidden;background:#2c3440}
-.review-detail-poster img{width:100%;aspect-ratio:2/3;object-fit:contain}
+.review-detail-poster img{width:100%;aspect-ratio:2/3;object-fit:fill}
 .review-detail-info h1{font-size:1.5rem;margin-bottom:4px}
 .review-detail-year{font-size:1rem;color:#9ab}
 .review-detail-authors{font-size:.9rem;color:#9ab;margin:6px 0}

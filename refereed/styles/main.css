@@ -14,7 +14,7 @@ img{max-width:100%;display:block}
 /* --- Header / Nav --- */
 .site-header{background:#1b2028;border-bottom:1px solid #2c3440;position:sticky;top:0;z-index:100}
 .header-inner{max-width:950px;margin:0 auto;padding:0 24px;height:52px;display:flex;align-items:center}
-.site-logo{font-size:1.2rem;font-weight:700;color:#ff6b35;letter-spacing:1px;text-transform:uppercase}
+.site-logo{font-size:1.2rem;font-weight:700;color:#ff6b35;letter-spacing:1px;text-transform:lowercase}
 .site-logo:hover{color:#fff}
 /* Subpage compact nav bar */
 .subpage-nav{background:#1b2028;border-bottom:1px solid #2c3440}

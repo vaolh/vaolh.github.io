@@ -138,6 +138,20 @@
   "review": "This very short paper describes a few taxonomies of bats in Mount Whitney, California. The author is Glover Morrill Allen, who accompanied Thomas Lyman to a short expedition from Lone Pine to the upper limit of timber. There, they camped for a week at 11,000 feet (3350 meters) by the outlet of a lake. From Google Maps it seems Mount Whitney is quite rocky, although there seems to be some pines and other vegetation at the base. \n\n I did not know this, but to obtain specimens zoologists would kill them and collect the cadaver. The main contribution is the discovery of a new species of bat, *myotis albicinctus*. This bat is described as smilar to *myotis lucifugus*, better known as a little brown bat, first described bt John Eatton Le Conte. Allen describes the new species as having whiter border on the wing memabranes, and two larger premolars in the upper jaw. The pelage of the animal is described as very clear and pale sandy above pale buff, which is a color in *Color standards and color nomenclature* by Robert Ridgway. Using a second specimen from A. Brazier Howell, since the skull of the one they caught was lost somehow, Allen confirms the difference in the premolars. He claims this is *unquestionably* a new species. \n\n Three other bats are described, a Yuma myotis (*myotis yumanensis sociabilis*), a long-egged myotis (*myotis volans longicrus*), and a big brown bat (*Eptesicus fuscus*). The paper then tries to corroborate Hilda Wood Grinnell's idea that during summer adult males leave a female-dominated colony and go to higher elevations. Since all five specimens obtained at such heights were males, it would seem to support this theory. The explanation given is that there is a temporary increase in insect life, thus causing a temporary invasion of non-breeding bats. This is because upper levels of mountains abound with insects. There is also some discussion of life zones as developed by C. Hart Merriam. It would seem this new species did not survive this older style taxonomy, as the mammaldiversity website lists *myotis albicinctus* as a synonym of *myotis lucifugus*."
   },
   {
+  "id": "ThalerSunsteinAER2003",
+  "title": "Libertarian Paternalism",
+  "authors": ["Richard H. Thaler", "Cass R. Sunstein"],
+  "year": 2003,
+  "genre": "microeconomics",
+  "journal": "The American Economic Review",
+  "detail": "93(2), 175-179",
+  "poster": "https://vaolh.github.io/refereed/assets/aer.png",
+  "pdf": "https://www.jstor.org/stable/pdf/3132220",
+  "date_read": "2026-04-28",
+  "rating": 3,
+  "review": "Another very short piece. I like to read two or three pages of other papers when I am reading a longer, more difficult one. \n\n There is some useful propositions here that would be helpful to central planners who wish to remain non-coercive. In this respect, small examples are given of how to steer people gently and ways to modify behavior that do not seem to impact too much on the liberty of the participants of social organization. The argument is mostly amde to show that arguments against paternalism are not satisfactory. There is some discussion on how choices are not rational, and how this rationality is violated all the time when placed under scrutinity. \n\n There is an example given of a cafeteria, where the paternalistic decision is to place the healthy food at the beginning and deserts at the end, since people´s choices are affected by the ordering. Then, another example is given here, in that maybe the deserts whould be placed in another table, to increase the transaction cost. This is a more intrusive intervention, but they argue it remains libertarian, since choice is not really constrained. I liked the bits about how there is bias for status-quo. However, the framework remains within the biggest status-quo of them all, market allocations and revelaed preferences, welfare, and so on. We cannot judge this paper too hard as it is only a discussion piece."
+  },
+  {
   "id": "MelitzECMA2003",
   "title": "The Impact of Trade on Intra-Industry Reallocations and Aggregate Industry Productivity",
   "authors": ["Marc J. Melitz"],

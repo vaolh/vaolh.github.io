@@ -753,8 +753,9 @@
     papers.forEach(function (p) {
       if (!p.date_read) return;
       var key = p.date_read.slice(0, 7); // "YYYY-MM"
+      if (!/^\d{4}-\d{2}$/.test(key)) return; // skip placeholders like "2026-XX"
       var pages = parsePages(p.detail);
-      if (!monthly[key]) { monthly[key] = 0; monthOrder.push(key); }
+      if (!(key in monthly)) { monthly[key] = 0; monthOrder.push(key); }
       monthly[key] += pages;
     });
     monthOrder.sort();
@@ -763,7 +764,7 @@
     tsContainer.innerHTML = '';
     if (monthOrder.length > 1) {
       var tsMax = Math.max.apply(null, monthOrder.map(function (k) { return monthly[k]; }));
-      var W = 900, H = 140, padL = 10, padR = 16, padT = 16, padB = 36;
+      var W = 900, H = 140, padL = 38, padR = 16, padT = 16, padB = 36;
       var n = monthOrder.length;
       var plotW = W - padL - padR;
       var plotH = H - padT - padB;
@@ -802,6 +803,21 @@
       var s1 = document.createElementNS(svgNS, 'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#ff6b35'); s1.setAttribute('stop-opacity','0.18');
       var s2 = document.createElementNS(svgNS, 'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#ff6b35'); s2.setAttribute('stop-opacity','0');
       grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.appendChild(defs);
+      // y-axis gridlines + labels
+      var yTicks = 4;
+      for (var t = 0; t <= yTicks; t++) {
+        var yVal = Math.round((t / yTicks) * tsMax);
+        var yPos = padT + plotH - (t / yTicks) * plotH;
+        var gridLine = document.createElementNS(svgNS, 'line');
+        gridLine.setAttribute('x1', padL); gridLine.setAttribute('x2', padL + plotW);
+        gridLine.setAttribute('y1', yPos); gridLine.setAttribute('y2', yPos);
+        gridLine.setAttribute('stroke', '#2c3440'); gridLine.setAttribute('stroke-width', '1');
+        svg.appendChild(gridLine);
+        var yText = document.createElementNS(svgNS, 'text');
+        yText.setAttribute('x', padL - 6); yText.setAttribute('y', yPos + 4);
+        yText.setAttribute('text-anchor', 'end'); yText.setAttribute('class', 'ts-axis-label');
+        yText.textContent = yVal; svg.appendChild(yText);
+      }
       // area
       var area = document.createElementNS(svgNS, 'path');
       area.setAttribute('d', areaPath); area.setAttribute('fill', 'url(#ts-grad)');

@@ -607,7 +607,8 @@
 
   function openRatingDetail(rating) {
     var container = document.getElementById('rating-detail-content');
-    var matched = papers.filter(function (p) { return p.rating === rating; });
+    var matched = papers.filter(function (p) { return p.rating === rating; })
+      .sort(function (a, b) { return (b.date_read || '').localeCompare(a.date_read || ''); });
     var label = rating + '★';
 
     container.innerHTML =
@@ -643,7 +644,7 @@
     var container = document.getElementById('author-detail-content');
     var matched = papers.filter(function (p) {
       return p.authors && p.authors.indexOf(author) !== -1;
-    });
+    }).sort(function (a, b) { return (b.date_read || '').localeCompare(a.date_read || ''); });
 
     container.innerHTML =
       '<a href="#" class="back-link" id="author-back">&larr; Back</a>' +
@@ -678,7 +679,7 @@
     var container = document.getElementById('journal-detail-content');
     var matched = papers.filter(function (p) {
       return p.journal === journal;
-    });
+    }).sort(function (a, b) { return (b.date_read || '').localeCompare(a.date_read || ''); });
 
     container.innerHTML =
       '<a href="#" class="back-link" id="journal-back">&larr; Back</a>' +
@@ -734,10 +735,62 @@
     });
   }
 
-  // ---- Stats Page (top 10 journals, top 10 authors) ----
+  // ---- Stats Page ----
+
+  function parsePages(detail) {
+    if (!detail) return 0;
+    var m = /(\d+)-(\d+)\s*$/.exec(detail.trim());
+    if (!m) return 0;
+    var start = parseInt(m[1], 10);
+    var end = parseInt(m[2], 10);
+    return end >= start ? end - start + 1 : 0;
+  }
 
   function renderStatsPage() {
-    // Top journals
+    // --- Monthly pages time series ---
+    var monthly = {};
+    var monthOrder = [];
+    papers.forEach(function (p) {
+      if (!p.date_read) return;
+      var key = p.date_read.slice(0, 7); // "YYYY-MM"
+      var pages = parsePages(p.detail);
+      if (!monthly[key]) { monthly[key] = 0; monthOrder.push(key); }
+      monthly[key] += pages;
+    });
+    monthOrder.sort();
+
+    var tsContainer = document.getElementById('stats-timeseries');
+    tsContainer.innerHTML = '';
+    if (monthOrder.length > 0) {
+      var tsMax = Math.max.apply(null, monthOrder.map(function (k) { return monthly[k]; }));
+      var chart = document.createElement('div');
+      chart.className = 'stats-ts-chart';
+      monthOrder.forEach(function (key) {
+        var count = monthly[key];
+        var barH = tsMax > 0 ? Math.max(Math.round((count / tsMax) * 120), count > 0 ? 3 : 1) : 1;
+        var d = new Date(key + '-01T00:00:00');
+        var label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        var col = document.createElement('div');
+        col.className = 'stats-ts-col';
+        col.title = label + ': ' + count + ' pages';
+        var bar = document.createElement('div');
+        bar.className = 'stats-ts-bar';
+        bar.style.height = barH + 'px';
+        var lbl = document.createElement('div');
+        lbl.className = 'stats-ts-label';
+        lbl.textContent = label;
+        var cnt = document.createElement('div');
+        cnt.className = 'stats-ts-count';
+        cnt.textContent = count > 0 ? count : '';
+        col.appendChild(cnt);
+        col.appendChild(bar);
+        col.appendChild(lbl);
+        chart.appendChild(col);
+      });
+      tsContainer.appendChild(chart);
+    }
+
+    // --- Top journals (ranked list) ---
     var journalCounts = {};
     papers.forEach(function (p) {
       if (!p.journal) return;
@@ -749,22 +802,20 @@
 
     var jContainer = document.getElementById('stats-journals');
     jContainer.innerHTML = '';
-    var jMax = topJournals.length > 0 ? topJournals[0].count : 1;
-    topJournals.forEach(function (item) {
+    topJournals.forEach(function (item, i) {
       var row = document.createElement('div');
-      row.className = 'stats-bar-row';
+      row.className = 'stats-rank-item';
       row.innerHTML =
-        '<span class="stats-bar-label">' + escapeHtml(item.name) + '</span>' +
-        '<div class="stats-bar-track"><div class="stats-bar-fill" style="width:' + Math.round((item.count / jMax) * 100) + '%"></div></div>' +
-        '<span class="stats-bar-count">' + item.count + '</span>';
-      row.style.cursor = 'pointer';
+        '<span class="stats-rank-num">' + (i + 1) + '</span>' +
+        '<span class="stats-rank-name">' + escapeHtml(item.name) + '</span>' +
+        '<span class="stats-rank-badge">' + item.count + '</span>';
       row.addEventListener('click', (function (name) {
         return function () { openJournalDetail(name); };
       })(item.name));
       jContainer.appendChild(row);
     });
 
-    // Top authors
+    // --- Top authors (ranked list) ---
     var authorCounts = {};
     papers.forEach(function (p) {
       if (!p.authors) return;
@@ -778,15 +829,13 @@
 
     var aContainer = document.getElementById('stats-authors');
     aContainer.innerHTML = '';
-    var aMax = topAuthors.length > 0 ? topAuthors[0].count : 1;
-    topAuthors.forEach(function (item) {
+    topAuthors.forEach(function (item, i) {
       var row = document.createElement('div');
-      row.className = 'stats-bar-row';
+      row.className = 'stats-rank-item';
       row.innerHTML =
-        '<span class="stats-bar-label">' + escapeHtml(item.name) + '</span>' +
-        '<div class="stats-bar-track"><div class="stats-bar-fill" style="width:' + Math.round((item.count / aMax) * 100) + '%"></div></div>' +
-        '<span class="stats-bar-count">' + item.count + '</span>';
-      row.style.cursor = 'pointer';
+        '<span class="stats-rank-num">' + (i + 1) + '</span>' +
+        '<span class="stats-rank-name">' + escapeHtml(item.name) + '</span>' +
+        '<span class="stats-rank-badge">' + item.count + '</span>';
       row.addEventListener('click', (function (name) {
         return function () { openAuthorDetail(name); };
       })(item.name));

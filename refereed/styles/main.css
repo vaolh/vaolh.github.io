@@ -243,13 +243,10 @@ img{max-width:100%;display:block}
 .stats-section{margin-bottom:36px}
 .stats-section h3,.stats-col h3{font-size:.85rem;text-transform:uppercase;letter-spacing:1px;color:#9ab;margin-bottom:14px;border-bottom:1px solid #2c3440;padding-bottom:6px}
 .stats-columns{display:grid;grid-template-columns:1fr 1fr;gap:40px}
-/* Time series */
-.stats-timeseries{overflow-x:auto;padding-bottom:4px}
-.stats-ts-chart{display:flex;align-items:flex-end;gap:8px;height:160px;min-width:min-content;padding-top:20px}
-.stats-ts-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:0 0 44px;width:44px}
-.stats-ts-bar{width:28px;background:#ff6b35;border-radius:3px 3px 0 0;min-height:3px}
-.stats-ts-label{font-size:.58rem;color:#678;white-space:nowrap;text-align:center;margin-top:6px;letter-spacing:.2px}
-.stats-ts-count{font-size:.6rem;color:#9ab;margin-bottom:3px;height:14px;text-align:center}
+/* Time series SVG */
+.stats-timeseries{width:100%;overflow:hidden}
+.stats-ts-svg{width:100%;height:140px;display:block}
+.ts-axis-label{font-size:9px;fill:#678;font-family:inherit}
 /* Ranked lists */
 .stats-rank-item{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:4px;cursor:pointer;transition:background .1s}
 .stats-rank-item:hover{background:#1b2028}
@@ -424,8 +421,6 @@ img{max-width:100%;display:block}
   /* Lists */
   .lists-two-col{grid-template-columns:1fr;gap:16px}
   .stats-columns{grid-template-columns:1fr;gap:20px}
-  .stats-ts-col{flex:0 0 36px;width:36px}
-  .stats-ts-bar{width:22px}
 
   /* Histogram */
   .histogram{height:40px}

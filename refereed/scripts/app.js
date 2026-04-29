@@ -761,33 +761,77 @@
 
     var tsContainer = document.getElementById('stats-timeseries');
     tsContainer.innerHTML = '';
-    if (monthOrder.length > 0) {
+    if (monthOrder.length > 1) {
       var tsMax = Math.max.apply(null, monthOrder.map(function (k) { return monthly[k]; }));
-      var chart = document.createElement('div');
-      chart.className = 'stats-ts-chart';
-      monthOrder.forEach(function (key) {
-        var count = monthly[key];
-        var barH = tsMax > 0 ? Math.max(Math.round((count / tsMax) * 120), count > 0 ? 3 : 1) : 1;
-        var d = new Date(key + '-01T00:00:00');
-        var label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-        var col = document.createElement('div');
-        col.className = 'stats-ts-col';
-        col.title = label + ': ' + count + ' pages';
-        var bar = document.createElement('div');
-        bar.className = 'stats-ts-bar';
-        bar.style.height = barH + 'px';
-        var lbl = document.createElement('div');
-        lbl.className = 'stats-ts-label';
-        lbl.textContent = label;
-        var cnt = document.createElement('div');
-        cnt.className = 'stats-ts-count';
-        cnt.textContent = count > 0 ? count : '';
-        col.appendChild(cnt);
-        col.appendChild(bar);
-        col.appendChild(lbl);
-        chart.appendChild(col);
+      var W = 900, H = 140, padL = 10, padR = 16, padT = 16, padB = 36;
+      var n = monthOrder.length;
+      var plotW = W - padL - padR;
+      var plotH = H - padT - padB;
+      var xs = monthOrder.map(function (_, i) { return padL + (i / (n - 1)) * plotW; });
+      var ys = monthOrder.map(function (k) {
+        return padT + plotH - (tsMax > 0 ? (monthly[k] / tsMax) * plotH : 0);
       });
-      tsContainer.appendChild(chart);
+      // Smooth path via Catmull-Rom -> cubic bezier
+      function crToBez(pts) {
+        var d = 'M ' + pts[0][0] + ' ' + pts[0][1];
+        for (var i = 0; i < pts.length - 1; i++) {
+          var p0 = pts[i > 0 ? i - 1 : i];
+          var p1 = pts[i];
+          var p2 = pts[i + 1];
+          var p3 = pts[i < pts.length - 2 ? i + 2 : i + 1];
+          var cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+          var cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+          var cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+          var cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+          d += ' C ' + cp1x + ' ' + cp1y + ' ' + cp2x + ' ' + cp2y + ' ' + p2[0] + ' ' + p2[1];
+        }
+        return d;
+      }
+      var pts = xs.map(function (x, i) { return [x, ys[i]]; });
+      var linePath = crToBez(pts);
+      var areaPath = linePath + ' L ' + xs[n-1] + ' ' + (padT + plotH) + ' L ' + xs[0] + ' ' + (padT + plotH) + ' Z';
+      var svgNS = 'http://www.w3.org/2000/svg';
+      var svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      svg.setAttribute('preserveAspectRatio', 'none');
+      svg.className = 'stats-ts-svg';
+      // gradient fill
+      var defs = document.createElementNS(svgNS, 'defs');
+      var grad = document.createElementNS(svgNS, 'linearGradient');
+      grad.setAttribute('id', 'ts-grad'); grad.setAttribute('x1','0'); grad.setAttribute('y1','0'); grad.setAttribute('x2','0'); grad.setAttribute('y2','1');
+      var s1 = document.createElementNS(svgNS, 'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#ff6b35'); s1.setAttribute('stop-opacity','0.18');
+      var s2 = document.createElementNS(svgNS, 'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#ff6b35'); s2.setAttribute('stop-opacity','0');
+      grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.appendChild(defs);
+      // area
+      var area = document.createElementNS(svgNS, 'path');
+      area.setAttribute('d', areaPath); area.setAttribute('fill', 'url(#ts-grad)');
+      svg.appendChild(area);
+      // line
+      var line = document.createElementNS(svgNS, 'path');
+      line.setAttribute('d', linePath); line.setAttribute('fill', 'none'); line.setAttribute('stroke', '#ff6b35'); line.setAttribute('stroke-width', '2.2'); line.setAttribute('stroke-linejoin', 'round');
+      svg.appendChild(line);
+      // dots + tooltips
+      pts.forEach(function (pt, i) {
+        var circle = document.createElementNS(svgNS, 'circle');
+        circle.setAttribute('cx', pt[0]); circle.setAttribute('cy', pt[1]); circle.setAttribute('r', '3.5');
+        circle.setAttribute('fill', '#ff6b35'); circle.setAttribute('stroke', '#131920'); circle.setAttribute('stroke-width', '1.5');
+        var d = new Date(monthOrder[i] + '-01T00:00:00');
+        var ttLabel = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) + ': ' + monthly[monthOrder[i]] + ' pages';
+        var title = document.createElementNS(svgNS, 'title'); title.textContent = ttLabel;
+        circle.appendChild(title); svg.appendChild(circle);
+      });
+      // x-axis labels
+      var labelEvery = n <= 12 ? 1 : n <= 24 ? 2 : 3;
+      pts.forEach(function (pt, i) {
+        if (i % labelEvery !== 0 && i !== n - 1) return;
+        var d = new Date(monthOrder[i] + '-01T00:00:00');
+        var lbl = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        var text = document.createElementNS(svgNS, 'text');
+        text.setAttribute('x', pt[0]); text.setAttribute('y', H - 4);
+        text.setAttribute('text-anchor', 'middle'); text.setAttribute('class', 'ts-axis-label');
+        text.textContent = lbl; svg.appendChild(text);
+      });
+      tsContainer.appendChild(svg);
     }
 
     // --- Top journals (ranked list) ---

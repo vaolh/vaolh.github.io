@@ -803,16 +803,11 @@
       var s1 = document.createElementNS(svgNS, 'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#ff6b35'); s1.setAttribute('stop-opacity','0.18');
       var s2 = document.createElementNS(svgNS, 'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#ff6b35'); s2.setAttribute('stop-opacity','0');
       grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.appendChild(defs);
-      // y-axis gridlines + labels
+      // y-axis labels only (no gridlines)
       var yTicks = 4;
       for (var t = 0; t <= yTicks; t++) {
         var yVal = Math.round((t / yTicks) * tsMax);
         var yPos = padT + plotH - (t / yTicks) * plotH;
-        var gridLine = document.createElementNS(svgNS, 'line');
-        gridLine.setAttribute('x1', padL); gridLine.setAttribute('x2', padL + plotW);
-        gridLine.setAttribute('y1', yPos); gridLine.setAttribute('y2', yPos);
-        gridLine.setAttribute('stroke', '#2c3440'); gridLine.setAttribute('stroke-width', '1');
-        svg.appendChild(gridLine);
         var yText = document.createElementNS(svgNS, 'text');
         yText.setAttribute('x', padL - 6); yText.setAttribute('y', yPos + 4);
         yText.setAttribute('text-anchor', 'end'); yText.setAttribute('class', 'ts-axis-label');
@@ -826,15 +821,43 @@
       var line = document.createElementNS(svgNS, 'path');
       line.setAttribute('d', linePath); line.setAttribute('fill', 'none'); line.setAttribute('stroke', '#ff6b35'); line.setAttribute('stroke-width', '2.2'); line.setAttribute('stroke-linejoin', 'round');
       svg.appendChild(line);
-      // dots + tooltips
+      // dots + click label
       pts.forEach(function (pt, i) {
         var circle = document.createElementNS(svgNS, 'circle');
-        circle.setAttribute('cx', pt[0]); circle.setAttribute('cy', pt[1]); circle.setAttribute('r', '3.5');
+        circle.setAttribute('cx', pt[0]); circle.setAttribute('cy', pt[1]); circle.setAttribute('r', '5');
         circle.setAttribute('fill', '#ff6b35'); circle.setAttribute('stroke', '#131920'); circle.setAttribute('stroke-width', '1.5');
+        circle.setAttribute('style', 'cursor:pointer');
+        var pageCount = monthly[monthOrder[i]];
         var d = new Date(monthOrder[i] + '-01T00:00:00');
-        var ttLabel = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) + ': ' + monthly[monthOrder[i]] + ' pages';
+        var ttLabel = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) + ': ' + pageCount + ' pages';
         var title = document.createElementNS(svgNS, 'title'); title.textContent = ttLabel;
-        circle.appendChild(title); svg.appendChild(circle);
+        circle.appendChild(title);
+        // floating label on click
+        circle.addEventListener('click', (function (px, py, label) {
+          return function (e) {
+            e.stopPropagation();
+            var existing = svg.querySelector('.ts-click-label');
+            if (existing && existing.dataset.label === label) { existing.remove(); return; }
+            if (existing) existing.remove();
+            var g = document.createElementNS(svgNS, 'g');
+            g.setAttribute('class', 'ts-click-label'); g.dataset.label = label;
+            var bx = px - 36, by = py - 34, bw = 72, bh = 22;
+            // keep within viewBox
+            if (bx < padL) bx = padL;
+            if (bx + bw > W - padR) bx = W - padR - bw;
+            var rect = document.createElementNS(svgNS, 'rect');
+            rect.setAttribute('x', bx); rect.setAttribute('y', by);
+            rect.setAttribute('width', bw); rect.setAttribute('height', bh);
+            rect.setAttribute('rx', '4'); rect.setAttribute('fill', '#1b2028');
+            rect.setAttribute('stroke', '#ff6b35'); rect.setAttribute('stroke-width', '1');
+            var txt = document.createElementNS(svgNS, 'text');
+            txt.setAttribute('x', bx + bw / 2); txt.setAttribute('y', by + 15);
+            txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('class', 'ts-axis-label');
+            txt.setAttribute('fill', '#d8d8d8'); txt.textContent = label;
+            g.appendChild(rect); g.appendChild(txt); svg.appendChild(g);
+          };
+        })(pt[0], pt[1], ttLabel));
+        svg.appendChild(circle);
       });
       // x-axis labels
       var labelEvery = n <= 12 ? 1 : n <= 24 ? 2 : 3;

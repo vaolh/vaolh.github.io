@@ -794,7 +794,7 @@
       var svg = document.createElementNS(svgNS, 'svg');
       svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
       svg.setAttribute('preserveAspectRatio', 'none');
-      svg.className = 'stats-ts-svg';
+      svg.setAttribute('class', 'stats-ts-svg');
       // gradient fill
       var defs = document.createElementNS(svgNS, 'defs');
       var grad = document.createElementNS(svgNS, 'linearGradient');

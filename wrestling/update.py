@@ -1668,11 +1668,26 @@ class WrestlingDatabase:
         if all_time_titles:
             html = "<h3>Titles in Wrestling</h3>\n\n"
             title_parts = []
+            # Group tournaments first
+            open_years  = sorted(
+                int(w.replace('tournament_', ''))
+                for (org, w) in all_time_titles if org == 'open'
+            )
+            trios_years = sorted(
+                int(w.replace('tournament_', ''))
+                for (org, w) in all_time_titles if org == 'trios'
+            )
+            if trios_years:
+                title_parts.append(
+                    f"Trios Tournament ({', '.join(str(y) for y in trios_years)})")
+            if open_years:
+                title_parts.append(
+                    f"Open Tournament ({', '.join(str(y) for y in open_years)})")
+            # Then championships
             for (org, weight), (label, count) in all_time_titles.items():
-                # Tournament entries have year info baked into the label, no "Championship" suffix
                 if org in ('open', 'trios'):
-                    title_parts.append(label)
-                elif count > 1:
+                    continue
+                if count > 1:
                     title_parts.append(f"{label} Championship ({count}x)")
                 else:
                     title_parts.append(f"{label} Championship")
@@ -3134,12 +3149,12 @@ class WrestlingDatabase:
         # Handle K (thousands)
         if 'K' in audience_str or 'k' in audience_str:
             num = float(audience_str.replace('K', '').replace('k', '').strip())
-            return int(num * 1000)
+            return round(num * 1000)
         
         # Handle M (millions)
         if 'M' in audience_str or 'm' in audience_str:
             num = float(audience_str.replace('M', '').replace('m', '').strip())
-            return int(num * 1000000)
+            return round(num * 1000000)
         
         # Plain number
         try:
@@ -3288,7 +3303,7 @@ class WrestlingDatabase:
         # Handle K (thousands)
         if 'K' in attendance_str or 'k' in attendance_str:
             num = float(attendance_str.replace('K', '').replace('k', '').strip())
-            return int(num * 1000)
+            return round(num * 1000)
         
         # Plain number
         try:

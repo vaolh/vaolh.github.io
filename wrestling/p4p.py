@@ -338,7 +338,7 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
 
     # ── GOAT MODE ────────────────────────────────────────────────────────
     if goat_mode:
-        # Quality wins
+        # 1. Quality wins — wins over rated opponents
         qw_total = 0.0
         qw_wins  = 0
         for (fy, result, method, m) in matches_to_date:
@@ -351,27 +351,16 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
             qw_wins  += 1
         quality_wins_score = min(qw_total / (100 * min(max(qw_wins, 1), 30)), 1.0) * 100
 
-        # Dominance
+        # 2. Win volume — raw count of wins
         wins   = sum(1 for (_, r, *_) in matches_to_date if r == 'Win')
         losses = sum(1 for (_, r, *_) in matches_to_date if r == 'Loss')
         draws  = sum(1 for (_, r, *_) in matches_to_date if r == 'Draw')
         total  = wins + losses + 0.5 * draws
         win_pct = wins / total if total else 0
-        cur = streak = 0
-        for (_, r, *_) in matches_to_date:
-            cur = (cur + 1) if r == 'Win' else 0
-            streak = max(streak, cur)
-        max_def = max(
-            (reign.get('defenses', 0)
-             for org in ALL_ORGS for weight in WEIGHT_ORDER
-             for reign in db.championships[org][weight]
-             if reign['champion'] == name and _year_of(reign['date']) <= ranking_year),
-            default=0,
-        )
-        dominance_score = min(win_pct * 70 + min(streak * 2, 20) + min(max_def * 5, 30), 100)
+        win_volume_score = min(wins / 20, 1.0) * 100  # 20 wins = full score
 
-        # Championship score
-        title_pts = total_days = longest_reign = 0
+        # 3. Championship — title wins + defenses (most important title factor)
+        title_pts = total_days = longest_reign = total_defenses = 0
         for org in ALL_ORGS:
             for weight in WEIGHT_ORDER:
                 for reign in db.championships[org][weight]:
@@ -384,6 +373,7 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
                     days = reign.get('days') or 0
                     total_days += days
                     longest_reign = max(longest_reign, days)
+                    total_defenses += reign.get('defenses', 0)
         is_current_champ = any(
             reign['champion'] == name
             and i == len(db.championships[org][weight]) - 1
@@ -392,14 +382,15 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
             for i, reign in enumerate(db.championships[org][weight])
         )
         championship_score = min(
-            min(title_pts, 85)
-            + (20 if is_current_champ else 0)
-            + min(total_days / 365, 3) * 10
-            + min(longest_reign / 365, 2) * 5,
+            min(title_pts, 70)
+            + (15 if is_current_champ else 0)
+            + min(total_days / 365, 3) * 8
+            + min(longest_reign / 365, 2) * 4
+            + min(total_defenses * 8, 40),   # up to 5 defenses = full bonus
             100,
         )
 
-        # Tournament bonuses (GOAT mode only)
+        # Tournament bonuses folded into championship
         open_win_years = [y for y in cache['open_wins'].get(name, []) if y <= ranking_year]
         open_bonus = min(len(open_win_years) * OPEN_WIN_GOAT_TITLE_PTS,
                          OPEN_WIN_GOAT_TITLE_PTS * 3)
@@ -408,14 +399,37 @@ def compute_score(db, cache, name, ranking_year, goat_mode=False):
                           TRIOS_WIN_GOAT_TITLE_PTS * 3)
         championship_with_tournaments = min(championship_score + open_bonus + trios_bonus, 100)
 
-        # Draw / main-event score
-        draw_score = min(w.get('main_events', 0) * 20, 100)
+        # 4. Dominance — win%, winning streak
+        cur = streak = 0
+        for (_, r, *_) in matches_to_date:
+            cur = (cur + 1) if r == 'Win' else 0
+            streak = max(streak, cur)
+        dominance_score = min(win_pct * 60 + min(streak * 3, 30), 100)
+
+        # 5. Drawing power — main events + PPV appearances
+        main_ev = w.get('main_events', 0)
+        ppv_appearances = sum(
+            1 for (_, _, _, m) in matches_to_date
+            if m.get('broadcast_type', '').upper() == 'PPV'
+        )
+        draw_score = min(main_ev * 15 + ppv_appearances * 5, 100)
+
+        # 6. Undefeated / near-undefeated bonus
+        if losses == 0 and wins >= P4P_MIN_BOUTS:
+            undefeated_bonus = 30
+        elif total >= 5 and win_pct >= 0.90:
+            undefeated_bonus = 15
+        else:
+            undefeated_bonus = 0
+        bonus_score = min(undefeated_bonus, 30)
 
         return round(
-            quality_wins_score              * 0.40
-            + dominance_score               * 0.25
+            quality_wins_score              * 0.35
+            + win_volume_score              * 0.15
             + championship_with_tournaments * 0.25
-            + draw_score                    * 0.10,
+            + dominance_score               * 0.10
+            + draw_score                    * 0.10
+            + bonus_score                   * 0.05,
             4,
         )
 
@@ -624,6 +638,15 @@ def titles_at_year(db, name, year, cache=None):
 def all_titles_str(db, name, cache=None):
     """Full career championship list."""
     parts = []
+    # Tournaments first (grouped)
+    if cache:
+        trios_years = sorted(cache['trios_wins'].get(name, []))
+        open_years  = sorted(cache['open_wins'].get(name, []))
+        if trios_years:
+            parts.append(f"Trios Tournament ({', '.join(str(y) for y in trios_years)})")
+        if open_years:
+            parts.append(f"Open Tournament ({', '.join(str(y) for y in open_years)})")
+    # Then championships
     for org in ('wwf', 'wwo', 'iwb', 'ring'):
         for weight in WEIGHT_ORDER:
             reigns = [r for r in db.championships[org][weight] if r['champion'] == name]
@@ -634,11 +657,6 @@ def all_titles_str(db, name, cache=None):
             if len(reigns) > 1:
                 txt += f" ({len(reigns)}x)"
             parts.append(txt)
-    if cache:
-        for y in sorted(cache['open_wins'].get(name, [])):
-            parts.append(f"{y} Open Tournament")
-        for y in sorted(cache['trios_wins'].get(name, [])):
-            parts.append(f"{y} Trios Tournament")
     return ' <br> '.join(parts)
 
 
@@ -718,32 +736,122 @@ def flag(country):
     return f'<span class="fi fi-{country}"></span>'
 
 
-def p4p_table_html(db, year, gender_label, rankings):
-    if not rankings:
+# Leading particles to strip before abbreviating
+_LEADING = ('El ', 'La ', 'Los ', 'Las ', 'The ')
+
+def _abbrev_name(name):
+    """Abbreviate a wrestler name for compact display in the P4P grid.
+
+    Rules:
+    - Strip a leading article (El/La/Los/Las/The)
+    - If what remains is a single word (mononym) → return original unchanged
+    - Otherwise → first letter of first word + '. ' + rest
+    Examples:
+      Kenny Omega        → K. Omega
+      Stephanie Vaquer   → S. Vaquer
+      El Nieto del Santo → N. del Santo
+      El Hijo del Vikingo→ H. del Vikingo
+      The Rock           → The Rock   (single word after strip)
+      Mistico            → Mistico    (mononym)
+    """
+    stripped = name
+    for prefix in _LEADING:
+        if name.startswith(prefix):
+            stripped = name[len(prefix):]
+            break
+    words = stripped.split()
+    if len(words) <= 1:
+        return name  # mononym or reduces to one word → keep original
+    return words[0][0] + '. ' + ' '.join(words[1:])
+
+
+def _build_yearly_gender_details(db, cache, gender_label, glist, yearly_data, start_year, goat_rankings, top_n=10):
+    """Build a single <details> with All+year×rank grid table for one gender."""
+    years = cache['all_years']
+    max_year = max(years) if years else 0
+    # Exclude the current/ongoing max year from yearly rows
+    year_list = [y for y in reversed(sorted(years))
+                 if y >= start_year and y < max_year and yearly_data.get(y)]
+    if not goat_rankings:
         return ''
+
+    # Build grid for year rows: year -> list of (name, country)|None, length top_n
+    grid = {}
+    for year in year_list:
+        row = []
+        rankings = yearly_data.get(year, [])
+        for rank_idx in range(top_n):
+            if rank_idx < len(rankings):
+                name    = rankings[rank_idx][0]
+                country = db.wrestlers[name]['country']
+                row.append((name, country))
+            else:
+                row.append(None)
+        grid[year] = row
+
+    # Build the All row
+    goat_row = list(goat_rankings[:top_n])
+    while len(goat_row) < top_n:
+        goat_row.append(None)
+
+    # Full row sequence for rowspan computation: All first, then year rows
+    all_rows = [goat_row] + [grid[y] for y in year_list]
+    n_rows = len(all_rows)
+
+    spans = [[(1, False)] * top_n for _ in range(n_rows)]
+    for rank_pos in range(top_n):
+        r_idx = 0
+        while r_idx < n_rows:
+            cell = all_rows[r_idx][rank_pos]
+            if cell is None:
+                spans[r_idx][rank_pos] = (1, False)
+                r_idx += 1
+                continue
+            run_len = 1
+            while (r_idx + run_len < n_rows
+                   and all_rows[r_idx + run_len][rank_pos] is not None
+                   and all_rows[r_idx + run_len][rank_pos][0] == cell[0]):
+                run_len += 1
+            spans[r_idx][rank_pos] = (run_len, False)
+            for k in range(1, run_len):
+                spans[r_idx + k][rank_pos] = (0, True)
+            r_idx += run_len
+
     lines = [
-        f'    <!-- {year} {gender_label} P4P -->',
+        f'    <!-- {gender_label} P4P -->',
         '    <details>',
-        f"    <summary>{year} {gender_label}'s <i>The Ring</i> P4P Rankings</summary>",
-        '    <table style="width: 65%;" class="p4p">',
-        '        <tbody><tr>',
-        f'            <th>Rank</th><th>Wrestler</th><th>Career Record</th>'
-        f'<th>{year} Record</th><th>Titles</th>',
-        '        </tr>',
+        f"    <summary>{gender_label}'s <i>The Ring</i> P4P Rankings</summary>",
+        '    <table class="p4p-grid">',
+        '        <tr>',
+        '            <th>Year</th>',
     ]
-    for rank, (name, score, record, year_record, weight, titles) in enumerate(rankings, 1):
-        country   = db.wrestlers[name]['country']
-        titles_td = f'<td>{titles}</td>' if titles else '<th></th>'
-        lines += [
-            '        <tr>',
-            f'            <th>{rank}</th>',
-            f'            <td>{flag(country)} {name}</td>',
-            f'            <td>{record}</td>',
-            f'            <td>{year_record}</td>',
-            f'            {titles_td}',
-            '        </tr>',
-        ]
-    lines += ['    </tbody></table>', '    </details>', '', '']
+    for rank_num in range(1, top_n + 1):
+        lines.append(f'            <th>{rank_num}</th>')
+    lines.append('        </tr>')
+
+    # Render all rows: index 0 = All, indices 1+ = years
+    row_labels = ['All'] + [str(y) for y in year_list]
+    for r_idx, (label, row_data) in enumerate(zip(row_labels, all_rows)):
+        lines.append('        <tr>')
+        lines.append(f'            <th>{label}</th>')
+        for rank_pos in range(top_n):
+            rowspan, skip = spans[r_idx][rank_pos]
+            if skip:
+                continue
+            cell = row_data[rank_pos]
+            span_attr = f' rowspan="{rowspan}"' if rowspan > 1 else ''
+            if cell is None:
+                lines.append(f'            <td{span_attr}></td>')
+            else:
+                name, country = cell
+                short = _abbrev_name(name)
+                # Only show abbreviated form if it differs from full name;
+                # always store full name in title for hover tooltip.
+                title_attr = f' title="{name}"' if short != name else ''
+                lines.append(f'            <td{span_attr}{title_attr}>{flag(country)} {short}</td>')
+        lines.append('        </tr>')
+
+    lines += ['    </table>', '    </details>', '', '']
     return '\n'.join(lines)
 
 
@@ -755,53 +863,7 @@ def generate_p4p_html(db, cache):
 
     parts = []
 
-    # GOAT tables
-    for gender_label, glist in [('Men', men), ('Women', women)]:
-        goat = []
-        for name in glist:
-            if name not in db.ppv_wrestlers:
-                continue
-            w = db.wrestlers[name]
-            if w['wins'] + w['losses'] + w['draws'] < P4P_MIN_BOUTS:
-                continue
-            if w['wins'] < P4P_MIN_CAREER_WINS:
-                continue
-            score = compute_goat_score(db, cache, name, current_year)
-            if score > 0:
-                record = f"{w['wins']}-{w['losses']}-{w['draws']}"
-                goat.append((name, score, record))
-        goat.sort(key=lambda x: (-x[1], x[0]))
-        goat = goat[:25]
-        if not goat:
-            continue
-
-        lines = [
-            f'    <!-- All-Time {gender_label} GOAT -->',
-            '    <details>',
-            f"    <summary>All-Time {gender_label}'s <i>The Ring</i> P4P GOAT Rankings</summary>",
-            '    <table style="width: 65%;" class="p4p">',
-            '        <tbody><tr>',
-            '            <th>Rank</th><th>Wrestler</th><th>Record</th>'
-            '<th>Score</th><th>Titles</th>',
-            '        </tr>',
-        ]
-        for rank, (name, score, record) in enumerate(goat, 1):
-            country   = db.wrestlers[name]['country']
-            titles    = all_titles_str(db, name, cache)
-            titles_td = f'<td>{titles}</td>' if titles else '<th></th>'
-            lines += [
-                '        <tr>',
-                f'            <th>{rank}</th>',
-                f'            <td>{flag(country)} {name}</td>',
-                f'            <td>{record}</td>',
-                f'            <td>{score:.1f}</td>',
-                f'            {titles_td}',
-                '        </tr>',
-            ]
-        lines += ['    </tbody></table>', '    </details>', '', '']
-        parts.append('\n'.join(lines))
-
-    # Yearly tables (compute oldest→newest, display newest→oldest)
+    # Yearly tables: compute oldest→newest for voter fatigue, display newest→oldest
     men_woty   = defaultdict(int)
     women_woty = defaultdict(int)
     yearly_men   = {}
@@ -809,21 +871,42 @@ def generate_p4p_html(db, cache):
 
     for year in sorted(years):
         if year >= MENS_P4P_START:
-            ranks = rank_for_year(db, cache, year, men, woty_count=men_woty)
+            ranks = rank_for_year(db, cache, year, men, top_n=10, woty_count=men_woty)
             yearly_men[year] = ranks
-            if ranks:
+            if ranks and year < max(years):
                 men_woty[ranks[0][0]] += 1
         if year >= WOMENS_P4P_START:
-            ranks = rank_for_year(db, cache, year, women, woty_count=women_woty)
+            ranks = rank_for_year(db, cache, year, women, top_n=10, woty_count=women_woty)
             yearly_women[year] = ranks
-            if ranks:
+            if ranks and year < max(years):
                 women_woty[ranks[0][0]] += 1
 
-    for year in reversed(sorted(years)):
-        if year >= MENS_P4P_START and yearly_men.get(year):
-            parts.append(p4p_table_html(db, year, 'Men', yearly_men[year]))
-        if year >= WOMENS_P4P_START and yearly_women.get(year):
-            parts.append(p4p_table_html(db, year, 'Women', yearly_women[year]))
+    # GOAT top-10 for each gender (used as the "All" row)
+    # Lower thresholds so wrestlers with fewer bouts still appear;
+    # no PPV-only filter so TV/STM competitors are included.
+    def build_goat(glist):
+        goat = []
+        for name in glist:
+            if name not in db.wrestlers:
+                continue
+            w = db.wrestlers[name]
+            if w['wins'] + w['losses'] + w['draws'] < 2:
+                continue
+            if w['wins'] < 1:
+                continue
+            score = compute_goat_score(db, cache, name, current_year)
+            if score > 0:
+                goat.append((name, score))
+        goat.sort(key=lambda x: (-x[1], x[0]))
+        return [(name, db.wrestlers[name]['country']) for name, _ in goat[:10]]
+
+    men_goat   = build_goat(men)
+    women_goat = build_goat(women)
+
+    parts.append(_build_yearly_gender_details(
+        db, cache, 'Men', men, yearly_men, MENS_P4P_START, men_goat))
+    parts.append(_build_yearly_gender_details(
+        db, cache, 'Women', women, yearly_women, WOMENS_P4P_START, women_goat))
 
     return ''.join(parts)
 

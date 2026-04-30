@@ -762,115 +762,73 @@
 
     var tsContainer = document.getElementById('stats-timeseries');
     tsContainer.innerHTML = '';
-    if (monthOrder.length > 1) {
-      var tsMax = Math.max.apply(null, monthOrder.map(function (k) { return monthly[k]; }));
-      var W = 900, H = 140, padL = 38, padR = 16, padT = 16, padB = 36;
-      var n = monthOrder.length;
-      var plotW = W - padL - padR;
-      var plotH = H - padT - padB;
-      var xs = monthOrder.map(function (_, i) { return padL + (i / (n - 1)) * plotW; });
-      var ys = monthOrder.map(function (k) {
-        return padT + plotH - (tsMax > 0 ? (monthly[k] / tsMax) * plotH : 0);
+    if (monthOrder.length > 1 && window.Chart) {
+      var canvas = document.createElement('canvas');
+      canvas.style.width = '100%';
+      canvas.style.height = '160px';
+      tsContainer.appendChild(canvas);
+      var xLabels = monthOrder.map(function (k) {
+        var d = new Date(k + '-01T00:00:00');
+        return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       });
-      // Smooth path via Catmull-Rom -> cubic bezier
-      function crToBez(pts) {
-        var d = 'M ' + pts[0][0] + ' ' + pts[0][1];
-        for (var i = 0; i < pts.length - 1; i++) {
-          var p0 = pts[i > 0 ? i - 1 : i];
-          var p1 = pts[i];
-          var p2 = pts[i + 1];
-          var p3 = pts[i < pts.length - 2 ? i + 2 : i + 1];
-          var cp1x = p1[0] + (p2[0] - p0[0]) / 6;
-          var cp1y = p1[1] + (p2[1] - p0[1]) / 6;
-          var cp2x = p2[0] - (p3[0] - p1[0]) / 6;
-          var cp2y = p2[1] - (p3[1] - p1[1]) / 6;
-          d += ' C ' + cp1x + ' ' + cp1y + ' ' + cp2x + ' ' + cp2y + ' ' + p2[0] + ' ' + p2[1];
+      var values = monthOrder.map(function (k) { return monthly[k]; });
+      new window.Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: xLabels,
+          datasets: [{
+            data: values,
+            borderColor: '#ff6b35',
+            backgroundColor: 'rgba(255,107,53,0.12)',
+            fill: true,
+            cubicInterpolationMode: 'monotone',
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#ff6b35',
+            pointBorderColor: '#131920',
+            pointBorderWidth: 1.5,
+            pointHoverBackgroundColor: '#ff6b35',
+            pointHoverBorderColor: '#fff',
+            borderWidth: 2.2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              displayColors: false,
+              backgroundColor: '#1b2028',
+              borderColor: '#ff6b35',
+              borderWidth: 1,
+              titleColor: '#9ab',
+              bodyColor: '#d8d8d8',
+              bodyFont: { size: 13 },
+              callbacks: {
+                title: function (items) { return items[0].label; },
+                label: function (item) { return item.raw + ' pages'; }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              grid: { display: false },
+              border: { display: false },
+              ticks: { color: '#678', font: { size: 10 }, maxRotation: 0 }
+            },
+            y: {
+              display: true,
+              grid: { display: false },
+              border: { display: false },
+              ticks: { color: '#678', font: { size: 10 } }
+            }
+          }
         }
-        return d;
-      }
-      var pts = xs.map(function (x, i) { return [x, ys[i]]; });
-      var linePath = crToBez(pts);
-      var areaPath = linePath + ' L ' + xs[n-1] + ' ' + (padT + plotH) + ' L ' + xs[0] + ' ' + (padT + plotH) + ' Z';
-      var svgNS = 'http://www.w3.org/2000/svg';
-      var svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-      svg.setAttribute('preserveAspectRatio', 'none');
-      svg.setAttribute('class', 'stats-ts-svg');
-      // gradient fill
-      var defs = document.createElementNS(svgNS, 'defs');
-      var grad = document.createElementNS(svgNS, 'linearGradient');
-      grad.setAttribute('id', 'ts-grad'); grad.setAttribute('x1','0'); grad.setAttribute('y1','0'); grad.setAttribute('x2','0'); grad.setAttribute('y2','1');
-      var s1 = document.createElementNS(svgNS, 'stop'); s1.setAttribute('offset','0%'); s1.setAttribute('stop-color','#ff6b35'); s1.setAttribute('stop-opacity','0.18');
-      var s2 = document.createElementNS(svgNS, 'stop'); s2.setAttribute('offset','100%'); s2.setAttribute('stop-color','#ff6b35'); s2.setAttribute('stop-opacity','0');
-      grad.appendChild(s1); grad.appendChild(s2); defs.appendChild(grad); svg.appendChild(defs);
-      // y-axis labels only (no gridlines)
-      var yTicks = 4;
-      for (var t = 0; t <= yTicks; t++) {
-        var yVal = Math.round((t / yTicks) * tsMax);
-        var yPos = padT + plotH - (t / yTicks) * plotH;
-        var yText = document.createElementNS(svgNS, 'text');
-        yText.setAttribute('x', padL - 6); yText.setAttribute('y', yPos + 4);
-        yText.setAttribute('text-anchor', 'end'); yText.setAttribute('class', 'ts-axis-label');
-        yText.textContent = yVal; svg.appendChild(yText);
-      }
-      // area
-      var area = document.createElementNS(svgNS, 'path');
-      area.setAttribute('d', areaPath); area.setAttribute('fill', 'url(#ts-grad)');
-      svg.appendChild(area);
-      // line
-      var line = document.createElementNS(svgNS, 'path');
-      line.setAttribute('d', linePath); line.setAttribute('fill', 'none'); line.setAttribute('stroke', '#ff6b35'); line.setAttribute('stroke-width', '2.2'); line.setAttribute('stroke-linejoin', 'round');
-      svg.appendChild(line);
-      // dots + click label
-      pts.forEach(function (pt, i) {
-        var circle = document.createElementNS(svgNS, 'circle');
-        circle.setAttribute('cx', pt[0]); circle.setAttribute('cy', pt[1]); circle.setAttribute('r', '5');
-        circle.setAttribute('fill', '#ff6b35'); circle.setAttribute('stroke', '#131920'); circle.setAttribute('stroke-width', '1.5');
-        circle.setAttribute('style', 'cursor:pointer');
-        var pageCount = monthly[monthOrder[i]];
-        var d = new Date(monthOrder[i] + '-01T00:00:00');
-        var ttLabel = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) + ': ' + pageCount + ' pages';
-        var title = document.createElementNS(svgNS, 'title'); title.textContent = ttLabel;
-        circle.appendChild(title);
-        // floating label on click
-        circle.addEventListener('click', (function (px, py, label) {
-          return function (e) {
-            e.stopPropagation();
-            var existing = svg.querySelector('.ts-click-label');
-            if (existing && existing.dataset.label === label) { existing.remove(); return; }
-            if (existing) existing.remove();
-            var g = document.createElementNS(svgNS, 'g');
-            g.setAttribute('class', 'ts-click-label'); g.dataset.label = label;
-            var bx = px - 36, by = py - 34, bw = 72, bh = 22;
-            // keep within viewBox
-            if (bx < padL) bx = padL;
-            if (bx + bw > W - padR) bx = W - padR - bw;
-            var rect = document.createElementNS(svgNS, 'rect');
-            rect.setAttribute('x', bx); rect.setAttribute('y', by);
-            rect.setAttribute('width', bw); rect.setAttribute('height', bh);
-            rect.setAttribute('rx', '4'); rect.setAttribute('fill', '#1b2028');
-            rect.setAttribute('stroke', '#ff6b35'); rect.setAttribute('stroke-width', '1');
-            var txt = document.createElementNS(svgNS, 'text');
-            txt.setAttribute('x', bx + bw / 2); txt.setAttribute('y', by + 15);
-            txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('class', 'ts-axis-label');
-            txt.setAttribute('fill', '#d8d8d8'); txt.textContent = label;
-            g.appendChild(rect); g.appendChild(txt); svg.appendChild(g);
-          };
-        })(pt[0], pt[1], ttLabel));
-        svg.appendChild(circle);
       });
-      // x-axis labels
-      var labelEvery = n <= 12 ? 1 : n <= 24 ? 2 : 3;
-      pts.forEach(function (pt, i) {
-        if (i % labelEvery !== 0 && i !== n - 1) return;
-        var d = new Date(monthOrder[i] + '-01T00:00:00');
-        var lbl = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-        var text = document.createElementNS(svgNS, 'text');
-        text.setAttribute('x', pt[0]); text.setAttribute('y', H - 4);
-        text.setAttribute('text-anchor', 'middle'); text.setAttribute('class', 'ts-axis-label');
-        text.textContent = lbl; svg.appendChild(text);
-      });
-      tsContainer.appendChild(svg);
     }
 
     // --- Top journals (ranked list) ---

@@ -243,10 +243,8 @@ img{max-width:100%;display:block}
 .stats-section{margin-bottom:36px}
 .stats-section h3,.stats-col h3{font-size:.85rem;text-transform:uppercase;letter-spacing:1px;color:#9ab;margin-bottom:14px;border-bottom:1px solid #2c3440;padding-bottom:6px}
 .stats-columns{display:grid;grid-template-columns:1fr 1fr;gap:40px}
-/* Time series SVG */
-.stats-timeseries{width:100%;overflow:hidden}
-.stats-ts-svg{width:100%;height:140px;display:block}
-.ts-axis-label{font-size:9px;fill:#678;font-family:inherit}
+/* Time series */
+.stats-timeseries{width:100%;height:160px;position:relative}
 /* Ranked lists */
 .stats-rank-item{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:4px;cursor:pointer;transition:background .1s}
 .stats-rank-item:hover{background:#1b2028}

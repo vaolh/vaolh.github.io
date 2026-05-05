@@ -167,15 +167,24 @@
       <div class="search-bar">
         <input type="text" id="search-input" placeholder="Search papers by title, author, journal…" autocomplete="off">
       </div>
-      <div id="bib-export-panel" class="bib-export-panel">
-        <div class="bib-export-header">
-          <span class="bib-export-title">Export to BibTeX</span>
-          <label class="bib-select-all-label"><input type="checkbox" id="bib-select-all"> Select all</label>
-          <button id="bib-export-btn" class="bib-export-btn">Download biblio.bib</button>
-        </div>
-        <div id="bib-export-list" class="bib-export-list"></div>
-      </div>
       <div class="poster-grid" id="search-results"></div>
+
+      <h3 class="export-heading">Export</h3>
+      <div id="export-section">
+        <div class="export-queue" id="export-queue">
+          <span class="export-queue-empty" id="export-queue-empty">Click a poster above to add it here.</span>
+        </div>
+        <div class="export-lists-row">
+          <span class="export-lists-label">Add list:</span>
+          <button class="export-list-btn" data-list="papers">All papers</button>
+          <button class="export-list-btn" data-list="readlist">Read list</button>
+          <span id="export-genre-btns"></span>
+        </div>
+        <div class="export-actions">
+          <button id="export-clear-btn" class="export-clear-btn">Clear</button>
+          <button id="export-download-btn" class="export-download-btn">Download biblio.bib</button>
+        </div>
+      </div>
     </section>
 
     <!-- ======== AUTHOR DETAIL ======== -->

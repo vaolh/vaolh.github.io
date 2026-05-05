@@ -167,6 +167,14 @@
       <div class="search-bar">
         <input type="text" id="search-input" placeholder="Search papers by title, author, journal…" autocomplete="off">
       </div>
+      <div id="bib-export-panel" class="bib-export-panel">
+        <div class="bib-export-header">
+          <span class="bib-export-title">Export to BibTeX</span>
+          <label class="bib-select-all-label"><input type="checkbox" id="bib-select-all"> Select all</label>
+          <button id="bib-export-btn" class="bib-export-btn">Download biblio.bib</button>
+        </div>
+        <div id="bib-export-list" class="bib-export-list"></div>
+      </div>
       <div class="poster-grid" id="search-results"></div>
     </section>
 

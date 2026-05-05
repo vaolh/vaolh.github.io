@@ -47,6 +47,15 @@
     return html;
   }
 
+  function formatDetail(p) {
+    if (p.note) return p.note;
+    if (!p.volume && !p.pages) return '';
+    var s = p.volume || '';
+    if (p.number) s += '(' + p.number + ')';
+    if (p.pages) s += (s ? ', ' : '') + p.pages;
+    return s;
+  }
+
   function formatDate(iso) {
     if (!iso) return '';
     var d = new Date(iso + 'T00:00:00');
@@ -370,7 +379,8 @@
         var subParts = [];
         if (p.year) subParts.push(p.year);
         if (p.journal) subParts.push(p.journal);
-        if (p.detail) subParts.push(p.detail);
+        var detailStr = formatDetail(p);
+        if (detailStr) subParts.push(detailStr);
         var subHtml = subParts.map(function (s) { return escapeHtml(String(s)); }).join(' · ');
 
         var pdfHtml = p.pdf
@@ -462,7 +472,7 @@
             '<h1>' + escapeHtml(p.title) + '</h1>' +
             '<div class="review-detail-year">' + p.year + '</div>' +
             '<div class="review-detail-authors" id="review-detail-authors-links"></div>' +
-            (p.journal ? '<div class="review-detail-journal"><a href="#" class="journal-link" data-journal="' + escapeHtml(p.journal) + '">' + escapeHtml(p.journal) + '</a>' + (p.detail ? ' ' + escapeHtml(p.detail) : '') + '</div>' : '') +
+            (p.journal ? '<div class="review-detail-journal"><a href="#" class="journal-link" data-journal="' + escapeHtml(p.journal) + '">' + escapeHtml(p.journal) + '</a>' + (formatDetail(p) ? ' ' + escapeHtml(formatDetail(p)) : '') + '</div>' : '') +
             '<div class="review-detail-genre">' + escapeHtml(p.genre || '') + '</div>' +
             '<div class="review-detail-rating"><span class="stars">' + ratingToStars(p.rating) + '</span>' +
             '</div>' +
@@ -564,7 +574,7 @@
     var container = document.getElementById('toread-detail-content');
     var authorHtml = (p.authors || []).map(function (a) { return escapeHtml(a); }).join(', ');
     var journalHtml = p.journal
-      ? escapeHtml(p.journal) + (p.detail ? ' <span style="color:#678">' + escapeHtml(p.detail) + '</span>' : '')
+      ? escapeHtml(p.journal) + (formatDetail(p) ? ' <span style="color:#678">' + escapeHtml(formatDetail(p)) + '</span>' : '')
       : '';
     var pdfHtml = p.pdf
       ? '<div style="margin-top:8px"><a href="' + escapeHtml(p.pdf) + '" target="_blank" rel="noopener noreferrer" style="font-size:.85rem">View PDF \u2192</a></div>'
@@ -708,15 +718,82 @@
     });
   }
 
+  // ---- BibTeX export ----
+
+  function paperToBib(p) {
+    var lines = ['@article{' + p.id + ','];
+    if (p.authors && p.authors.length) {
+      lines.push('  author    = {' + p.authors.join(' and ') + '},');
+    }
+    if (p.title)   lines.push('  title     = {' + p.title + '},');
+    if (p.journal) lines.push('  journal   = {' + p.journal + '},');
+    if (p.year)    lines.push('  year      = {' + p.year + '},');
+    if (p.volume)  lines.push('  volume    = {' + p.volume + '},');
+    if (p.number)  lines.push('  number    = {' + p.number + '},');
+    if (p.pages)   lines.push('  pages     = {' + p.pages.replace(/-/g, '--') + '},');
+    if (p.note)    lines.push('  note      = {' + p.note + '},');
+    if (p.pdf)     lines.push('  url       = {' + p.pdf + '},');
+    lines.push('}');
+    return lines.join('\n');
+  }
+
+  function downloadBib(selectedPapers) {
+    var content = selectedPapers.map(paperToBib).join('\n\n');
+    var blob = new Blob([content], { type: 'text/plain' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'biblio.bib';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   // ---- Search ----
 
   function initSearch() {
     var input = document.getElementById('search-input');
     var grid = document.getElementById('search-results');
+    var exportPanel = document.getElementById('bib-export-panel');
+    var exportList = document.getElementById('bib-export-list');
+    var exportBtn = document.getElementById('bib-export-btn');
+    var selectAll = document.getElementById('bib-select-all');
     if (!input || !grid) return;
+
+    // Build export list from all read papers
+    function buildExportList() {
+      if (!exportList) return;
+      exportList.innerHTML = '';
+      var sorted = papers.slice().sort(function (a, b) {
+        return (a.title || '').localeCompare(b.title || '');
+      });
+      sorted.forEach(function (p) {
+        var row = document.createElement('label');
+        row.className = 'bib-export-row';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.value = p.id;
+        cb.className = 'bib-export-cb';
+        var span = document.createElement('span');
+        var detail = formatDetail(p);
+        span.textContent = (p.authors && p.authors.length ? p.authors[0] + (p.authors.length > 1 ? ' et al.' : '') + ' ' : '') +
+          '(' + (p.year || '?') + ') ' + (p.title || p.id) +
+          (p.journal ? ' — ' + p.journal : '') +
+          (detail ? ' ' + detail : '');
+        row.appendChild(cb);
+        row.appendChild(span);
+        exportList.appendChild(row);
+      });
+    }
+
+    buildExportList();
+
+    // Hide export panel when search bar is active
     input.addEventListener('input', function () {
       var q = this.value.toLowerCase().trim();
       grid.innerHTML = '';
+      if (exportPanel) exportPanel.style.display = q ? 'none' : 'block';
       if (!q) return;
       var all = papers.concat(readlist);
       var seen = {};
@@ -733,13 +810,31 @@
         grid.appendChild(makePosterCard(p, { showStars: true, noHover: false }));
       });
     });
+
+    if (selectAll) {
+      selectAll.addEventListener('change', function () {
+        var cbs = exportList ? exportList.querySelectorAll('.bib-export-cb') : [];
+        cbs.forEach(function (cb) { cb.checked = selectAll.checked; });
+      });
+    }
+
+    if (exportBtn) {
+      exportBtn.addEventListener('click', function () {
+        var cbs = exportList ? exportList.querySelectorAll('.bib-export-cb:checked') : [];
+        var ids = Array.prototype.map.call(cbs, function (cb) { return cb.value; });
+        var selected = papers.filter(function (p) { return ids.indexOf(p.id) !== -1; });
+        if (selected.length === 0) return;
+        downloadBib(selected);
+      });
+    }
   }
 
   // ---- Stats Page ----
 
-  function parsePages(detail) {
-    if (!detail) return 0;
-    var m = /(\d+)-(\d+)\s*$/.exec(detail.trim());
+  function parsePages(p) {
+    var pages = p.pages || '';
+    if (!pages) return 0;
+    var m = /(\d+)-(\d+)\s*$/.exec(pages.trim());
     if (!m) return 0;
     var start = parseInt(m[1], 10);
     var end = parseInt(m[2], 10);
@@ -754,7 +849,7 @@
       if (!p.date_read) return;
       var key = p.date_read.slice(0, 7); // "YYYY-MM"
       if (!/^\d{4}-\d{2}$/.test(key)) return; // skip placeholders like "2026-XX"
-      var pages = parsePages(p.detail);
+      var pages = parsePages(p);
       if (!(key in monthly)) { monthly[key] = 0; monthOrder.push(key); }
       monthly[key] += pages;
     });

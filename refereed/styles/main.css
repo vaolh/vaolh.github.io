@@ -246,16 +246,21 @@ img{max-width:100%;display:block}
 .export-chip-label{font-size:.78rem;color:#d8d8d8;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
 .export-chip-remove{background:none;border:none;color:#678;cursor:pointer;font-size:.95rem;padding:0 2px;line-height:1;transition:color .15s}
 .export-chip-remove:hover{color:#ff6b35}
-.export-lists-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px}
-.export-lists-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:#678;margin-right:4px}
-.export-list-btn{padding:4px 10px;background:transparent;border:1px solid #2c3440;border-radius:4px;color:#9ab;font-size:.78rem;cursor:pointer;transition:border-color .15s,color .15s}
-.export-list-btn:hover{border-color:#ff6b35;color:#ff6b35}
 .export-actions{display:flex;align-items:center;gap:10px}
 .export-clear-btn{padding:6px 14px;background:transparent;border:1px solid #2c3440;color:#678;border-radius:4px;font-size:.82rem;cursor:pointer;transition:color .15s,border-color .15s}
 .export-clear-btn:hover{color:#d8d8d8;border-color:#9ab}
 .export-download-btn{padding:6px 16px;background:#ff6b35;color:#fff;border:none;border-radius:4px;font-size:.82rem;font-weight:600;cursor:pointer;transition:background .15s}
 .export-download-btn:hover{background:#e05a28}
-.poster-card.export-selected{outline:2px solid #ff6b35;outline-offset:2px}
+.export-card-wrap{position:relative;display:inline-block}
+.export-check-badge{display:none;position:absolute;top:5px;right:5px;width:20px;height:20px;background:#ff6b35;border-radius:50%;color:#fff;font-size:12px;font-weight:700;line-height:20px;text-align:center;pointer-events:none;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.export-card-wrap.export-selected .export-check-badge{display:block}
+.export-addlist-wrap{position:relative}
+.export-addlist-btn{padding:6px 12px;background:transparent;border:1px solid #2c3440;color:#9ab;border-radius:4px;font-size:.82rem;cursor:pointer;transition:color .15s,border-color .15s}
+.export-addlist-btn:hover{color:#d8d8d8;border-color:#9ab}
+.export-addlist-menu{display:none;position:absolute;bottom:calc(100% + 6px);left:0;background:#1b2028;border:1px solid #2c3440;border-radius:6px;min-width:160px;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.5);overflow:hidden}
+.export-addlist-menu.open{display:block}
+.export-addlist-option{display:block;width:100%;text-align:left;padding:8px 14px;background:none;border:none;color:#d8d8d8;font-size:.82rem;cursor:pointer;transition:background .1s}
+.export-addlist-option:hover{background:#2c3440}
 
 /* =============================================
    STATS PAGE

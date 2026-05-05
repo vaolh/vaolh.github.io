@@ -759,7 +759,8 @@
     var queueEmpty   = document.getElementById('export-queue-empty');
     var downloadBtn  = document.getElementById('export-download-btn');
     var clearBtn     = document.getElementById('export-clear-btn');
-    var genreBtns    = document.getElementById('export-genre-btns');
+    var addListBtn   = document.getElementById('export-addlist-btn');
+    var addListMenu  = document.getElementById('export-addlist-menu');
     if (!input || !grid) return;
 
     // selectedIds: ordered set of paper ids queued for export
@@ -815,13 +816,20 @@
       });
 
       // keep selected posters highlighted in results grid
-      var cards = grid.querySelectorAll('.poster-card');
-      cards.forEach(function (card) {
-        var cid = card.getAttribute('data-paper-id');
-        if (cid) {
-          card.classList.toggle('export-selected', selectedIds.indexOf(cid) !== -1);
-        }
+      var cards = grid.querySelectorAll('.export-card-wrap');
+      cards.forEach(function (wrap) {
+        var cid = wrap.getAttribute('data-paper-id');
+        if (cid) wrap.classList.toggle('export-selected', selectedIds.indexOf(cid) !== -1);
       });
+    }
+
+    function toggleQueue(id) {
+      if (selectedIds.indexOf(id) === -1) {
+        selectedIds.push(id);
+      } else {
+        selectedIds = selectedIds.filter(function (x) { return x !== id; });
+      }
+      renderQueue();
     }
 
     function addToQueue(id) {
@@ -837,14 +845,21 @@
     // ----- poster cards with export-click behaviour -----
 
     function makeExportCard(p) {
+      var wrap = document.createElement('div');
+      wrap.className = 'export-card-wrap';
+      wrap.setAttribute('data-paper-id', p.id);
       var card = makePosterCard(p, {
         showStars: true,
         noHover: false,
-        onClick: function () { addToQueue(p.id); }
+        onClick: function () { toggleQueue(p.id); }
       });
-      card.setAttribute('data-paper-id', p.id);
-      if (selectedIds.indexOf(p.id) !== -1) card.classList.add('export-selected');
-      return card;
+      var check = document.createElement('span');
+      check.className = 'export-check-badge';
+      check.innerHTML = '&#10003;';
+      wrap.appendChild(card);
+      wrap.appendChild(check);
+      if (selectedIds.indexOf(p.id) !== -1) wrap.classList.add('export-selected');
+      return wrap;
     }
 
     // ----- search input -----
@@ -865,40 +880,50 @@
       results.forEach(function (p) { grid.appendChild(makeExportCard(p)); });
     });
 
-    // ----- list buttons -----
+    // ----- Add list dropdown -----
 
-    document.querySelectorAll('.export-list-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var list = this.getAttribute('data-list');
-        var toAdd = [];
-        if (list === 'papers')   toAdd = papers;
-        else if (list === 'readlist') toAdd = readlist;
-        else {
-          toAdd = papers.filter(function (p) {
-            return p.genre && p.genre.toLowerCase() === list;
-          });
-        }
-        toAdd.forEach(function (p) { addToQueue(p.id); });
-      });
-    });
-
-    // populate genre buttons
-    if (genreBtns) {
+    function buildAddListMenu() {
+      if (!addListMenu) return;
+      addListMenu.innerHTML = '';
+      var items = [
+        { label: 'All papers', fn: function () { papers.forEach(function (p) { addToQueue(p.id); }); } },
+        { label: 'Read list',  fn: function () { readlist.forEach(function (p) { addToQueue(p.id); }); } }
+      ];
       var genres = {};
       papers.forEach(function (p) { if (p.genre) genres[p.genre.toLowerCase()] = p.genre; });
       Object.keys(genres).sort().forEach(function (g) {
-        var btn = document.createElement('button');
-        btn.className = 'export-list-btn';
-        btn.setAttribute('data-list', g);
-        btn.textContent = genres[g].charAt(0).toUpperCase() + genres[g].slice(1);
-        btn.addEventListener('click', function () {
-          papers.filter(function (p) {
-            return p.genre && p.genre.toLowerCase() === g;
-          }).forEach(function (p) { addToQueue(p.id); });
+        var label = genres[g].charAt(0).toUpperCase() + genres[g].slice(1);
+        items.push({ label: label, fn: (function (genre) {
+          return function () {
+            papers.filter(function (p) { return p.genre && p.genre.toLowerCase() === genre; })
+              .forEach(function (p) { addToQueue(p.id); });
+          };
+        })(g) });
+      });
+      items.forEach(function (item) {
+        var opt = document.createElement('button');
+        opt.className = 'export-addlist-option';
+        opt.textContent = item.label;
+        opt.addEventListener('click', function () {
+          item.fn();
+          addListMenu.classList.remove('open');
         });
-        genreBtns.appendChild(btn);
+        addListMenu.appendChild(opt);
       });
     }
+
+    buildAddListMenu();
+
+    if (addListBtn) {
+      addListBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        addListMenu.classList.toggle('open');
+      });
+    }
+
+    document.addEventListener('click', function () {
+      if (addListMenu) addListMenu.classList.remove('open');
+    });
 
     // ----- clear & download -----
 

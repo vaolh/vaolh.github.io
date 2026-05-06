@@ -151,6 +151,58 @@
     "detail": "68(2), 223-228",
     "poster": "https://vaolh.github.io/refereed/assets/aer.png",
     "pdf": "https://www.jstor.org/stable/1816692"
+  },
+  {
+    "id": "EllingsenMohlinJPE2026",
+    "title": "A Model of Social Duties",
+    "authors": ["Tore Ellingsen", "Erik Mohlin"],
+    "year": 2026,
+    "genre": "microeconomics",
+    "journal": "Journal of Political Economy",
+    "volume": 134,
+    "number": 5,
+    "pages": "000-000",
+    "poster": "https://vaolh.github.io/refereed/assets/EllingsenMohlinJPE2026.webp",
+    "pdf": "https://www.journals.uchicago.edu/doi/abs/10.1086/739834"
+  },
+  {
+    "id": "FehrCharnessJEL2025",
+    "title": "Social Preferences: Fundamental Characteristics and Economic Consequences",
+    "authors": ["Ernst Fehr", "Gary Charness"],
+    "year": 2025,
+    "genre": "microeconomics",
+    "journal": "Journal of Economic Literature",
+    "volume": 63,
+    "number": 2,
+    "pages": "440-514",
+    "poster": "https://vaolh.github.io/refereed/assets/jel.png",
+    "pdf": "https://www.aeaweb.org/articles?id=10.1257/jel.20241391"
+  },
+  {
+  "id": "VerhoogenQJE2008",
+  "title": "Trade, Quality Upgrading, and Wage Inequality in the Mexican Manufacturing Sector",
+  "authors": ["Eric Verhoogen"],
+  "year": 2008,
+  "genre": "microeconomics",
+  "journal": "The Quarterly Journal of Economics",
+  "volume": 123,
+  "number": 2,
+  "pages": "489-530",
+  "poster": "https://vaolh.github.io/refereed/assets/LaneQJE2026.jpeg",
+  "pdf": "https://academic.oup.com/qje/article-abstract/123/2/489/1930844"
+  },
+  {
+    "id": "VerhoogenJEL2023",
+    "title": "Firm-level Upgrading in Developing Countries",
+    "authors": ["Eric Verhoogen"],
+    "year": 2023,
+    "genre": "microeconomics",
+    "journal": "Journal of Economic Literature",
+    "volume": 61,
+    "number": 4,
+    "pages": "1410-1464",
+    "poster": "https://vaolh.github.io/refereed/assets/jel.png",
+    "pdf": "https://www.aeaweb.org/articles?id=10.1257/jel.20221633"
   }
 
 ]

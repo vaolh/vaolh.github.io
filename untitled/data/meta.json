@@ -1,13 +1,13 @@
 {
-  "world_name": "Bredaelwold",
+  "world_name": "Faukiwynia",
   "era": "supercontinent",
   "supercontinent_name": "Supercontinent",
   "supercontinent_slug": "supercontinent",
-  "seed": 7,
+  "seed": 449,
   "mesh_cells": 26000,
   "plate_count": 22,
-  "land_fraction": 0.2684526368394018,
-  "highest_elevation": 2.0653150823107653,
+  "land_fraction": 0.2645449847795721,
+  "highest_elevation": 1.8251058782981346,
   "center_lon": 0.0,
   "center_lat": 8.0
 }

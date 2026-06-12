@@ -3,9 +3,9 @@
 /* The fantasy wiki reuses the shared wiki styling but with a narrower centred
    content column. */
 body {
-    max-width: 600px;
-    margin-left: max(20px, calc((100vw - 600px) / 2));
-    margin-right: max(20px, calc((100vw - 600px) / 2));
+    max-width: 960px;
+    margin-left: max(20px, calc((100vw - 960px) / 2));
+    margin-right: max(20px, calc((100vw - 960px) / 2));
 }
 
 /* Globe palette, matching the millmint factbook line-art aesthetic. The land

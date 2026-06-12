@@ -69,12 +69,9 @@ toggle the flat map, and click the {name} to open its article.</p>
       <span class="vk-loader-text">Loading map&hellip;</span>
     </div>
     <div id="world-map-controls">
-      <button id="wm-btn-reset" class="vk-ctrl-btn" title="Reset view">
-        <span class="navicon">🔄</span></button>
-      <button id="wm-btn-globe" class="vk-ctrl-btn active" title="Toggle globe/map">
-        <span class="navicon">🌐</span></button>
-      <button id="wm-btn-fs" class="vk-ctrl-btn" title="Toggle fullscreen">
-        <span class="navicon">⛶</span></button>
+      <button id="wm-btn-globe" class="vk-ctrl-btn active" title="Toggle globe or flat map">Globe</button>
+      <button id="wm-btn-reset" class="vk-ctrl-btn" title="Reset view">Reset</button>
+      <button id="wm-btn-fs" class="vk-ctrl-btn" title="Toggle fullscreen">Fullscreen</button>
     </div>
   </div>
   <div id="world-map-tooltip"><div class="vkl-popup-inner"></div></div>

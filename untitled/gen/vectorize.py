@@ -3,6 +3,7 @@
 #################################################
 
 import numpy as np
+from scipy import ndimage
 from scipy.spatial import cKDTree
 from skimage import measure
 from shapely.geometry import LineString, Polygon, MultiPolygon, mapping
@@ -54,6 +55,45 @@ def rasterize_idw(tree, values, grid_xyz):
     return sampled.reshape(cfg.grid_height, cfg.grid_width)
 
 
+def keep_supercontinent(land_mask):
+    """Keep the largest connected landmass plus sufficiently large islands.
+
+    Working on the grid mask rather than the mesh removes the faceted Voronoi
+    coastline that nearest-cell rasterising produces. Connected components are
+    labelled and any smaller than the island threshold relative to the largest
+    are flooded, leaving one dominant supercontinent.
+    """
+    labels, count = ndimage.label(land_mask)
+    if count == 0:
+        return land_mask
+    sizes = ndimage.sum(np.ones_like(labels), labels,
+                        index=np.arange(1, count + 1))
+    largest = sizes.max()
+    keep = np.zeros(count + 1, dtype=bool)
+    keep[1:] = sizes >= cfg.island_min_relative_size * largest
+    return keep[labels]
+
+
+def _chaikin(ring):
+    """Round a closed coordinate ring with Chaikin corner cutting.
+
+    Each iteration replaces every edge with two points a quarter and three
+    quarters along it, smoothing the axis-aligned marching-squares steps into
+    natural curves while preserving the overall coastline shape.
+    """
+    points = np.asarray(ring, dtype=np.float64)
+    if points.shape[0] >= 2 and np.allclose(points[0], points[-1]):
+        points = points[:-1]
+    for _ in range(cfg.coastline_smoothing_iterations):
+        following = np.roll(points, -1, axis=0)
+        quarter = 0.75 * points + 0.25 * following
+        three_quarter = 0.25 * points + 0.75 * following
+        points = np.empty((quarter.shape[0] * 2, 2), dtype=np.float64)
+        points[0::2] = quarter
+        points[1::2] = three_quarter
+    return np.vstack((points, points[0]))
+
+
 def _row_to_lat(rows):
     """Map fractional grid rows to latitude in degrees."""
     return -90.0 + rows * (180.0 / (cfg.grid_height - 1))
@@ -79,7 +119,7 @@ def mask_to_multipolygon(mask):
             continue
         lon = _col_to_lon(contour[:, 1])
         lat = _row_to_lat(contour[:, 0])
-        polygon = Polygon(np.column_stack((lon, lat)))
+        polygon = Polygon(_chaikin(np.column_stack((lon, lat))))
         if not polygon.is_valid:
             polygon = polygon.buffer(0)
         if polygon.is_empty or polygon.area == 0.0:

@@ -13,7 +13,8 @@ import config as cfg
 from geometry import fibonacci_sphere, build_adjacency
 from tectonics import simulate
 from names import generate_world_name
-from vectorize import build_grid, rasterize_nearest, mask_to_multipolygon
+from vectorize import (build_grid, rasterize_idw, mask_to_multipolygon,
+                       keep_supercontinent)
 
 ### REPLICATION FILE: generate.py
 ### PYTHON VERSION:   3.13+
@@ -59,8 +60,8 @@ def build_world(seed):
 
     tree = cKDTree(points)
     lon, lat, grid_xyz = build_grid()
-    land_grid = rasterize_nearest(
-        tree, world["is_land"].astype(np.int64), grid_xyz).astype(bool)
+    elevation_grid = rasterize_idw(tree, world["elevation"], grid_xyz)
+    land_grid = keep_supercontinent(elevation_grid > world["sea_level"])
 
     cfg.data_dir.mkdir(parents=True, exist_ok=True)
     land_geometry = mask_to_multipolygon(land_grid)

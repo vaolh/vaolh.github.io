@@ -50,8 +50,9 @@ mesh_neighbours = 7
 ### Number of tectonic plates tessellated across the globe.
 plate_count = 22
 
-### Fraction of total surface area that begins as continental crust.
-continental_area_fraction = 0.34
+### Fraction of total surface area that begins as continental crust. Tuned so
+### the emergent supercontinent covers a Pangaea-like share of the globe.
+continental_area_fraction = 0.27
 
 ### Plateau elevation of continental interior and floor of oceanic crust, in
 ### model units where sea level is zero.
@@ -130,9 +131,10 @@ tectonic_scale_percentile = 98.0
 ### Number of random sinusoidal components summed to form seamless sphere noise.
 noise_components = 48
 
-### Spatial frequency range of those components, in inverse radians.
+### Spatial frequency range of those components, in inverse radians. The upper
+### bound sets how crenulated the coastline becomes with capes and bays.
 noise_frequency_min = 1.5
-noise_frequency_max = 9.0
+noise_frequency_max = 12.0
 
 ### Overall amplitude of the fractal noise relative to elevation units.
 noise_amplitude = 0.32
@@ -180,16 +182,20 @@ elevation_meters_per_unit = 3500
 #################################################
 
 ### Equirectangular grid resolution used to vectorise fields into polygons.
-grid_width = 2048
-grid_height = 1024
+grid_width = 2400
+grid_height = 1200
 
 ### Number of neighbours blended by inverse-distance weighting for the
 ### continuous elevation raster.
-raster_idw_neighbours = 4
+raster_idw_neighbours = 6
+
+### Chaikin corner-cutting iterations applied to each coastline ring to round
+### the marching-squares stair-steps into natural curves.
+coastline_smoothing_iterations = 2
 
 ### Douglas-Peucker simplification tolerance applied to emitted rings, in
-### degrees, to keep geojson compact without visible loss on a globe.
-simplify_tolerance_deg = 0.12
+### degrees, kept small so simplification does not reintroduce angular coasts.
+simplify_tolerance_deg = 0.05
 
 #################################################
 ################ PREVIEW ########################

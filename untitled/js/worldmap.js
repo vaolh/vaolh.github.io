@@ -138,8 +138,7 @@
                 is_globe = !is_globe;
                 map.setProjection({ type: is_globe ? "globe" : "mercator" });
                 this.classList.toggle("active", is_globe);
-                this.querySelector(".navicon").textContent =
-                    is_globe ? "🌐" : "🗺️";
+                this.textContent = is_globe ? "Globe" : "Flat map";
             });
 
         document.getElementById("wm-btn-fs").addEventListener("click",
@@ -188,13 +187,8 @@
 
         map.on("load", function () {
             map.setProjection({ type: "globe" });
-            map.setSky({
-                "sky-color": "rgba(0,0,0,0)",
-                "horizon-color": "rgba(0,0,0,0)",
-                "fog-color": "rgba(0,0,0,0)",
-                "atmosphere-blend": [
-                    "interpolate", ["linear"], ["zoom"], 0, 0, 8, 0]
-            });
+            /* Disable the globe atmosphere entirely so there is no blue halo. */
+            map.setSky({ "atmosphere-blend": 0 });
 
             map.addSource("graticule", { type: "geojson", data: graticule() });
             map.addLayer({ id: "graticule-line", type: "line",

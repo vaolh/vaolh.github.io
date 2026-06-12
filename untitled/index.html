@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seises</title>
+<link rel="stylesheet" href="css/world.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script></head>
+<body>
+<h1>Seises</h1>
+
+<p><b>Seises</b> is the world of an unnamed fantasy setting, shown
+here in its <b>supercontinent era</b>. Its land is gathered into a single
+landmass, the <b>Supercontinent</b>, assembled by a simulated system of
+22 tectonic plates. Drag to spin the globe, scroll to zoom,
+toggle the flat map, and click the Supercontinent to open its article.</p>
+
+<div id="world-map-outer">
+  <div id="world-map-wrap">
+    <div id="world-map"></div>
+    <div id="world-map-loader">
+      <div class="vk-loader-spinner"></div>
+      <span class="vk-loader-text">Loading map&hellip;</span>
+    </div>
+    <div id="world-map-controls">
+      <button id="wm-btn-reset" class="vk-ctrl-btn" title="Reset view">
+        <span class="navicon">🔄</span></button>
+      <button id="wm-btn-globe" class="vk-ctrl-btn active" title="Toggle globe/map">
+        <span class="navicon">🌐</span></button>
+      <button id="wm-btn-fs" class="vk-ctrl-btn" title="Toggle fullscreen">
+        <span class="navicon">⛶</span></button>
+    </div>
+  </div>
+  <div id="world-map-tooltip"><div class="vkl-popup-inner"></div></div>
+</div>
+
+<script src="js/worldmap.js"></script>
+</body></html>

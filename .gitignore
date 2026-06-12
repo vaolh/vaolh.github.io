@@ -5,6 +5,7 @@ docs/.DS_Store
 .DS_Store
 docs/.DS_Store
 .DS_Store
+.venv/
 __pycache__/
 .DS_Store
 docs/.DS_Store

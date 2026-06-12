@@ -1,0 +1,13 @@
+{
+  "world_name": "Seises",
+  "era": "supercontinent",
+  "supercontinent_name": "Supercontinent",
+  "supercontinent_slug": "supercontinent",
+  "seed": 7,
+  "mesh_cells": 12000,
+  "plate_count": 22,
+  "land_fraction": 0.3655833333333333,
+  "highest_elevation": 2.105542735323273,
+  "center_lon": 0.0,
+  "center_lat": 8.0
+}

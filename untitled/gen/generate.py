@@ -69,7 +69,11 @@ def build_world(seed):
         land_geometry,
         {"name": cfg.supercontinent_name, "slug": cfg.supercontinent_slug})])
 
-    land_fraction = float(np.mean(world["is_land"]))
+    ### Report the area-weighted land share of the displayed continent, since
+    ### the equirectangular grid over-represents the poles.
+    row_weight = np.cos(np.radians(lat))[:, None]
+    land_fraction = float((land_grid * row_weight).sum()
+                          / (row_weight.sum() * cfg.grid_width))
     meta = {
         "world_name": world_name,
         "era": "supercontinent",

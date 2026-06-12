@@ -56,21 +56,23 @@ def rasterize_idw(tree, values, grid_xyz):
 
 
 def keep_supercontinent(land_mask):
-    """Keep the largest connected landmass plus sufficiently large islands.
+    """Keep the largest connected landmass plus only small offshore islands.
 
     Working on the grid mask rather than the mesh removes the faceted Voronoi
-    coastline that nearest-cell rasterising produces. Connected components are
-    labelled and any smaller than the island threshold relative to the largest
-    are flooded, leaving one dominant supercontinent.
+    coastline that nearest-cell rasterising produces. The largest component is
+    the supercontinent; secondary components survive only if small enough to be
+    islands, so any rival continent is flooded and one landmass remains.
     """
     labels, count = ndimage.label(land_mask)
     if count == 0:
         return land_mask
     sizes = ndimage.sum(np.ones_like(labels), labels,
                         index=np.arange(1, count + 1))
+    largest_index = int(np.argmax(sizes)) + 1
     largest = sizes.max()
     keep = np.zeros(count + 1, dtype=bool)
-    keep[1:] = sizes >= cfg.island_min_relative_size * largest
+    keep[1:] = sizes <= cfg.island_max_relative_size * largest
+    keep[largest_index] = True
     return keep[labels]
 
 

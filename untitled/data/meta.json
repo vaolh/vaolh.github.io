@@ -1,13 +1,13 @@
 {
-  "world_name": "Seises",
+  "world_name": "Bredaelwold",
   "era": "supercontinent",
   "supercontinent_name": "Supercontinent",
   "supercontinent_slug": "supercontinent",
   "seed": 7,
-  "mesh_cells": 12000,
+  "mesh_cells": 26000,
   "plate_count": 22,
-  "land_fraction": 0.30283333333333334,
-  "highest_elevation": 2.1577496930972337,
+  "land_fraction": 0.2684526368394018,
+  "highest_elevation": 2.0653150823107653,
   "center_lon": 0.0,
   "center_lat": 8.0
 }

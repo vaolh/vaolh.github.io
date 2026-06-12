@@ -4,8 +4,8 @@
 
    Interactive viewer for the supercontinent, built to match the aesthetic of
    the millmint factbook globe: a MapLibre GL line-art globe that toggles to a
-   flat mercator map, with a graticule, a dashed equator, a ring around the
-   globe edge, and a single clickable landmass that highlights on hover and
+   flat mercator map, with a graticule, a dashed equator, and a single
+   clickable landmass that highlights on hover and
    links to its wiki article. */
 
 (function () {
@@ -49,33 +49,6 @@
             }
         }
         return { type: "FeatureCollection", features: features };
-    }
-
-    /* Draw the thin ring around the globe edge on its own canvas overlay. */
-    function attach_ring(map) {
-        const wrap = document.getElementById(map_id + "-wrap");
-        const canvas = document.createElement("canvas");
-        canvas.style.cssText =
-            "position:absolute;inset:0;pointer-events:none;z-index:5;";
-        wrap.appendChild(canvas);
-        map.on("render", function () {
-            const width = wrap.clientWidth;
-            const height = wrap.clientHeight;
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext("2d");
-            ctx.clearRect(0, 0, width, height);
-            if (!is_globe) {
-                return;
-            }
-            let radius = (512 * Math.pow(2, map.getZoom())) / (2 * Math.PI);
-            radius = Math.min(radius, Math.min(width, height) / 2 - 1);
-            ctx.beginPath();
-            ctx.arc(width / 2, height / 2, radius, 0, Math.PI * 2);
-            ctx.strokeStyle = highlight;
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-        });
     }
 
     /* Show the popup anchored at a geographic point with a link to the article. */
@@ -228,7 +201,6 @@
         });
 
         map.on("render", function () { reposition_popup(map); });
-        attach_ring(map);
         attach_controls(map);
         watch_theme(map);
     }

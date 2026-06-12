@@ -247,19 +247,22 @@ def connected_components(point_count, edges, is_land):
 
 
 def enforce_supercontinent(point_count, edges, is_land):
-    """Keep one supercontinent plus only sufficiently large islands.
+    """Keep one supercontinent plus only small offshore islands.
 
-    The largest land component is the supercontinent. Any other component
-    smaller than the island threshold relative to it is flooded, guaranteeing a
-    single dominant landmass surrounded by at most a few islands.
+    The largest land component is the supercontinent. Secondary components are
+    kept only if they are small enough to read as islands; anything larger but
+    short of the main mass is flooded, so a seed that would otherwise split into
+    rival continents still yields a single supercontinent.
     """
     labels = connected_components(point_count, edges, is_land)
     land_labels = labels[labels >= 0]
     if land_labels.size == 0:
         return is_land
     unique, counts = np.unique(land_labels, return_counts=True)
+    largest_label = unique[np.argmax(counts)]
     largest = counts.max()
-    keep = set(unique[counts >= cfg.island_min_relative_size * largest])
+    keep = set(unique[counts <= cfg.island_max_relative_size * largest])
+    keep.add(largest_label)
     return np.array([label in keep for label in labels])
 
 

@@ -38,7 +38,7 @@ default_seed = 7
 
 ### Number of Fibonacci mesh cells sampled on the unit sphere. Higher values
 ### produce finer coastlines at the cost of generation time.
-mesh_cells = 12000
+mesh_cells = 26000
 
 ### Number of nearest neighbours used to approximate the mesh adjacency graph.
 mesh_neighbours = 7
@@ -52,7 +52,7 @@ plate_count = 22
 
 ### Fraction of total surface area that begins as continental crust. Tuned so
 ### the emergent supercontinent covers a Pangaea-like share of the globe.
-continental_area_fraction = 0.27
+continental_area_fraction = 0.25
 
 ### Plateau elevation of continental interior and floor of oceanic crust, in
 ### model units where sea level is zero.
@@ -62,7 +62,7 @@ oceanic_base_elevation = -0.55
 ### Number of neighbour-averaging passes that smooth the continental indicator
 ### into a continentality field, so the coastline ramps across the crust margin
 ### rather than snapping to the polygonal plate boundary.
-continentality_smoothing_passes = 2
+continentality_smoothing_passes = 3
 
 ### Range of plate angular speeds (model units per step) drawn per plate.
 plate_speed_min = 0.20
@@ -83,7 +83,7 @@ supercontinent_bias_width = 45.0
 
 ### Peak amplitude of that broad uplift in elevation units. Kept subtle so it
 ### raises the continental interior without lifting open ocean into land.
-supercontinent_bias_amplitude = 0.12
+supercontinent_bias_amplitude = 0.18
 
 ### Display name and article slug for the single landmass of the present era.
 supercontinent_name = "Supercontinent"
@@ -129,15 +129,15 @@ tectonic_scale_percentile = 98.0
 #################################################
 
 ### Number of random sinusoidal components summed to form seamless sphere noise.
-noise_components = 48
+noise_components = 72
 
 ### Spatial frequency range of those components, in inverse radians. The upper
 ### bound sets how crenulated the coastline becomes with capes and bays.
 noise_frequency_min = 1.5
-noise_frequency_max = 12.0
+noise_frequency_max = 18.0
 
 ### Overall amplitude of the fractal noise relative to elevation units.
-noise_amplitude = 0.32
+noise_amplitude = 0.38
 
 #################################################
 ################ SEA LEVEL ######################
@@ -148,9 +148,11 @@ noise_amplitude = 0.32
 ### stays above it and the deep ocean floor stays below it.
 sea_level = 0.0
 
-### Minimum size of a detached land component, as a fraction of the largest
-### component, for it to survive as an island rather than be flooded.
-island_min_relative_size = 0.012
+### Maximum size of a secondary land component, as a fraction of the largest,
+### for it to be kept as an offshore island. Components larger than this but
+### smaller than the main mass are flooded, so the result is always one
+### supercontinent surrounded by at most small islands.
+island_max_relative_size = 0.03
 
 #################################################
 ################ ELEVATION CLASSES ##############
@@ -191,7 +193,7 @@ raster_idw_neighbours = 6
 
 ### Chaikin corner-cutting iterations applied to each coastline ring to round
 ### the marching-squares stair-steps into natural curves.
-coastline_smoothing_iterations = 2
+coastline_smoothing_iterations = 3
 
 ### Douglas-Peucker simplification tolerance applied to emitted rings, in
 ### degrees, kept small so simplification does not reintroduce angular coasts.

@@ -1,12 +1,11 @@
 @import url("/assets/css/wiki.css");
 
-/* The fantasy wiki reuses the shared wiki styling but with Wikipedia-like
-   margins: the content is left-aligned with a small left margin rather than a
-   narrow column centred in wide gutters. */
+/* The fantasy wiki reuses the shared wiki styling but with a narrower centred
+   content column. */
 body {
-    max-width: 1080px;
-    margin-left: 2.5rem;
-    margin-right: auto;
+    max-width: 600px;
+    margin-left: max(20px, calc((100vw - 600px) / 2));
+    margin-right: max(20px, calc((100vw - 600px) / 2));
 }
 
 /* Globe palette, matching the millmint factbook line-art aesthetic. The land

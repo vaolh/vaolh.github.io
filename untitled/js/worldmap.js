@@ -1,12 +1,11 @@
 /* REPLICATION FILE: worldmap.js
-   JS RUNTIME:       browser, maplibre-gl v4
-   LAST EDIT:        2026-06-11 by vao2116
+   JS RUNTIME:       browser, maplibre-gl v5
+   LAST EDIT:        2026-06-12 by vao2116
 
-   Interactive viewer for the supercontinent, built to match the aesthetic of
-   the millmint factbook globe: a MapLibre GL line-art globe that toggles to a
-   flat mercator map, with a graticule, a dashed equator, and a single
-   clickable landmass that highlights on hover and
-   links to its wiki article. */
+   Interactive viewer for the world, in the aesthetic of the millmint factbook
+   globe: a MapLibre GL globe of green continents on a blue ocean with white
+   polar ice, that toggles to a flat mercator map. Each continent is a clickable
+   feature that highlights on hover and links to its wiki article. */
 
 (function () {
     "use strict";
@@ -25,9 +24,16 @@
         return value || fallback;
     }
 
-    let highlight = css_color("--wm-highlight", "#0055cc");
-    let land_fill = css_color("--wm-land", "#f5f5f5");
-    let highlight_fill = css_color("--wm-highlight-bg", "rgba(0,85,204,0.16)");
+    let highlight = css_color("--wm-highlight", "#3a72ad");
+    let land_fill = css_color("--wm-land", "#d6e8bf");
+    let highlight_fill = css_color("--wm-highlight-bg", "rgba(58,114,173,0.3)");
+    let ocean_fill = css_color("--wm-ocean", "#bcd6ec");
+    let ice_fill = css_color("--wm-ice", "#ffffff");
+
+    /* Latitudes poleward of which white ice is drawn: a small arctic sea-ice cap
+       in the north and a larger cap covering the antarctic continent. */
+    const arctic_ice_latitude = 74;
+    const antarctic_ice_latitude = 66;
 
     let meta = null;
     let is_globe = true;
@@ -49,6 +55,22 @@
             }
         }
         return { type: "FeatureCollection", features: features };
+    }
+
+    /* Return a polar ice cap as one polygon: a circle at the edge latitude
+       closed by a line just shy of the pole, which renders on the globe where a
+       ring through the exact pole would not. */
+    function _ice_cap(edge_lat, near_pole) {
+        const steps = 120;
+        const top = [];
+        const bottom = [];
+        for (let i = 0; i <= steps; i++) {
+            const lon = -179 + 358 * i / steps;
+            top.push([lon, edge_lat]);
+            bottom.push([-179 + 358 * (steps - i) / steps, near_pole]);
+        }
+        return { type: "Feature", geometry: { type: "Polygon",
+            coordinates: [top.concat(bottom, [top[0]])] } };
     }
 
     /* Show the popup anchored at a geographic point with a link to the article. */
@@ -126,10 +148,18 @@
     /* React to colour-scheme changes so the globe matches the active theme. */
     function watch_theme(map) {
         const apply = function () {
-            highlight = css_color("--wm-highlight", "#0055cc");
-            land_fill = css_color("--wm-land", "#f5f5f5");
+            highlight = css_color("--wm-highlight", "#3a72ad");
+            land_fill = css_color("--wm-land", "#d6e8bf");
             highlight_fill = css_color("--wm-highlight-bg",
-                                       "rgba(0,85,204,0.16)");
+                                       "rgba(58,114,173,0.3)");
+            ocean_fill = css_color("--wm-ocean", "#bcd6ec");
+            ice_fill = css_color("--wm-ice", "#ffffff");
+            if (map.getLayer("ocean-fill")) {
+                map.setPaintProperty("ocean-fill", "fill-color", ocean_fill);
+            }
+            if (map.getLayer("ice-fill")) {
+                map.setPaintProperty("ice-fill", "fill-color", ice_fill);
+            }
             ["graticule-line", "equator-line", "land-line"].forEach(
                 function (id) {
                     if (map.getLayer(id)) {
@@ -144,6 +174,11 @@
 
     /* Build the map once the metadata and library are ready. */
     function init() {
+        /* Allow the page to open straight into the flat map with #flat. */
+        if (window.location.hash === "#flat") {
+            is_globe = false;
+        }
+
         const map = new maplibregl.Map({
             container: map_id,
             attributionControl: false,
@@ -154,14 +189,25 @@
                 layers: [{ id: "space", type: "background",
                            paint: { "background-color": "rgba(0,0,0,0)" } }]
             },
-            center: [meta.center_lon, meta.center_lat],
-            zoom: reset_zoom, dragRotate: false, minZoom: 0, maxZoom: 20
+            center: is_globe ? [meta.center_lon, meta.center_lat] : [0, -10],
+            zoom: is_globe ? reset_zoom : 0.2,
+            dragRotate: false, minZoom: 0, maxZoom: 20
         });
 
         map.on("load", function () {
-            map.setProjection({ type: "globe" });
+            map.setProjection({ type: is_globe ? "globe" : "mercator" });
             /* Disable the globe atmosphere entirely so there is no blue halo. */
             map.setSky({ "atmosphere-blend": 0 });
+
+            /* Ocean fills the whole sphere; the transparent space layer lets the
+               page background show outside the globe. */
+            map.addSource("ocean", { type: "geojson", data: {
+                type: "FeatureCollection", features: [{ type: "Feature",
+                    geometry: { type: "Polygon", coordinates: [[
+                        [-180, -90], [180, -90], [180, 90], [-180, 90],
+                        [-180, -90]]] } }] } });
+            map.addLayer({ id: "ocean-fill", type: "fill", source: "ocean",
+                paint: { "fill-color": ocean_fill } });
 
             map.addSource("graticule", { type: "geojson", data: graticule() });
             map.addLayer({ id: "graticule-line", type: "line",
@@ -190,6 +236,15 @@
                         paint: { "line-color": highlight, "line-width": [
                             "interpolate", ["linear"], ["zoom"],
                             2, 0.9, 6, 1.6, 10, 2.2] } });
+
+                    /* White polar ice caps drawn over both land and sea. */
+                    map.addSource("ice", { type: "geojson", data: {
+                        type: "FeatureCollection", features: [
+                            _ice_cap(arctic_ice_latitude, 89.9),
+                            _ice_cap(-antarctic_ice_latitude, -89.9)] } });
+                    map.addLayer({ id: "ice-fill", type: "fill", source: "ice",
+                        paint: { "fill-color": ice_fill } });
+
                     refresh_fill(map);
                     attach_interaction(map);
 

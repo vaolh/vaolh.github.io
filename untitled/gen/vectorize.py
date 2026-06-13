@@ -55,25 +55,68 @@ def rasterize_idw(tree, values, grid_xyz):
     return sampled.reshape(cfg.grid_height, cfg.grid_width)
 
 
-def keep_supercontinent(land_mask):
-    """Keep the largest connected landmass plus only small offshore islands.
+def keep_landmasses(land_mask):
+    """Flood land components that should not survive for the active mode.
 
     Working on the grid mask rather than the mesh removes the faceted Voronoi
-    coastline that nearest-cell rasterising produces. The largest component is
-    the supercontinent; secondary components survive only if small enough to be
-    islands, so any rival continent is flooded and one landmass remains.
+    coastline that nearest-cell rasterising produces. In supercontinent mode the
+    largest mass plus small islands are kept; in continents mode every component
+    above a small relative size is kept, leaving several distinct continents.
     """
     labels, count = ndimage.label(land_mask)
     if count == 0:
         return land_mask
     sizes = ndimage.sum(np.ones_like(labels), labels,
                         index=np.arange(1, count + 1))
-    largest_index = int(np.argmax(sizes)) + 1
     largest = sizes.max()
     keep = np.zeros(count + 1, dtype=bool)
-    keep[1:] = sizes <= cfg.island_max_relative_size * largest
-    keep[largest_index] = True
+    if cfg.world_mode == "continents":
+        keep[1:] = sizes >= cfg.continent_min_relative_size * largest
+    else:
+        keep[1:] = sizes <= cfg.island_max_relative_size * largest
+        keep[int(np.argmax(sizes)) + 1] = True
     return keep[labels]
+
+
+def label_landmasses(land_mask):
+    """Return per-component masks ordered from largest to smallest.
+
+    Each surviving connected landmass becomes its own mask so it can be
+    vectorised into a separately named, separately clickable continent.
+    """
+    labels, count = ndimage.label(land_mask)
+    if count == 0:
+        return []
+    sizes = ndimage.sum(np.ones_like(labels), labels,
+                        index=np.arange(1, count + 1))
+    order = np.argsort(sizes)[::-1] + 1
+    return [labels == component for component in order]
+
+
+### Latitude used to close polar polygons, just shy of the pole so the ring does
+### not contain the pole singularity that breaks globe rendering.
+near_pole_lat = 89.9
+
+
+def build_polar_cap(rng):
+    """Return a south-polar continent as one polygon closed near the pole.
+
+    The wavy coast is a periodic function of longitude so it joins across the
+    antimeridian, and the ring is closed by a densely sampled line at -89.9
+    degrees rather than the exact pole. This is how a real circum-polar landmass
+    such as Antarctica is encoded, and it renders correctly on the globe.
+    """
+    longitudes = np.linspace(-179.0, 179.0, 181)
+    coast = np.full_like(longitudes, cfg.antarctica_coast_lat)
+    for harmonic in range(1, cfg.antarctica_harmonics + 1):
+        amplitude = cfg.antarctica_coast_roughness * rng.uniform(0.2, 1.0) \
+            / harmonic
+        phase = rng.uniform(0.0, 2.0 * np.pi)
+        coast += amplitude * np.sin(harmonic * np.radians(longitudes) + phase)
+    coast[-1] = coast[0]
+    top = list(zip(longitudes, coast))
+    bottom = [(lon, -near_pole_lat) for lon in longitudes[::-1]]
+    return Polygon(top + bottom + [top[0]])
 
 
 def _chaikin(ring):
@@ -126,7 +169,11 @@ def mask_to_multipolygon(mask):
             polygon = polygon.buffer(0)
         if polygon.is_empty or polygon.area == 0.0:
             continue
-        rings.append(polygon)
+        ### Smoothing can make a ring self-intersect, in which case buffer(0)
+        ### returns several polygons; treat each part as its own ring.
+        parts = (polygon.geoms if polygon.geom_type == "MultiPolygon"
+                 else [polygon])
+        rings.extend(parts)
     if not rings:
         return None
 
@@ -155,6 +202,8 @@ def mask_to_multipolygon(mask):
         holes = [rings[hole].exterior.coords for hole in parent.get(index, [])]
         shells.append(Polygon(ring.exterior.coords, holes))
 
+    if not shells:
+        return None
     geometry = MultiPolygon(shells) if len(shells) > 1 else shells[0]
     return geometry.simplify(cfg.simplify_tolerance_deg)
 

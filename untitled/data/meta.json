@@ -1,13 +1,43 @@
 {
-  "world_name": "Faukiwynia",
-  "era": "supercontinent",
-  "supercontinent_name": "Supercontinent",
-  "supercontinent_slug": "supercontinent",
-  "seed": 449,
+  "world_name": "Reinufyodoria",
+  "era": "continents",
+  "seed": 7,
   "mesh_cells": 26000,
-  "plate_count": 22,
-  "land_fraction": 0.2645449847795721,
-  "highest_elevation": 1.8251058782981346,
+  "plate_count": 44,
+  "land_fraction": 0.3272370912573763,
+  "highest_elevation": 1.8364898497433244,
   "center_lon": 0.0,
-  "center_lat": 8.0
+  "center_lat": 8.0,
+  "landmasses": [
+    {
+      "name": "Draulyothal",
+      "slug": "draulyothal",
+      "land_fraction": 0.13739193011861006
+    },
+    {
+      "name": "Akrin",
+      "slug": "akrin",
+      "land_fraction": 0.05567926656549439
+    },
+    {
+      "name": "Vheikyorn",
+      "slug": "vheikyorn",
+      "land_fraction": 0.04474857673077985
+    },
+    {
+      "name": "Phadrauzaes",
+      "slug": "phadrauzaes",
+      "land_fraction": 0.023872589340156382
+    },
+    {
+      "name": "Reikiadreir",
+      "slug": "reikiadreir",
+      "land_fraction": 0.014941751651919086
+    },
+    {
+      "name": "Antarctica",
+      "slug": "antarctica",
+      "land_fraction": 0.05060297685041654
+    }
+  ]
 }

@@ -8,14 +8,15 @@ import config as cfg
 
 ### REPLICATION FILE: build_pages.py
 ### PYTHON VERSION:   3.13+
-### LAST EDIT:        2026-06-11 by vao2116
+### LAST EDIT:        2026-06-12 by vao2116
 
 """Generation of the wiki shell from the world metadata.
 
-The world home page embeds the interactive MapLibre globe and the single
-supercontinent is the only clickable feature, linking to its article. Pages
-reuse the shared wiki styling through ``css/world.css`` so the map, the index
-and the article form a navigable wiki in the millmint factbook style.
+The world home page embeds the interactive MapLibre globe; every landmass is a
+clickable feature linking to its article, and one stub article is written per
+landmass. Pages reuse the shared wiki styling through ``css/world.css`` so the
+map, the index and the articles form a navigable wiki in the millmint factbook
+style.
 """
 
 ### Pinned MapLibre GL build used by the globe viewer. Version 5 is required for
@@ -48,18 +49,22 @@ def _head(title, css_prefix, extra=""):
 
 
 def build_index(meta):
-    """Write the world home page with the embedded globe."""
+    """Write the world home page with the embedded globe and continent index."""
     extra = (f'<link rel="stylesheet" href="{maplibre_css}">\n'
              f'<script src="{maplibre_js}"></script>')
-    name = meta["supercontinent_name"]
+    landmasses = meta["landmasses"]
+    links = "\n".join(
+        f'<div><a href="wiki/{land["slug"]}.html">{land["name"]}</a></div>'
+        for land in landmasses)
+    count = len(landmasses)
     html = _head(meta["world_name"], "", extra)
     html += f"""<h1>{meta['world_name']}</h1>
 
-<p><b>{meta['world_name']}</b> is the world of an unnamed fantasy setting, shown
-here in its <b>supercontinent era</b>. Its land is gathered into a single
-landmass, the <b>{name}</b>, assembled by a simulated system of
-{meta['plate_count']} tectonic plates. Drag to spin the globe, scroll to zoom,
-toggle the flat map, and click the {name} to open its article.</p>
+<p><b>{meta['world_name']}</b> is the world of an unnamed fantasy setting. Its
+surface is shaped by a simulated system of {meta['plate_count']} tectonic plates
+whose collisions raise mountain belts and whose drift carries the
+{count} continents across the globe. Drag to spin the globe, scroll to zoom,
+toggle the flat map, and click a continent to open its article.</p>
 
 <div id="world-map-outer">
   <div id="world-map-wrap">
@@ -77,55 +82,56 @@ toggle the flat map, and click the {name} to open its article.</p>
   <div id="world-map-tooltip"><div class="vkl-popup-inner"></div></div>
 </div>
 
+<h2>Continents</h2>
+<div class="nation-list">
+{links}
+</div>
+
 <script src="js/worldmap.js"></script>
 </body></html>
 """
     (cfg.project_dir / "index.html").write_text(html)
 
 
-def build_article(meta):
-    """Write the single supercontinent article with a geography infobox."""
+def build_articles(meta):
+    """Write one stub article per landmass with a geography infobox."""
     wiki_dir = cfg.project_dir / "wiki"
     wiki_dir.mkdir(parents=True, exist_ok=True)
-    name = meta["supercontinent_name"]
-    html = _head(f"{name} – {meta['world_name']}", "../")
-    html += f"""<h1>{name}</h1>
+    for land in meta["landmasses"]:
+        name = land["name"]
+        share = land["land_fraction"]
+        html = _head(f"{name} – {meta['world_name']}", "../")
+        html += f"""<h1>{name}</h1>
 
 <div class="infobox">
 <div class="infobox-title">{name}</div>
 <div class="infobox-section">Geography</div>
 <table><tbody>
 <tr><th>World</th><td><a href="../index.html">{meta['world_name']}</a></td></tr>
-<tr><th>Era</th><td>Supercontinent</td></tr>
-<tr><th>Land area</th><td>{_land_km2(meta['land_fraction']):,} km&sup2;</td></tr>
-<tr><th>Share of globe</th><td>{round(meta['land_fraction'] * 100)}%</td></tr>
-<tr><th>Highest point</th><td>{_meters(meta['highest_elevation']):,} m</td></tr>
-<tr><th>Tectonic plates</th><td>{meta['plate_count']}</td></tr>
+<tr><th>Type</th><td>Continent</td></tr>
+<tr><th>Area</th><td>{_land_km2(share):,} km&sup2;</td></tr>
+<tr><th>Share of globe</th><td>{round(share * 100, 1)}%</td></tr>
 </tbody></table>
 </div>
 
-<p>The <b>{name}</b> is the single landmass of {meta['world_name']} during its
-supercontinent era. It covers roughly {round(meta['land_fraction'] * 100)}% of
-the planet's surface and was assembled by the convergence of
-{meta['plate_count']} tectonic plates, whose collisions raised its mountain
-belts and whose interior it now binds into one contiguous mass. Its highest
-summit reaches about {_meters(meta['highest_elevation']):,} m above sea level.</p>
-
-<p>This article is a stub. In later eras the {name} will rift apart into separate
-continents, the stage on which the history of {meta['world_name']} unfolds.</p>
+<p><b>{name}</b> is a continent of {meta['world_name']}, one of
+{len(meta['landmasses'])} landmasses on a world shaped by {meta['plate_count']}
+drifting tectonic plates. It covers roughly {round(share * 100, 1)}% of the
+planet's surface. This article is a stub awaiting its geography, peoples and
+history.</p>
 
 <p><a href="../index.html">&larr; Back to the map of {meta['world_name']}</a></p>
 </body></html>
 """
-    (wiki_dir / f"{meta['supercontinent_slug']}.html").write_text(html)
+        (wiki_dir / f"{land['slug']}.html").write_text(html)
 
 
 def main():
-    """Build the index and the supercontinent article from the metadata."""
+    """Build the index and one article per landmass from the metadata."""
     meta = json.loads((cfg.data_dir / "meta.json").read_text())
     build_index(meta)
-    build_article(meta)
-    print("built index.html and the supercontinent article")
+    build_articles(meta)
+    print(f"built index.html and {len(meta['landmasses'])} articles")
 
 
 if __name__ == "__main__":

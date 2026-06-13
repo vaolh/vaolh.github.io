@@ -32,6 +32,10 @@ preview_dir = data_dir / "previews"
 ### Default master seed; override on the command line to explore alternatives.
 default_seed = 7
 
+### Generation mode. "supercontinent" gathers all land into one Pangaea-like
+### mass; "continents" scatters several Earth-like continents with a polar cap.
+world_mode = "continents"
+
 #################################################
 ################ SPHERE MESH ####################
 #################################################
@@ -48,11 +52,11 @@ mesh_neighbours = 7
 #################################################
 
 ### Number of tectonic plates tessellated across the globe.
-plate_count = 22
+plate_count = 44
 
 ### Fraction of total surface area that begins as continental crust. Tuned so
 ### the emergent supercontinent covers a Pangaea-like share of the globe.
-continental_area_fraction = 0.25
+continental_area_fraction = 0.18
 
 ### Plateau elevation of continental interior and floor of oceanic crust, in
 ### model units where sea level is zero.
@@ -62,7 +66,7 @@ oceanic_base_elevation = -0.55
 ### Number of neighbour-averaging passes that smooth the continental indicator
 ### into a continentality field, so the coastline ramps across the crust margin
 ### rather than snapping to the polygonal plate boundary.
-continentality_smoothing_passes = 3
+continentality_smoothing_passes = 2
 
 ### Range of plate angular speeds (model units per step) drawn per plate.
 plate_speed_min = 0.20
@@ -88,6 +92,53 @@ supercontinent_bias_amplitude = 0.18
 ### Display name and article slug for the single landmass of the present era.
 supercontinent_name = "Supercontinent"
 supercontinent_slug = "supercontinent"
+
+#################################################
+################ CONTINENTS #####################
+#################################################
+
+### Number of separate non-polar continents grown in continents mode.
+continent_count = 6
+
+### Bounds within which continent cratons are seeded, in degrees, kept clear of
+### the antimeridian and poles so coastline extraction stays seam-free.
+craton_lon_min = -150.0
+craton_lon_max = 150.0
+craton_lat_min = -55.0
+craton_lat_max = 65.0
+
+### Minimum angular separation enforced between craton centres, in degrees, so
+### continents do not merge into one mass.
+craton_min_separation = 42.0
+
+### Spread of continent target sizes. Each craton's share of the continental
+### area is drawn from this range before normalisation, giving Earth-like
+### variety from large continents down to small ones.
+continent_size_min = 0.4
+continent_size_max = 1.8
+
+### Minimum size of a kept landmass, as a fraction of the largest continent, so
+### tiny specks are flooded while genuine continents and islands survive.
+continent_min_relative_size = 0.02
+
+#################################################
+################ ANTARCTICA #####################
+#################################################
+
+### Whether a polar ice continent is placed at the south pole.
+include_antarctica = True
+
+### Mean latitude of the antarctic coastline and the amplitude of its waviness,
+### in degrees.
+antarctica_coast_lat = -64.0
+antarctica_coast_roughness = 7.0
+
+### Number of periodic harmonics shaping the antarctic coastline.
+antarctica_harmonics = 9
+
+### Display name and article slug for the polar continent.
+antarctica_name = "Antarctica"
+antarctica_slug = "antarctica"
 
 #################################################
 ################ TECTONIC FORCING ###############

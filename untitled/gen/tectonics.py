@@ -54,16 +54,59 @@ def plate_adjacency(plate_id, edges):
     return adjacency
 
 
+def _grow_region(continental, adjacency, cells_per_plate, seed_to_center,
+                 target):
+    """Grow a contiguous continental block from its nearest free plate.
+
+    Starting at the unclaimed plate closest to a craton centre, neighbouring
+    plates are annexed in order of proximity to that centre until the block
+    reaches its target area, keeping each continent compact and contiguous.
+    """
+    free = [plate for plate in np.argsort(seed_to_center)
+            if not continental[plate]]
+    if not free:
+        return
+    nucleus = free[0]
+    continental[nucleus] = True
+    accumulated = cells_per_plate[nucleus]
+    frontier = {p for p in adjacency[nucleus] if not continental[p]}
+    while accumulated < target and frontier:
+        candidate = min(frontier, key=lambda plate: seed_to_center[plate])
+        continental[candidate] = True
+        accumulated += cells_per_plate[candidate]
+        frontier.discard(candidate)
+        frontier.update(p for p in adjacency[candidate] if not continental[p])
+
+
+def _craton_centers(rng):
+    """Return spread-out craton centres within the seeding bounds.
+
+    Centres are rejection-sampled so that every pair is at least the minimum
+    separation apart, which keeps the resulting continents distinct rather than
+    fused into one landmass.
+    """
+    separation = np.radians(cfg.craton_min_separation)
+    centers = []
+    attempts = 0
+    while len(centers) < cfg.continent_count and attempts < 2000:
+        attempts += 1
+        candidate = lonlat_to_xyz(
+            rng.uniform(cfg.craton_lon_min, cfg.craton_lon_max),
+            rng.uniform(cfg.craton_lat_min, cfg.craton_lat_max))[0]
+        if all(angular_distance(np.array([existing]), candidate)[0] > separation
+               for existing in centers):
+            centers.append(candidate)
+    return np.array(centers)
+
+
 def assign_plates(points, edges, rng):
     """Tessellate the sphere into plates and label continental crust.
 
     Plate seeds are drawn uniformly and every cell is assigned to its nearest
-    seed, giving a spherical Voronoi tessellation. Continental crust is then
-    grown outward from the plate at the supercontinent centre, repeatedly
-    annexing whichever neighbouring plate sits closest to that centre, until the
-    continental area fraction is met. Because the continental plates are
-    mutually adjacent the crust forms one contiguous block, which is what makes
-    the emergent land a single supercontinent rather than scattered continents.
+    seed, giving a spherical Voronoi tessellation. In supercontinent mode the
+    continental crust is grown as one block at the supercontinent centre; in
+    continents mode it is grown as several blocks of varied size around scattered
+    craton centres, producing distinct Earth-like continents.
     """
     seed_indices = rng.choice(points.shape[0], size=cfg.plate_count,
                               replace=False)
@@ -71,25 +114,24 @@ def assign_plates(points, edges, rng):
     seed_tree = cKDTree(seeds)
     _, plate_id = seed_tree.query(points, workers=-1)
 
-    center = lonlat_to_xyz(cfg.supercontinent_center_lon,
-                           cfg.supercontinent_center_lat)[0]
-    seed_to_center = angular_distance(seeds, center)
     adjacency = plate_adjacency(plate_id, edges)
-
     cells_per_plate = np.bincount(plate_id, minlength=cfg.plate_count)
-    target_continental_cells = cfg.continental_area_fraction * points.shape[0]
+    total_target = cfg.continental_area_fraction * points.shape[0]
     continental = np.zeros(cfg.plate_count, dtype=bool)
 
-    nucleus = int(np.argmin(seed_to_center))
-    continental[nucleus] = True
-    accumulated = cells_per_plate[nucleus]
-    frontier = set(adjacency[nucleus])
-    while accumulated < target_continental_cells and frontier:
-        candidate = min(frontier, key=lambda plate: seed_to_center[plate])
-        continental[candidate] = True
-        accumulated += cells_per_plate[candidate]
-        frontier.discard(candidate)
-        frontier.update(p for p in adjacency[candidate] if not continental[p])
+    if cfg.world_mode == "continents":
+        centers = _craton_centers(rng)
+        weights = rng.uniform(cfg.continent_size_min, cfg.continent_size_max,
+                              size=centers.shape[0])
+        targets = weights / weights.sum() * total_target
+        for center, target in zip(centers, targets):
+            _grow_region(continental, adjacency, cells_per_plate,
+                         angular_distance(seeds, center), target)
+    else:
+        center = lonlat_to_xyz(cfg.supercontinent_center_lon,
+                               cfg.supercontinent_center_lat)[0]
+        _grow_region(continental, adjacency, cells_per_plate,
+                     angular_distance(seeds, center), total_target)
 
     return plate_id, seeds, continental
 
@@ -246,23 +288,25 @@ def connected_components(point_count, edges, is_land):
     return labels
 
 
-def enforce_supercontinent(point_count, edges, is_land):
-    """Keep one supercontinent plus only small offshore islands.
+def enforce_landmasses(point_count, edges, is_land):
+    """Flood land components that should not survive for the active mode.
 
-    The largest land component is the supercontinent. Secondary components are
-    kept only if they are small enough to read as islands; anything larger but
-    short of the main mass is flooded, so a seed that would otherwise split into
-    rival continents still yields a single supercontinent.
+    In supercontinent mode only the largest mass plus small offshore islands are
+    kept, so rival continents are flooded. In continents mode every component
+    above a small relative size is kept, leaving several distinct continents and
+    their islands while removing stray specks.
     """
     labels = connected_components(point_count, edges, is_land)
     land_labels = labels[labels >= 0]
     if land_labels.size == 0:
         return is_land
     unique, counts = np.unique(land_labels, return_counts=True)
-    largest_label = unique[np.argmax(counts)]
     largest = counts.max()
-    keep = set(unique[counts <= cfg.island_max_relative_size * largest])
-    keep.add(largest_label)
+    if cfg.world_mode == "continents":
+        keep = set(unique[counts >= cfg.continent_min_relative_size * largest])
+    else:
+        keep = set(unique[counts <= cfg.island_max_relative_size * largest])
+        keep.add(unique[np.argmax(counts)])
     return np.array([label in keep for label in labels])
 
 
@@ -285,12 +329,15 @@ def simulate(points, edges, rng):
                + (cfg.continental_base_elevation - cfg.oceanic_base_elevation)
                * continentality)
 
-    center = lonlat_to_xyz(cfg.supercontinent_center_lon,
-                           cfg.supercontinent_center_lat)[0]
-    distance_to_center = angular_distance(points, center)
-    width = np.radians(cfg.supercontinent_bias_width)
-    bias = cfg.supercontinent_bias_amplitude * np.exp(
-        -(distance_to_center / width) ** 2)
+    ### The broad cohesion uplift only applies when forcing one supercontinent.
+    bias = np.zeros(points.shape[0])
+    if cfg.world_mode == "supercontinent":
+        center = lonlat_to_xyz(cfg.supercontinent_center_lon,
+                               cfg.supercontinent_center_lat)[0]
+        distance_to_center = angular_distance(points, center)
+        width = np.radians(cfg.supercontinent_bias_width)
+        bias = cfg.supercontinent_bias_amplitude * np.exp(
+            -(distance_to_center / width) ** 2)
 
     tectonic = normalize_tectonic(accumulate_tectonic_elevation(
         points, continental_cell, boundary_xyz, regime, magnitude))
@@ -301,8 +348,8 @@ def simulate(points, edges, rng):
     elevation = plateau + bias + tectonic + noise
 
     sea_level = cfg.sea_level
-    is_land = enforce_supercontinent(points.shape[0], edges,
-                                     elevation > sea_level)
+    is_land = enforce_landmasses(points.shape[0], edges,
+                                 elevation > sea_level)
 
     return {
         "points": points,

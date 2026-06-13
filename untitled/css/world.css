@@ -8,23 +8,27 @@ body {
     margin-right: max(20px, calc((100vw - 960px) / 2));
 }
 
-/* Globe palette, matching the millmint factbook line-art aesthetic. The land
-   sits a shade off the ocean so the single continent reads, with blue linework
-   for outlines, graticule and equator. */
+/* Globe palette. The space outside the globe matches the page background so
+   the planet reads as a sphere floating on the page; the ocean is blue, the
+   land a pale green, and the polar caps white, with blue coastline linework. */
 :root {
-    --wm-highlight: #0055cc;
-    --wm-highlight-bg: rgba(0, 85, 204, 0.18);
-    --wm-land: #f6f4ee;
-    --wm-ocean: #dfeaf4;
+    --wm-space: #ffffff;
+    --wm-ocean: #bcd6ec;
+    --wm-land: #d6e8bf;
+    --wm-ice: #ffffff;
+    --wm-highlight: #3a72ad;
+    --wm-highlight-bg: rgba(58, 114, 173, 0.30);
     --wm-border: #cccccc;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
+        --wm-space: #1a1a1a;
+        --wm-ocean: #16293b;
+        --wm-land: #34492c;
+        --wm-ice: #e6edf2;
         --wm-highlight: #6ba3ff;
-        --wm-highlight-bg: rgba(107, 163, 255, 0.24);
-        --wm-land: #2b333d;
-        --wm-ocean: #121a24;
+        --wm-highlight-bg: rgba(107, 163, 255, 0.30);
         --wm-border: #444444;
     }
 }
@@ -40,7 +44,7 @@ body {
     height: 70vh;
     border-radius: 4px;
     overflow: hidden;
-    background-color: var(--wm-ocean);
+    background-color: var(--wm-space);
 }
 
 #world-map {
@@ -54,7 +58,7 @@ body {
     width: 100vw !important;
     height: 100vh !important;
     z-index: 9999 !important;
-    background-color: var(--wm-ocean) !important;
+    background-color: var(--wm-space) !important;
 }
 
 #world-map-outer.vk-fullscreen #world-map-wrap {
@@ -76,7 +80,7 @@ body.vk-map-fullscreen > *:not(#world-map-outer) {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    background-color: var(--wm-ocean);
+    background-color: var(--wm-space);
     transition: opacity 0.3s ease;
     pointer-events: none;
 }
@@ -118,7 +122,7 @@ body.vk-map-fullscreen > *:not(#world-map-outer) {
     padding: 5px 12px;
     border-radius: 4px;
     border: 1.5px solid var(--wm-border);
-    background-color: var(--wm-ocean);
+    background-color: var(--wm-space);
     color: inherit;
     cursor: pointer;
     font-family: inherit;
@@ -144,7 +148,7 @@ body.vk-map-fullscreen > *:not(#world-map-outer) {
     pointer-events: none;
     transform: translateY(6px);
     transition: opacity 0.09s ease, transform 0.09s ease;
-    background-color: var(--wm-ocean);
+    background-color: var(--wm-space);
     border: 1px solid var(--wm-border);
     border-radius: 4px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);

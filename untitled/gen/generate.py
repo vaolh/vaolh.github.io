@@ -10,7 +10,8 @@ from scipy.spatial import cKDTree
 from shapely.geometry import mapping
 
 import config as cfg
-from geometry import fibonacci_sphere, build_adjacency, lonlat_to_xyz
+from geometry import (fibonacci_sphere, build_adjacency, lonlat_to_xyz,
+                      xyz_to_lonlat)
 from tectonics import simulate, drift_axes, drift_points
 from names import generate_world_name
 from vectorize import build_grid, mask_to_multipolygon, label_landmasses
@@ -133,6 +134,14 @@ def build_world(seed):
     land_plate = world["plate_id"][is_land]
     axes = drift_axes(points, world["plate_id"], center)
 
+    ### Default the globe view to the mean direction of the supercontinent,
+    ### excluding the polar continent so the view is not dragged south.
+    land_lat = np.degrees(np.arcsin(np.clip(land_xyz[:, 2], -1.0, 1.0)))
+    main = land_xyz[land_lat > cfg.polar_drift_cutoff_lat]
+    view = (main if main.shape[0] else land_xyz).mean(axis=0)
+    view /= np.linalg.norm(view)
+    view_lonlat = xyz_to_lonlat(view[None])[0]
+
     lon, lat, grid_xyz = build_grid()
     row_weight = np.cos(np.radians(lat))[:, None]
     safe = ((np.abs(lat)[:, None] <= cfg.safe_lat_limit)
@@ -161,8 +170,8 @@ def build_world(seed):
         "seed": int(seed),
         "mesh_cells": cfg.mesh_cells,
         "plate_count": cfg.plate_count,
-        "center_lon": cfg.supercontinent_center_lon,
-        "center_lat": cfg.supercontinent_center_lat,
+        "center_lon": float(view_lonlat[0]),
+        "center_lat": float(view_lonlat[1]),
         "eras": eras,
         "landmasses": final_landmasses,
         "articles": list(articles.values()),

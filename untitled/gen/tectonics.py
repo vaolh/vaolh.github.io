@@ -6,8 +6,8 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 import config as cfg
-from geometry import (angular_distance, lonlat_to_xyz, sphere_noise,
-                      smooth_field, domain_warp, rodrigues)
+from geometry import (angular_distance, lonlat_to_xyz, domain_warp, rodrigues,
+                      fault_displacement)
 
 ### REPLICATION FILE: tectonics.py
 ### PYTHON VERSION:   3.13+
@@ -170,6 +170,10 @@ def drift_axes(points, plate_id, center):
             continue
         centroid = cells.mean(axis=0)
         centroid /= np.linalg.norm(centroid) + 1e-12
+        ### Freeze polar plates so the polar continent stays put across eras.
+        latitude = np.degrees(np.arcsin(np.clip(centroid[2], -1.0, 1.0)))
+        if latitude < cfg.polar_drift_cutoff_lat:
+            continue
         axis = np.cross(center, centroid)
         norm = np.linalg.norm(axis)
         if norm > 1e-6:
@@ -319,25 +323,36 @@ def connected_components(point_count, edges, is_land):
     return labels
 
 
-def enforce_landmasses(point_count, edges, is_land):
-    """Flood land components that should not survive for the active mode.
+def enforce_landmasses(points, edges, is_land):
+    """Keep the supercontinent, the polar continent and small islands.
 
-    In supercontinent mode only the largest mass plus small offshore islands are
-    kept, so rival continents are flooded. In continents mode every component
-    above a small relative size is kept, leaving several distinct continents and
-    their islands while removing stray specks.
+    The largest component is the supercontinent and any small component is an
+    offshore island; a component whose centroid lies far enough south is the
+    guaranteed polar continent. Everything else, such as stray rival landmasses
+    thrown up by the fractal field away from the centre, is flooded so the
+    assembled era reads as one supercontinent plus a polar landmass.
     """
-    labels = connected_components(point_count, edges, is_land)
+    labels = connected_components(points.shape[0], edges, is_land)
     land_labels = labels[labels >= 0]
     if land_labels.size == 0:
         return is_land
     unique, counts = np.unique(land_labels, return_counts=True)
     largest = counts.max()
-    if cfg.world_mode == "continents":
-        keep = set(unique[counts >= cfg.continent_min_relative_size * largest])
-    else:
-        keep = set(unique[counts <= cfg.island_max_relative_size * largest])
-        keep.add(unique[np.argmax(counts)])
+    latitudes = np.degrees(np.arcsin(np.clip(points[:, 2], -1.0, 1.0)))
+    keep = {unique[np.argmax(counts)]}
+
+    ### Small components are offshore islands and archipelagos.
+    for label, count in zip(unique, counts):
+        if count <= cfg.island_max_relative_size * largest:
+            keep.add(label)
+
+    ### Keep only the single largest deep-southern component as the polar
+    ### continent, flooding stray southern fault land that would clip flat.
+    southern = [(count, label) for label, count in zip(unique, counts)
+                if latitudes[labels == label].mean() < cfg.polar_drift_cutoff_lat]
+    if southern:
+        keep.add(max(southern)[1])
+
     return np.array([label in keep for label in labels])
 
 
@@ -354,33 +369,38 @@ def simulate(points, edges, rng):
         points, edges, plate_id, continental, velocity)
 
     continental_cell = continental[plate_id]
-    continentality = smooth_field(continental_cell.astype(np.float64), edges,
-                                  cfg.continentality_smoothing_passes)
-    plateau = (cfg.oceanic_base_elevation
-               + (cfg.continental_base_elevation - cfg.oceanic_base_elevation)
-               * continentality)
 
-    ### The broad cohesion uplift only applies when forcing one supercontinent.
-    bias = np.zeros(points.shape[0])
-    if cfg.world_mode == "supercontinent":
-        center = lonlat_to_xyz(cfg.supercontinent_center_lon,
-                               cfg.supercontinent_center_lat)[0]
-        distance_to_center = angular_distance(points, center)
-        width = np.radians(cfg.supercontinent_bias_width)
-        bias = cfg.supercontinent_bias_amplitude * np.exp(
-            -(distance_to_center / width) ** 2)
+    ### Fractal fault terrain is the base; broad biases gather it into one
+    ### supercontinent and guarantee a fractal landmass at the south pole.
+    fractal = fault_displacement(points, rng, cfg.fault_count)
+
+    center = lonlat_to_xyz(cfg.supercontinent_center_lon,
+                           cfg.supercontinent_center_lat)[0]
+    width = np.radians(cfg.supercontinent_bias_width)
+    bias = cfg.supercontinent_bias_amplitude * np.exp(
+        -(angular_distance(points, center) / width) ** 2)
+
+    south = lonlat_to_xyz(cfg.polar_bias_center_lon,
+                          cfg.polar_bias_center_lat)[0]
+    polar_width = np.radians(cfg.polar_bias_width)
+    polar_bias = cfg.polar_bias_amplitude * np.exp(
+        -(angular_distance(points, south) / polar_width) ** 2)
 
     tectonic = normalize_tectonic(accumulate_tectonic_elevation(
         points, continental_cell, boundary_xyz, regime, magnitude))
-    noise = sphere_noise(points, rng, cfg.noise_components,
-                         cfg.noise_frequency_min, cfg.noise_frequency_max,
-                         cfg.noise_amplitude)
 
-    elevation = plateau + bias + tectonic + noise
+    ### A ramp floods everything south of the Southern Ocean latitude, so the
+    ### only deep-southern land is the polar continent poking through.
+    cell_lat = np.degrees(np.arcsin(np.clip(points[:, 2], -1.0, 1.0)))
+    southern_ocean = cfg.southern_ocean_amplitude * np.clip(
+        (cfg.southern_ocean_center_lat - cell_lat) / cfg.southern_ocean_width,
+        0.0, 1.0)
 
-    sea_level = cfg.sea_level
-    is_land = enforce_landmasses(points.shape[0], edges,
-                                 elevation > sea_level)
+    elevation = (cfg.fault_weight * fractal + bias + polar_bias
+                 - southern_ocean + tectonic)
+
+    sea_level = np.quantile(elevation, 1.0 - cfg.target_land_fraction)
+    is_land = enforce_landmasses(points, edges, elevation > sea_level)
 
     return {
         "points": points,

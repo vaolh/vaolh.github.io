@@ -88,15 +88,54 @@ plate_speed_max = 1.00
 ### Geographic centre toward which continental plates are clustered so that
 ### emergent land coheres into a single supercontinent, in degrees.
 supercontinent_center_lon = 0.0
-supercontinent_center_lat = 8.0
+supercontinent_center_lat = 20.0
 
 ### Angular width of the broad gaussian uplift that reinforces cohesion of the
 ### supercontinent, in degrees.
-supercontinent_bias_width = 45.0
+supercontinent_bias_width = 32.0
 
-### Peak amplitude of that broad uplift in elevation units. Kept subtle so it
-### raises the continental interior without lifting open ocean into land.
-supercontinent_bias_amplitude = 0.18
+### Peak amplitude of that broad uplift, strong enough to gather the fractal
+### terrain into one dominant supercontinent in the assembled era.
+supercontinent_bias_amplitude = 1.6
+
+#################################################
+############### FRACTAL TERRAIN #################
+#################################################
+
+### Number of random great-circle faults summed into the fractal heightfield,
+### the donjon / Mogensen fractal-planet method that gives crenulated fractal
+### coastlines uniformly over the sphere, poles included.
+fault_count = 2200
+
+### Weight of the fractal heightfield in the elevation relative to the broad
+### biases; higher values give more fractal islands and rougher coasts.
+fault_weight = 0.9
+
+### Target fraction of the surface left above sea level.
+target_land_fraction = 0.27
+
+#################################################
+############### POLAR CONTINENT #################
+#################################################
+
+### Broad uplift placing a guaranteed fractal polar continent in the deep south.
+### Its centre is offset from the pole and to one side so the landmass is a
+### localised blob rather than a circumpolar band, in degrees and elevation units.
+polar_bias_center_lon = -80.0
+polar_bias_center_lat = -63.0
+polar_bias_amplitude = 3.2
+polar_bias_width = 12.0
+
+### Plates whose centroid is poleward of this latitude are frozen, so the polar
+### continent keeps its place at the pole across every era.
+polar_drift_cutoff_lat = -50.0
+
+### A southern-ocean band lowers elevation in a latitude ring, like Earth's
+### Southern Ocean, so the supercontinent stays clear of the deep south and the
+### polar continent sits alone in open water, in elevation units and degrees.
+southern_ocean_amplitude = 2.2
+southern_ocean_center_lat = -42.0
+southern_ocean_width = 14.0
 
 ### Display name and article slug for the single landmass of the present era.
 supercontinent_name = "Supercontinent"
@@ -152,7 +191,7 @@ safe_lat_limit = 84.0
 
 ### Continents whose centroid lies poleward of this latitude render as white
 ### ice rather than green land, giving polar continents an ice-sheet look.
-ice_continent_lat = 60.0
+ice_continent_lat = 54.0
 
 ### Minimum size of a kept landmass, as a fraction of the largest, low enough to
 ### preserve island arcs and archipelagos rather than only major continents.

@@ -105,6 +105,33 @@ def domain_warp(points, rng, amplitude, components, frequency_min,
     return warped / np.linalg.norm(warped, axis=1, keepdims=True)
 
 
+def fault_displacement(points, rng, faults, chunk=256):
+    """Return a fractal heightfield built by random great-circle faults.
+
+    This is the donjon / Mogensen fractal-planet method: each fault is a random
+    great circle that raises one hemisphere and lowers the other by one unit.
+    Summed over thousands of faults the result is fractional-Brownian terrain
+    that is fractal uniformly over the sphere, so coastlines thresholded from it
+    are naturally crenulated everywhere, including at the poles. The field is
+    returned standardised to zero mean and unit variance.
+    """
+    field = np.zeros(points.shape[0], dtype=np.float64)
+    done = 0
+    while done < faults:
+        size = min(chunk, faults - done)
+        normals = rng.normal(size=(size, 3))
+        normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+        signs = rng.choice(np.array([-1.0, 1.0]), size=size)
+        projection = points @ normals.T
+        field += (projection > 0).astype(np.float64) @ signs
+        done += size
+    field -= field.mean()
+    spread = field.std()
+    if spread > 0:
+        field /= spread
+    return field
+
+
 def smooth_field(values, edges, passes):
     """Smooth a per-cell field by repeated averaging with adjacent cells.
 

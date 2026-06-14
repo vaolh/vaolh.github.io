@@ -240,7 +240,7 @@
                 });
             })).then(function (loaded) {
                 era_data = loaded;
-                era_index = 0;
+                era_index = meta.eras.length - 1;
                 map.addSource("land", { type: "geojson",
                     data: era_data[era_index], generateId: true });
                 map.addLayer({ id: "land-fill", type: "fill", source: "land",

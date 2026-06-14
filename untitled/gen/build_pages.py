@@ -60,12 +60,12 @@ def build_index(meta):
     html = _head(meta["world_name"], "", extra)
     html += f"""<h1>{meta['world_name']}</h1>
 
-<p><b>{meta['world_name']}</b> is the world of an unnamed fantasy setting. Its
-surface is shaped by a simulated system of {meta['plate_count']} tectonic plates.
-The <b>Era</b> button replays its geological history: one assembled
-supercontinent that rifts apart and drifts into {count} continents whose
-coastlines still fit back together. Drag to spin the globe, scroll to zoom,
-toggle the flat map, and click a continent to open its article.</p>
+<p><b>{meta['world_name']}</b> is the world of an unnamed fantasy setting, its
+coastlines shaped by a fractal terrain model. The <b>Era</b> button replays its
+geological history: {count} drifting continents that the Euler rotations of plate
+tectonics carry back together into one supercontinent and apart again. Drag to
+spin the globe, scroll to zoom, toggle the flat map, and click a continent to
+open its article.</p>
 
 <div id="world-map-outer">
   <div id="world-map-wrap">
@@ -118,7 +118,7 @@ def build_articles(meta):
 </div>
 
 <p><b>{name}</b> is a {kind} of {meta['world_name']}, a world shaped by
-{meta['plate_count']} drifting tectonic plates. It covers roughly
+fractal fault lines. It covers roughly
 {round(share * 100, 1)}% of the planet's surface. This article is a stub
 awaiting its name, geography, peoples and history.</p>
 

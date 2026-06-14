@@ -1,197 +1,65 @@
 {
-  "world_name": "Touskeil",
-  "seed": 7,
+  "world_name": "The World",
+  "seed": 449,
   "mesh_cells": 26000,
-  "plate_count": 44,
-  "center_lon": -105.47674779127034,
-  "center_lat": -11.204402847585577,
+  "continent_count": 3,
+  "center_lon": -94.91874762386668,
+  "center_lat": -74.77353208483895,
   "eras": [
     {
       "name": "Supercontinent",
       "file": "land_era1.geojson",
-      "count": 8
+      "count": 3
     },
     {
       "name": "First tectonic movements",
       "file": "land_era2.geojson",
-      "count": 9
+      "count": 3
     },
     {
       "name": "Earth-like continents",
       "file": "land_era3.geojson",
-      "count": 10
+      "count": 3
     }
   ],
   "landmasses": [
     {
       "name": "Continent 1",
       "slug": "continent-1",
-      "polar": false,
-      "land_fraction": 0.11207355319897469
+      "polar": true,
+      "land_fraction": 0.31122073321693006
     },
     {
       "name": "Continent 2",
       "slug": "continent-2",
       "polar": false,
-      "land_fraction": 0.024184004714239548
+      "land_fraction": 0.044654983887883436
     },
     {
       "name": "Continent 3",
       "slug": "continent-3",
-      "polar": true,
-      "land_fraction": 0.0011470374625495187
-    },
-    {
-      "name": "Continent 4",
-      "slug": "continent-4",
-      "polar": true,
-      "land_fraction": 0.0012672134063170617
-    },
-    {
-      "name": "Continent 5",
-      "slug": "continent-5",
       "polar": false,
-      "land_fraction": 0.002657964423262534
-    },
-    {
-      "name": "Continent 6",
-      "slug": "continent-6",
-      "polar": true,
-      "land_fraction": 0.0005526134361677357
-    },
-    {
-      "name": "Continent 7",
-      "slug": "continent-7",
-      "polar": false,
-      "land_fraction": 0.0017646087476556604
-    },
-    {
-      "name": "Continent 8",
-      "slug": "continent-8",
-      "polar": false,
-      "land_fraction": 0.0008959068832706453
-    },
-    {
-      "name": "Continent 9",
-      "slug": "continent-9",
-      "polar": false,
-      "land_fraction": 0.0008503096367224078
-    },
-    {
-      "name": "Continent 10",
-      "slug": "continent-10",
-      "polar": false,
-      "land_fraction": 0.0006186495045944635
+      "land_fraction": 0.025111460209718696
     }
   ],
   "articles": [
     {
-      "name": "Supercontinent",
-      "slug": "supercontinent",
-      "polar": false,
-      "land_fraction": 0.22124678974556655
-    },
-    {
-      "name": "Island 1",
-      "slug": "island-1",
-      "polar": false,
-      "land_fraction": 0.005549306340141469
-    },
-    {
-      "name": "Island 2",
-      "slug": "island-2",
-      "polar": false,
-      "land_fraction": 0.0034513764440911947
-    },
-    {
-      "name": "Island 3",
-      "slug": "island-3",
-      "polar": false,
-      "land_fraction": 0.0026582094998813233
-    },
-    {
-      "name": "Island 4",
-      "slug": "island-4",
-      "polar": false,
-      "land_fraction": 0.003255462775073187
-    },
-    {
-      "name": "Island 5",
-      "slug": "island-5",
-      "polar": false,
-      "land_fraction": 0.0026530427577286593
-    },
-    {
-      "name": "Island 6",
-      "slug": "island-6",
-      "polar": false,
-      "land_fraction": 0.002313348147928632
-    },
-    {
-      "name": "Island 7",
-      "slug": "island-7",
-      "polar": false,
-      "land_fraction": 0.0011448375046748296
-    },
-    {
       "name": "Continent 1",
       "slug": "continent-1",
-      "polar": false,
-      "land_fraction": 0.11207355319897469
+      "polar": true,
+      "land_fraction": 0.31122073321693006
     },
     {
       "name": "Continent 2",
       "slug": "continent-2",
       "polar": false,
-      "land_fraction": 0.024184004714239548
+      "land_fraction": 0.044654983887883436
     },
     {
       "name": "Continent 3",
       "slug": "continent-3",
-      "polar": true,
-      "land_fraction": 0.0011470374625495187
-    },
-    {
-      "name": "Continent 4",
-      "slug": "continent-4",
-      "polar": true,
-      "land_fraction": 0.0012672134063170617
-    },
-    {
-      "name": "Continent 5",
-      "slug": "continent-5",
       "polar": false,
-      "land_fraction": 0.002657964423262534
-    },
-    {
-      "name": "Continent 6",
-      "slug": "continent-6",
-      "polar": true,
-      "land_fraction": 0.0005526134361677357
-    },
-    {
-      "name": "Continent 7",
-      "slug": "continent-7",
-      "polar": false,
-      "land_fraction": 0.0017646087476556604
-    },
-    {
-      "name": "Continent 8",
-      "slug": "continent-8",
-      "polar": false,
-      "land_fraction": 0.0008959068832706453
-    },
-    {
-      "name": "Continent 9",
-      "slug": "continent-9",
-      "polar": false,
-      "land_fraction": 0.0008503096367224078
-    },
-    {
-      "name": "Continent 10",
-      "slug": "continent-10",
-      "polar": false,
-      "land_fraction": 0.0006186495045944635
+      "land_fraction": 0.025111460209718696
     }
   ]
 }

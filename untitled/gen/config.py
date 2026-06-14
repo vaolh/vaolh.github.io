@@ -32,10 +32,13 @@ preview_dir = data_dir / "previews"
 ### Default master seed; override on the command line to explore alternatives.
 default_seed = 7
 
-### Base generation always builds one supercontinent and then drifts it apart
-### into the later eras, so the continents are torn fragments whose coastlines
-### fit back together rather than unrelated blobs.
-world_mode = "supercontinent"
+### Fixed display name of the world; never generated.
+world_display_name = "The World"
+
+### Counter-inductive build: fractal continents are generated first, then Euler
+### rotations carry them together to assemble the supercontinent, the reverse of
+### the Bullard fit-of-the-continents reconstruction.
+world_mode = "continents"
 
 #################################################
 ################ SPHERE MESH ####################
@@ -107,114 +110,83 @@ supercontinent_bias_amplitude = 1.6
 ### coastlines uniformly over the sphere, poles included.
 fault_count = 2200
 
-### Weight of the fractal heightfield in the elevation relative to the broad
-### biases; higher values give more fractal islands and rougher coasts.
-fault_weight = 0.9
+### Weight of the high-pass fractal detail added to the continent templates. The
+### fault field is high-passed so it supplies fractal coastline roughness without
+### its large-scale structure percolating all land into one blob.
+fault_weight = 1.0
+
+### Neighbour-averaging passes used to high-pass the fault field; the smoothed
+### low frequencies are subtracted, leaving fractal detail.
+fractal_reach_ref = 0.12
 
 ### Target fraction of the surface left above sea level.
-target_land_fraction = 0.27
+target_land_fraction = 0.30
 
 #################################################
-############### POLAR CONTINENT #################
+############### POLAR CONTINENTS ################
 #################################################
 
-### Broad uplift placing a guaranteed fractal polar continent in the deep south.
-### Its centre is offset from the pole and to one side so the landmass is a
-### localised blob rather than a circumpolar band, in degrees and elevation units.
-polar_bias_center_lon = -80.0
-polar_bias_center_lat = -63.0
-polar_bias_amplitude = 3.2
-polar_bias_width = 12.0
+### Localised uplifts that guarantee a fractal continent near each pole. The
+### centres are offset from the poles and to one side so each landmass is a
+### blob with fractal coasts rather than a circumpolar band, in degrees and
+### elevation units.
+arctic_bias_center_lon = 110.0
+arctic_bias_center_lat = 74.0
+antarctic_bias_center_lon = -70.0
+antarctic_bias_center_lat = -72.0
+polar_bias_amplitude = 2.4
+polar_bias_width = 16.0
 
-### Plates whose centroid is poleward of this latitude are frozen, so the polar
-### continent keeps its place at the pole across every era.
-polar_drift_cutoff_lat = -50.0
-
-### A southern-ocean band lowers elevation in a latitude ring, like Earth's
-### Southern Ocean, so the supercontinent stays clear of the deep south and the
-### polar continent sits alone in open water, in elevation units and degrees.
-southern_ocean_amplitude = 2.2
-southern_ocean_center_lat = -42.0
-southern_ocean_width = 14.0
-
-### Display name and article slug for the single landmass of the present era.
-supercontinent_name = "Supercontinent"
-supercontinent_slug = "supercontinent"
+### Continents whose centroid lies poleward of this latitude render as white ice.
+ice_continent_lat = 62.0
 
 #################################################
 ################ CONTINENTS #####################
 #################################################
 
-### Number of separate non-polar continents grown in continents mode.
+### Continent template cores. Each is a broad uplift that anchors one continent;
+### the high-pass fractal then carves its fractal coastline. Cores are scattered
+### with a minimum separation so the continents stay distinct.
 continent_count = 6
+craton_lon_min = -170.0
+craton_lon_max = 170.0
+craton_lat_min = -52.0
+craton_lat_max = 58.0
+craton_min_separation = 44.0
+craton_amplitude = 2.2
+craton_width = 16.0
+craton_size_min = 0.55
+craton_size_max = 1.7
 
-### Bounds within which continent cratons are seeded, in degrees, kept clear of
-### the antimeridian and poles so coastline extraction stays seam-free.
-craton_lon_min = -150.0
-craton_lon_max = 150.0
-craton_lat_min = -55.0
-craton_lat_max = 65.0
+### A landmass counts as a continent when its area is at least this share of all
+### land. Smaller landmasses are islands and are merged into the nearest
+### continent rather than listed separately.
+continent_min_land_share = 0.03
 
-### Minimum angular separation enforced between craton centres, in degrees, so
-### continents do not merge into one mass.
-craton_min_separation = 42.0
-
-### Spread of continent target sizes. Each craton's share of the continental
-### area is drawn from this range before normalisation, giving Earth-like
-### variety from large continents down to small ones.
-continent_size_min = 0.4
-continent_size_max = 1.8
-
-### Minimum size of a kept landmass, as a fraction of the largest continent, so
-### tiny specks are flooded while genuine continents and islands survive.
-continent_min_relative_size = 0.02
+### Speck landmasses below this share of total land are dropped entirely.
+landmass_min_land_share = 0.0015
 
 #################################################
-################ ERAS AND DRIFT #################
+################ ERAS AND ASSEMBLY ##############
 #################################################
 
-### The three geological eras and the outward drift angle, in radians, applied
-### to each plate to reach them. Era one is the assembled supercontinent.
+### The three geological eras and the Euler angle, in radians, by which each
+### continent is rotated toward the assembly centre to reach them. The earth-like
+### era is the generated fractal world; larger angles pack the continents into
+### the supercontinent.
 era_names = ["Supercontinent", "First tectonic movements",
              "Earth-like continents"]
-era_drift_radians = [0.0, 0.30, 0.85]
+era_assembly_radians = [0.95, 0.42, 0.0]
 
-### Geodesic distance within which a drifted land cell paints land on the grid,
-### in radians. Gaps wider than this between drifting fragments become ocean.
-drift_land_threshold = 0.038
+### Geographic centre toward which continents are gathered to assemble the
+### supercontinent, in degrees.
+assembly_center_lon = 0.0
+assembly_center_lat = 10.0
 
-### Land is clipped inside these longitude and latitude limits, in degrees, so a
-### drifting continent never reaches the antimeridian seam or a pole where
-### coastline extraction would break; the excluded margins read as open ocean.
-safe_lon_limit = 168.0
-safe_lat_limit = 84.0
+### Geodesic distance within which a moved land cell paints land on the grid, in
+### radians. Gaps wider than this between separated continents read as ocean.
+drift_land_threshold = 0.06
 
-### Continents whose centroid lies poleward of this latitude render as white
-### ice rather than green land, giving polar continents an ice-sheet look.
-ice_continent_lat = 54.0
-
-### Minimum size of a kept landmass, as a fraction of the largest, low enough to
-### preserve island arcs and archipelagos rather than only major continents.
-landmass_min_relative_size = 0.004
-
-#################################################
-################ ANTARCTICA #####################
-#################################################
-
-### Whether a polar ice continent is placed at the south pole.
-include_antarctica = True
-
-### Mean latitude of the antarctic coastline and the amplitude of its waviness,
-### in degrees.
-antarctica_coast_lat = -64.0
-antarctica_coast_roughness = 7.0
-
-### Number of periodic harmonics shaping the antarctic coastline.
-antarctica_harmonics = 9
-
-### Display name and article slug for the polar continent.
-antarctica_name = "Antarctica"
-antarctica_slug = "antarctica"
 
 #################################################
 ################ TECTONIC FORCING ###############
@@ -316,11 +288,11 @@ grid_height = 1200
 
 ### Number of neighbours blended by inverse-distance weighting for the
 ### continuous elevation raster.
-raster_idw_neighbours = 6
+raster_idw_neighbours = 3
 
 ### Chaikin corner-cutting iterations applied to each coastline ring to round
 ### the marching-squares stair-steps into natural curves.
-coastline_smoothing_iterations = 3
+coastline_smoothing_iterations = 1
 
 ### Douglas-Peucker simplification tolerance applied to emitted rings, in
 ### degrees, kept small so simplification does not reintroduce angular coasts.

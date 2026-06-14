@@ -6,8 +6,7 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 import config as cfg
-from geometry import (angular_distance, lonlat_to_xyz, domain_warp, rodrigues,
-                      fault_displacement)
+from geometry import angular_distance, lonlat_to_xyz, fault_displacement
 
 ### REPLICATION FILE: tectonics.py
 ### PYTHON VERSION:   3.13+
@@ -356,61 +355,73 @@ def enforce_landmasses(points, edges, is_land):
     return np.array([label in keep for label in labels])
 
 
-def simulate(points, edges, rng):
-    """Run the full tectonic pipeline and return the world state.
+def _gaussian_bias(points, centre, width_deg, amplitude):
+    """Return a localised gaussian uplift centred on a point."""
+    width = np.radians(width_deg)
+    return amplitude * np.exp(
+        -(angular_distance(points, centre) / width) ** 2)
 
-    The returned dictionary carries the per-cell plate, elevation and land
-    fields together with the classified boundary geometry, which downstream
-    stages vectorise into coastline, country and plate-boundary geojson.
+
+def _continent_cores(rng):
+    """Return scattered continent template centres with size weights.
+
+    Centres are rejection-sampled to keep a minimum separation so the continents
+    stay distinct and reliably numbered, each with a size weight for Earth-like
+    variety from large continents down to small ones.
     """
-    plate_id, seeds, continental = assign_plates(points, edges, rng)
-    velocity = plate_velocities(points, plate_id, rng)
-    boundary_xyz, regime, magnitude = classify_boundaries(
-        points, edges, plate_id, continental, velocity)
+    separation = np.radians(cfg.craton_min_separation)
+    centres = []
+    attempts = 0
+    while len(centres) < cfg.continent_count and attempts < 4000:
+        attempts += 1
+        candidate = lonlat_to_xyz(
+            rng.uniform(cfg.craton_lon_min, cfg.craton_lon_max),
+            rng.uniform(cfg.craton_lat_min, cfg.craton_lat_max))[0]
+        if all(angular_distance(np.array([existing]), candidate)[0] > separation
+               for existing in centres):
+            centres.append(candidate)
+    sizes = rng.uniform(cfg.craton_size_min, cfg.craton_size_max,
+                        size=len(centres))
+    return centres, sizes
 
-    continental_cell = continental[plate_id]
 
-    ### Fractal fault terrain is the base; broad biases gather it into one
-    ### supercontinent and guarantee a fractal landmass at the south pole.
+def simulate(points, edges, rng):
+    """Generate the dispersed world of fractal continents the eras build from.
+
+    Continent template cores and two polar cores set where land sits and keep the
+    continents distinct; the donjon fault fractal is added on and around them to
+    carve fully fractal coastlines and coastal archipelagos, while open ocean is
+    left clear of speckle. Sea level is set for the target land fraction.
+    """
     fractal = fault_displacement(points, rng, cfg.fault_count)
 
-    center = lonlat_to_xyz(cfg.supercontinent_center_lon,
-                           cfg.supercontinent_center_lat)[0]
-    width = np.radians(cfg.supercontinent_bias_width)
-    bias = cfg.supercontinent_bias_amplitude * np.exp(
-        -(angular_distance(points, center) / width) ** 2)
+    ### Continent core gaussian uplifts anchor the fractal into distinct land
+    ### masses. Each craton is a broad bump whose size weight scales the peak so
+    ### that larger cratons dominate more surface area.
+    centres, sizes = _continent_cores(rng)
+    craton_field = np.zeros(points.shape[0], dtype=np.float64)
+    for centre, size in zip(centres, sizes):
+        craton_field += _gaussian_bias(points, centre,
+                                       cfg.craton_width,
+                                       size * cfg.craton_amplitude)
 
-    south = lonlat_to_xyz(cfg.polar_bias_center_lon,
-                          cfg.polar_bias_center_lat)[0]
-    polar_width = np.radians(cfg.polar_bias_width)
-    polar_bias = cfg.polar_bias_amplitude * np.exp(
-        -(angular_distance(points, south) / polar_width) ** 2)
+    ### Two localised polar uplifts guarantee an arctic and antarctic continent;
+    ### otherwise the pure fault fractal sets the irregular, donjon-style shapes.
+    arctic = lonlat_to_xyz(cfg.arctic_bias_center_lon,
+                           cfg.arctic_bias_center_lat)[0]
+    antarctic = lonlat_to_xyz(cfg.antarctic_bias_center_lon,
+                              cfg.antarctic_bias_center_lat)[0]
+    polar = (_gaussian_bias(points, arctic, cfg.polar_bias_width,
+                            cfg.polar_bias_amplitude)
+             + _gaussian_bias(points, antarctic, cfg.polar_bias_width,
+                              cfg.polar_bias_amplitude))
 
-    tectonic = normalize_tectonic(accumulate_tectonic_elevation(
-        points, continental_cell, boundary_xyz, regime, magnitude))
-
-    ### A ramp floods everything south of the Southern Ocean latitude, so the
-    ### only deep-southern land is the polar continent poking through.
-    cell_lat = np.degrees(np.arcsin(np.clip(points[:, 2], -1.0, 1.0)))
-    southern_ocean = cfg.southern_ocean_amplitude * np.clip(
-        (cfg.southern_ocean_center_lat - cell_lat) / cfg.southern_ocean_width,
-        0.0, 1.0)
-
-    elevation = (cfg.fault_weight * fractal + bias + polar_bias
-                 - southern_ocean + tectonic)
-
+    elevation = cfg.fault_weight * fractal + craton_field + polar
     sea_level = np.quantile(elevation, 1.0 - cfg.target_land_fraction)
-    is_land = enforce_landmasses(points, edges, elevation > sea_level)
 
     return {
         "points": points,
-        "plate_id": plate_id,
-        "plate_seeds": seeds,
-        "plate_continental": continental,
         "elevation": elevation,
         "sea_level": sea_level,
-        "is_land": is_land,
-        "boundary_xyz": boundary_xyz,
-        "boundary_regime": regime,
-        "boundary_magnitude": magnitude,
+        "is_land": elevation > sea_level,
     }

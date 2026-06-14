@@ -55,6 +55,28 @@ def rasterize_idw(tree, values, grid_xyz):
     return sampled.reshape(cfg.grid_height, cfg.grid_width)
 
 
+def rasterize_continents(moved_xyz, cell_elevation, continent_index, sea_level,
+                         grid_xyz, gap_chord):
+    """Paint each grid cell with the continent it belongs to in an era.
+
+    Elevation is interpolated from the moved land cells by inverse-distance
+    weighting and thresholded at sea level, so the coastline follows the fractal
+    elevation contour rather than the cell positions and stays crenulated. A grid
+    cell beyond the gap distance from any land cell is ocean, which opens the
+    seas between separated continents. Land cells take the continent of their
+    nearest moved cell.
+    """
+    tree = cKDTree(moved_xyz)
+    distance, nearest = tree.query(grid_xyz, k=cfg.raster_idw_neighbours,
+                                   workers=-1)
+    weight = 1.0 / (distance + 1e-9)
+    elevation = np.sum(weight * cell_elevation[nearest], axis=1) \
+        / np.sum(weight, axis=1)
+    land = (elevation > sea_level) & (distance[:, 0] < gap_chord)
+    painted = np.where(land, continent_index[nearest[:, 0]], -1)
+    return painted.reshape(cfg.grid_height, cfg.grid_width)
+
+
 def keep_landmasses(land_mask):
     """Flood land components that should not survive for the active mode.
 
@@ -152,18 +174,21 @@ def _col_to_lon(cols):
 def mask_to_multipolygon(mask):
     """Trace a boolean grid mask into a shapely multipolygon with holes.
 
-    Marching squares yields one closed ring per region boundary, including the
-    boundaries of interior seas. Rings are nested by counting how many other
-    rings contain each one: an even nesting depth is an outer shell and an odd
-    depth is a hole, which is attached to the smallest shell that encloses it.
+    The mask is padded with an ocean border so that land touching the grid edge,
+    at the antimeridian or a pole, still closes into a valid ring rather than an
+    open contour; coordinates are clamped to the lon/lat bounds, putting any seam
+    exactly on the antimeridian where it is invisible on the globe. Rings are
+    nested by containment parity: an even depth is an outer shell and an odd
+    depth a hole attached to the smallest shell that encloses it.
     """
-    contours = measure.find_contours(mask.astype(float), 0.5)
+    padded = np.pad(mask.astype(float), 1)
+    contours = measure.find_contours(padded, 0.5)
     rings = []
     for contour in contours:
         if contour.shape[0] < 4:
             continue
-        lon = _col_to_lon(contour[:, 1])
-        lat = _row_to_lat(contour[:, 0])
+        lon = np.clip(_col_to_lon(contour[:, 1] - 1.0), -180.0, 180.0)
+        lat = np.clip(_row_to_lat(contour[:, 0] - 1.0), -90.0, 90.0)
         polygon = Polygon(_chaikin(np.column_stack((lon, lat))))
         if not polygon.is_valid:
             polygon = polygon.buffer(0)

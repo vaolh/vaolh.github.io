@@ -6,27 +6,28 @@ import argparse
 import json
 
 import numpy as np
+from scipy import ndimage
 from scipy.spatial import cKDTree
 from shapely.geometry import mapping
 
 import config as cfg
 from geometry import (fibonacci_sphere, build_adjacency, lonlat_to_xyz,
-                      xyz_to_lonlat)
-from tectonics import simulate, drift_axes, drift_points
-from names import generate_world_name
-from vectorize import build_grid, mask_to_multipolygon, label_landmasses
+                      xyz_to_lonlat, angular_distance, rodrigues)
+from tectonics import simulate
+from vectorize import build_grid, mask_to_multipolygon, rasterize_continents
 
 ### REPLICATION FILE: generate.py
 ### PYTHON VERSION:   3.13+
-### LAST EDIT:        2026-06-12 by vao2116
+### LAST EDIT:        2026-06-14 by vao2116
 
-"""Command-line entry point that builds one world.
+"""Command-line entry point that builds one world across its geological eras.
 
-Running this module with a seed produces the land geojson and a metadata file
-consumed by the map viewer and the wiki. In continents mode it emits several
-named, separately clickable continents plus a polar cap; in supercontinent mode
-it emits one landmass. A different seed yields a different but equally plausible
-world, which is how a preferred world is chosen.
+A dispersed world of fractal continents is generated first; islands are merged
+into the nearest continent and each continent is assigned an Euler axis toward
+the assembly centre. The eras are then produced by rotating the continents
+together by increasing angles, so the earth-like era is the generated fractal
+world and the supercontinent era is its reconstruction. A different seed yields a
+different world, which is how a preferred one is chosen.
 """
 
 
@@ -51,125 +52,143 @@ def _area_fraction(mask, row_weight):
                  / (row_weight.sum() * cfg.grid_width))
 
 
-def _name_landmass(era_index, rank, island_counter, continent_counter):
-    """Return the placeholder name and slug for a landmass in an era.
-
-    Names are deliberately generic numbered placeholders, since the continents
-    are named by hand later. Era one's largest mass is the supercontinent.
-    """
-    if era_index == 0 and rank == 0:
-        return cfg.supercontinent_name, cfg.supercontinent_slug
-    if era_index == 0:
-        island_counter[0] += 1
-        return f"Island {island_counter[0]}", f"island-{island_counter[0]}"
-    continent_counter[0] += 1
-    return (f"Continent {continent_counter[0]}",
-            f"continent-{continent_counter[0]}")
-
-
-def _extract_era(era_index, angle, land_xyz, land_plate, axes, grid_xyz,
-                 lon, lat, safe, row_weight):
-    """Drift the land to one era and return its features and landmass metadata.
-
-    Every land cell is carried about its plate's drift axis by the era angle,
-    the drifted cloud is painted onto the grid wherever a cell falls within the
-    drift threshold, and each connected landmass is traced into a polygon. Gaps
-    that open between diverging fragments become ocean.
-    """
-    moved = drift_points(land_xyz, land_plate, axes, angle)
-    tree = cKDTree(moved)
-    chord = 2.0 * np.sin(cfg.drift_land_threshold / 2.0)
-    distance, _ = tree.query(grid_xyz, workers=-1)
-    mask = (distance < chord).reshape(cfg.grid_height, cfg.grid_width) & safe
-
-    components = label_landmasses(mask)
-    features = []
-    landmasses = []
-    if not components:
-        return features, landmasses
-    largest = components[0].sum()
-    island_counter = [0]
-    continent_counter = [0]
-    rank = 0
-    for component in components:
-        if component.sum() < cfg.landmass_min_relative_size * largest:
-            continue
-        geometry = mask_to_multipolygon(component)
-        if geometry is None:
-            continue
-        rows = np.where(component.any(axis=1))[0]
-        centroid_lat = float(np.average(lat[rows],
-                                        weights=row_weight[rows, 0]))
-        polar = abs(centroid_lat) > cfg.ice_continent_lat
-        name, slug = _name_landmass(era_index, rank, island_counter,
-                                    continent_counter)
-        features.append(_feature(geometry, {"name": name, "slug": slug,
-                                            "polar": polar}))
-        landmasses.append({"name": name, "slug": slug, "polar": polar,
-                           "land_fraction": _area_fraction(component,
-                                                           row_weight)})
-        rank += 1
-    return features, landmasses
-
-
 def build_world(seed):
-    """Generate the three drift eras of one world and their metadata.
+    """Generate the fractal world and assemble its three geological eras.
 
-    A single supercontinent is simulated, then its land cells are drifted
-    outward by increasing angles to produce the supercontinent, early-rifting,
-    and dispersed-continents eras. Because every continent is a fragment of the
-    same supercontinent, their facing coastlines fit back together.
+    Continents are separated on the raster grid, where narrow seas truly divide
+    them, rather than on the mesh graph which bridges them. Islands are merged
+    into the nearest continent, and each continent is rotated toward the assembly
+    centre by the per-era angle. The earth-like era is the world as generated and
+    the supercontinent era is the continents packed back together.
     """
     rng = np.random.default_rng(seed)
 
     points = fibonacci_sphere(cfg.mesh_cells)
     edges = build_adjacency(points, cfg.mesh_neighbours)
     world = simulate(points, edges, rng)
-    world_name = generate_world_name(rng)
-
-    center = lonlat_to_xyz(cfg.supercontinent_center_lon,
-                           cfg.supercontinent_center_lat)[0]
     is_land = world["is_land"]
-    land_xyz = points[is_land]
-    land_plate = world["plate_id"][is_land]
-    axes = drift_axes(points, world["plate_id"], center)
-
-    ### Default the globe view to the mean direction of the supercontinent,
-    ### excluding the polar continent so the view is not dragged south.
-    land_lat = np.degrees(np.arcsin(np.clip(land_xyz[:, 2], -1.0, 1.0)))
-    main = land_xyz[land_lat > cfg.polar_drift_cutoff_lat]
-    view = (main if main.shape[0] else land_xyz).mean(axis=0)
-    view /= np.linalg.norm(view)
-    view_lonlat = xyz_to_lonlat(view[None])[0]
 
     lon, lat, grid_xyz = build_grid()
     row_weight = np.cos(np.radians(lat))[:, None]
-    safe = ((np.abs(lat)[:, None] <= cfg.safe_lat_limit)
-            & (np.abs(lon)[None, :] <= cfg.safe_lon_limit))
+    chord = 2.0 * np.sin(cfg.drift_land_threshold / 2.0)
+
+    ### Separate landmasses on the grid by true sea connectivity.
+    tree = cKDTree(points)
+    _, nearest = tree.query(grid_xyz, workers=-1)
+    land_grid = is_land[nearest].reshape(cfg.grid_height, cfg.grid_width)
+    grid_labels, count = ndimage.label(land_grid)
+    indices = np.arange(1, count + 1)
+    weighted = ndimage.sum(np.broadcast_to(row_weight, land_grid.shape),
+                           grid_labels, index=indices)
+    shares = weighted / weighted.sum()
+    grid_xyz_image = grid_xyz.reshape(cfg.grid_height, cfg.grid_width, 3)
+
+    def centroid(label):
+        vector = grid_xyz_image[grid_labels == label].mean(axis=0)
+        return vector / np.linalg.norm(vector)
+
+    kept = [int(label) for label, share in zip(indices, shares)
+            if share >= cfg.landmass_min_land_share]
+    continents = sorted(
+        [int(label) for label, share in zip(indices, shares)
+         if share >= cfg.continent_min_land_share],
+        key=lambda label: -shares[label - 1])
+    centroids = {label: centroid(label) for label in continents}
+
+    ### Islands merge into the nearest continent so they are not listed alone.
+    component_continent = {}
+    for label in kept:
+        if label in centroids:
+            component_continent[label] = label
+        else:
+            here = centroid(label)
+            component_continent[label] = min(
+                continents,
+                key=lambda c: angular_distance(centroids[c][None], here)[0])
+    continent_number = {label: index for index, label in enumerate(continents)}
+
+    ### Each continent gets an Euler axis toward the assembly centre and an ice
+    ### flag when polar.
+    assembly = lonlat_to_xyz(cfg.assembly_center_lon, cfg.assembly_center_lat)[0]
+    continent_info = {}
+    for label in continents:
+        here = centroids[label]
+        axis = np.cross(here, assembly)
+        norm = np.linalg.norm(axis)
+        rows = np.where(np.any(grid_labels == label, axis=1))[0]
+        reaches = float(np.max(np.abs(lat[rows]))) if rows.size else 0.0
+        index = continent_number[label]
+        continent_info[label] = {
+            "axis": axis / norm if norm > 1e-6 else np.zeros(3),
+            "polar": bool(reaches > cfg.ice_continent_lat),
+            "name": f"Continent {index + 1}",
+            "slug": f"continent-{index + 1}",
+        }
+
+    ### Tag each mesh land cell with the continent of its grid cell.
+    mesh_lonlat = xyz_to_lonlat(points)
+    mesh_col = np.clip(((mesh_lonlat[:, 0] + 180.0) / 360.0
+                        * (cfg.grid_width - 1)).round().astype(int),
+                       0, cfg.grid_width - 1)
+    mesh_row = np.clip(((mesh_lonlat[:, 1] + 90.0) / 180.0
+                        * (cfg.grid_height - 1)).round().astype(int),
+                       0, cfg.grid_height - 1)
+    mesh_label = grid_labels[mesh_row, mesh_col]
+    in_continent = np.isin(mesh_label, list(component_continent.keys()))
+    land_cells = np.where(is_land & in_continent)[0]
+    land_xyz = points[land_cells]
+    land_component = [component_continent[int(mesh_label[cell])]
+                      for cell in land_cells]
+    land_index = np.array([continent_number[label]
+                           for label in land_component])
+    land_axis = np.array([continent_info[label]["axis"]
+                          for label in land_component])
+    land_elevation = world["elevation"][land_cells]
+
+    view_lonlat = xyz_to_lonlat(centroids[continents[0]][None])[0]
 
     cfg.data_dir.mkdir(parents=True, exist_ok=True)
 
     eras = []
     articles = {}
     final_landmasses = []
-    for era_index, (name, angle) in enumerate(
-            zip(cfg.era_names, cfg.era_drift_radians)):
-        features, landmasses = _extract_era(
-            era_index, angle, land_xyz, land_plate, axes, grid_xyz, lon, lat,
-            safe, row_weight)
+    for era_index, (era_name, angle) in enumerate(
+            zip(cfg.era_names, cfg.era_assembly_radians)):
+        moved = rodrigues(land_xyz, land_axis, angle)
+        painted = rasterize_continents(moved, land_elevation, land_index,
+                                       world["sea_level"], grid_xyz, chord)
+
+        features = []
+        landmasses = []
+        for label in continents:
+            info = continent_info[label]
+            mask = painted == continent_number[label]
+            if not mask.any():
+                continue
+            geometry = mask_to_multipolygon(mask)
+            if geometry is None:
+                continue
+            properties = {"name": info["name"], "slug": info["slug"],
+                          "polar": info["polar"]}
+            features.append(_feature(geometry, properties))
+            landmasses.append({**properties,
+                               "land_fraction": _area_fraction(mask,
+                                                               row_weight)})
+
         filename = f"land_era{era_index + 1}.geojson"
         _write_collection(cfg.data_dir / filename, features)
-        eras.append({"name": name, "file": filename, "count": len(features)})
+        eras.append({"name": era_name, "file": filename,
+                     "count": len(features)})
         for landmass in landmasses:
             articles[landmass["slug"]] = landmass
         if era_index == len(cfg.era_names) - 1:
             final_landmasses = landmasses
 
     meta = {
-        "world_name": world_name,
+        "world_name": cfg.world_display_name,
         "seed": int(seed),
         "mesh_cells": cfg.mesh_cells,
-        "plate_count": cfg.plate_count,
+        "continent_count": len(continents),
         "center_lon": float(view_lonlat[0]),
         "center_lat": float(view_lonlat[1]),
         "eras": eras,

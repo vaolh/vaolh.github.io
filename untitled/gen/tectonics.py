@@ -7,7 +7,7 @@ from scipy.spatial import cKDTree
 
 import config as cfg
 from geometry import (angular_distance, lonlat_to_xyz, sphere_noise,
-                      smooth_field)
+                      smooth_field, domain_warp, rodrigues)
 
 ### REPLICATION FILE: tectonics.py
 ### PYTHON VERSION:   3.13+
@@ -112,7 +112,11 @@ def assign_plates(points, edges, rng):
                               replace=False)
     seeds = points[seed_indices]
     seed_tree = cKDTree(seeds)
-    _, plate_id = seed_tree.query(points, workers=-1)
+    warped = domain_warp(points, rng, cfg.boundary_warp_amplitude,
+                         cfg.boundary_warp_components,
+                         cfg.boundary_warp_frequency_min,
+                         cfg.boundary_warp_frequency_max)
+    _, plate_id = seed_tree.query(warped, workers=-1)
 
     adjacency = plate_adjacency(plate_id, edges)
     cells_per_plate = np.bincount(plate_id, minlength=cfg.plate_count)
@@ -149,6 +153,33 @@ def plate_velocities(points, plate_id, rng):
                          size=cfg.plate_count)
     rotation = axes * speeds[:, None]
     return np.cross(rotation[plate_id], points)
+
+
+def drift_axes(points, plate_id, center):
+    """Return each plate's Euler axis for drifting outward from the centre.
+
+    Rotating a plate about the axis ``centre x centroid`` carries its centroid
+    away from the supercontinent centre along their great circle, so applying it
+    to every plate breaks the assembled landmass apart radially, the way Pangaea
+    rifted into the modern continents.
+    """
+    axes = np.zeros((cfg.plate_count, 3))
+    for plate in range(cfg.plate_count):
+        cells = points[plate_id == plate]
+        if cells.shape[0] == 0:
+            continue
+        centroid = cells.mean(axis=0)
+        centroid /= np.linalg.norm(centroid) + 1e-12
+        axis = np.cross(center, centroid)
+        norm = np.linalg.norm(axis)
+        if norm > 1e-6:
+            axes[plate] = axis / norm
+    return axes
+
+
+def drift_points(positions, plate, axes, angle):
+    """Carry positions about their plate's drift axis by a given angle."""
+    return rodrigues(positions, axes[plate], angle)
 
 
 def classify_boundaries(points, edges, plate_id, continental, velocity):

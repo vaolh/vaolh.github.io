@@ -10,11 +10,10 @@ from scipy.spatial import cKDTree
 from shapely.geometry import mapping
 
 import config as cfg
-from geometry import fibonacci_sphere, build_adjacency
-from tectonics import simulate
-from names import generate_world_name, generate_names
-from vectorize import (build_grid, rasterize_idw, mask_to_multipolygon,
-                       keep_landmasses, label_landmasses, build_polar_cap)
+from geometry import fibonacci_sphere, build_adjacency, lonlat_to_xyz
+from tectonics import simulate, drift_axes, drift_points
+from names import generate_world_name
+from vectorize import build_grid, mask_to_multipolygon, label_landmasses
 
 ### REPLICATION FILE: generate.py
 ### PYTHON VERSION:   3.13+
@@ -51,12 +50,74 @@ def _area_fraction(mask, row_weight):
                  / (row_weight.sum() * cfg.grid_width))
 
 
-def build_world(seed):
-    """Generate the land geojson and metadata for a seed.
+def _name_landmass(era_index, rank, island_counter, continent_counter):
+    """Return the placeholder name and slug for a landmass in an era.
 
-    The full plate simulation runs first; its land field is rasterised, split
-    into landmasses, and each surviving continent is vectorised as a separately
-    named feature. In continents mode a wavy polar cap is appended as Antarctica.
+    Names are deliberately generic numbered placeholders, since the continents
+    are named by hand later. Era one's largest mass is the supercontinent.
+    """
+    if era_index == 0 and rank == 0:
+        return cfg.supercontinent_name, cfg.supercontinent_slug
+    if era_index == 0:
+        island_counter[0] += 1
+        return f"Island {island_counter[0]}", f"island-{island_counter[0]}"
+    continent_counter[0] += 1
+    return (f"Continent {continent_counter[0]}",
+            f"continent-{continent_counter[0]}")
+
+
+def _extract_era(era_index, angle, land_xyz, land_plate, axes, grid_xyz,
+                 lon, lat, safe, row_weight):
+    """Drift the land to one era and return its features and landmass metadata.
+
+    Every land cell is carried about its plate's drift axis by the era angle,
+    the drifted cloud is painted onto the grid wherever a cell falls within the
+    drift threshold, and each connected landmass is traced into a polygon. Gaps
+    that open between diverging fragments become ocean.
+    """
+    moved = drift_points(land_xyz, land_plate, axes, angle)
+    tree = cKDTree(moved)
+    chord = 2.0 * np.sin(cfg.drift_land_threshold / 2.0)
+    distance, _ = tree.query(grid_xyz, workers=-1)
+    mask = (distance < chord).reshape(cfg.grid_height, cfg.grid_width) & safe
+
+    components = label_landmasses(mask)
+    features = []
+    landmasses = []
+    if not components:
+        return features, landmasses
+    largest = components[0].sum()
+    island_counter = [0]
+    continent_counter = [0]
+    rank = 0
+    for component in components:
+        if component.sum() < cfg.landmass_min_relative_size * largest:
+            continue
+        geometry = mask_to_multipolygon(component)
+        if geometry is None:
+            continue
+        rows = np.where(component.any(axis=1))[0]
+        centroid_lat = float(np.average(lat[rows],
+                                        weights=row_weight[rows, 0]))
+        polar = abs(centroid_lat) > cfg.ice_continent_lat
+        name, slug = _name_landmass(era_index, rank, island_counter,
+                                    continent_counter)
+        features.append(_feature(geometry, {"name": name, "slug": slug,
+                                            "polar": polar}))
+        landmasses.append({"name": name, "slug": slug, "polar": polar,
+                           "land_fraction": _area_fraction(component,
+                                                           row_weight)})
+        rank += 1
+    return features, landmasses
+
+
+def build_world(seed):
+    """Generate the three drift eras of one world and their metadata.
+
+    A single supercontinent is simulated, then its land cells are drifted
+    outward by increasing angles to produce the supercontinent, early-rifting,
+    and dispersed-continents eras. Because every continent is a fragment of the
+    same supercontinent, their facing coastlines fit back together.
     """
     rng = np.random.default_rng(seed)
 
@@ -65,57 +126,46 @@ def build_world(seed):
     world = simulate(points, edges, rng)
     world_name = generate_world_name(rng)
 
-    tree = cKDTree(points)
+    center = lonlat_to_xyz(cfg.supercontinent_center_lon,
+                           cfg.supercontinent_center_lat)[0]
+    is_land = world["is_land"]
+    land_xyz = points[is_land]
+    land_plate = world["plate_id"][is_land]
+    axes = drift_axes(points, world["plate_id"], center)
+
     lon, lat, grid_xyz = build_grid()
-    elevation_grid = rasterize_idw(tree, world["elevation"], grid_xyz)
-    land_grid = keep_landmasses(elevation_grid > world["sea_level"])
     row_weight = np.cos(np.radians(lat))[:, None]
+    safe = ((np.abs(lat)[:, None] <= cfg.safe_lat_limit)
+            & (np.abs(lon)[None, :] <= cfg.safe_lon_limit))
 
     cfg.data_dir.mkdir(parents=True, exist_ok=True)
 
-    features = []
-    landmasses = []
-    if cfg.world_mode == "continents":
-        masks = label_landmasses(land_grid)
-        names = generate_names(len(masks), rng)
-        for mask, (name, slug) in zip(masks, names):
-            geometry = mask_to_multipolygon(mask)
-            if geometry is None:
-                continue
-            fraction = _area_fraction(mask, row_weight)
-            features.append(_feature(geometry, {"name": name, "slug": slug}))
-            landmasses.append({"name": name, "slug": slug,
-                               "land_fraction": fraction})
-        if cfg.include_antarctica:
-            cap = build_polar_cap(rng)
-            features.append(_feature(cap, {"name": cfg.antarctica_name,
-                                           "slug": cfg.antarctica_slug}))
-            polar = (np.sin(np.radians(cfg.antarctica_coast_lat)) + 1.0) / 2.0
-            landmasses.append({"name": cfg.antarctica_name,
-                               "slug": cfg.antarctica_slug,
-                               "land_fraction": float(polar)})
-    else:
-        geometry = mask_to_multipolygon(land_grid)
-        features.append(_feature(geometry, {"name": cfg.supercontinent_name,
-                                            "slug": cfg.supercontinent_slug}))
-        landmasses.append({"name": cfg.supercontinent_name,
-                           "slug": cfg.supercontinent_slug,
-                           "land_fraction": _area_fraction(land_grid,
-                                                           row_weight)})
-
-    _write_collection(cfg.data_dir / "land.geojson", features)
+    eras = []
+    articles = {}
+    final_landmasses = []
+    for era_index, (name, angle) in enumerate(
+            zip(cfg.era_names, cfg.era_drift_radians)):
+        features, landmasses = _extract_era(
+            era_index, angle, land_xyz, land_plate, axes, grid_xyz, lon, lat,
+            safe, row_weight)
+        filename = f"land_era{era_index + 1}.geojson"
+        _write_collection(cfg.data_dir / filename, features)
+        eras.append({"name": name, "file": filename, "count": len(features)})
+        for landmass in landmasses:
+            articles[landmass["slug"]] = landmass
+        if era_index == len(cfg.era_names) - 1:
+            final_landmasses = landmasses
 
     meta = {
         "world_name": world_name,
-        "era": cfg.world_mode,
         "seed": int(seed),
         "mesh_cells": cfg.mesh_cells,
         "plate_count": cfg.plate_count,
-        "land_fraction": sum(m["land_fraction"] for m in landmasses),
-        "highest_elevation": float(np.max(world["elevation"])),
         "center_lon": cfg.supercontinent_center_lon,
         "center_lat": cfg.supercontinent_center_lat,
-        "landmasses": landmasses,
+        "eras": eras,
+        "landmasses": final_landmasses,
+        "articles": list(articles.values()),
     }
     (cfg.data_dir / "meta.json").write_text(json.dumps(meta, indent=2))
     return meta
@@ -131,8 +181,8 @@ def main():
 
     meta = build_world(arguments.seed)
     print(f"world '{meta['world_name']}' built from seed {meta['seed']}")
-    print(f"{len(meta['landmasses'])} landmasses, "
-          f"land fraction {meta['land_fraction']:.3f}")
+    for era in meta["eras"]:
+        print(f"  {era['name']}: {era['count']} landmasses ({era['file']})")
     print(f"geojson written to {cfg.data_dir}")
 
 

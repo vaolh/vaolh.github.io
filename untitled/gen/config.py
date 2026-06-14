@@ -32,9 +32,10 @@ preview_dir = data_dir / "previews"
 ### Default master seed; override on the command line to explore alternatives.
 default_seed = 7
 
-### Generation mode. "supercontinent" gathers all land into one Pangaea-like
-### mass; "continents" scatters several Earth-like continents with a polar cap.
-world_mode = "continents"
+### Base generation always builds one supercontinent and then drifts it apart
+### into the later eras, so the continents are torn fragments whose coastlines
+### fit back together rather than unrelated blobs.
+world_mode = "supercontinent"
 
 #################################################
 ################ SPHERE MESH ####################
@@ -53,6 +54,14 @@ mesh_neighbours = 7
 
 ### Number of tectonic plates tessellated across the globe.
 plate_count = 44
+
+### Domain-warp amplitude and noise applied to plate assignment so plate
+### boundaries, and therefore the torn coastlines, are fractal rather than the
+### straight edges of a raw Voronoi tessellation.
+boundary_warp_amplitude = 0.07
+boundary_warp_components = 40
+boundary_warp_frequency_min = 2.0
+boundary_warp_frequency_max = 9.0
 
 ### Fraction of total surface area that begins as continental crust. Tuned so
 ### the emergent supercontinent covers a Pangaea-like share of the globe.
@@ -120,6 +129,34 @@ continent_size_max = 1.8
 ### Minimum size of a kept landmass, as a fraction of the largest continent, so
 ### tiny specks are flooded while genuine continents and islands survive.
 continent_min_relative_size = 0.02
+
+#################################################
+################ ERAS AND DRIFT #################
+#################################################
+
+### The three geological eras and the outward drift angle, in radians, applied
+### to each plate to reach them. Era one is the assembled supercontinent.
+era_names = ["Supercontinent", "First tectonic movements",
+             "Earth-like continents"]
+era_drift_radians = [0.0, 0.30, 0.85]
+
+### Geodesic distance within which a drifted land cell paints land on the grid,
+### in radians. Gaps wider than this between drifting fragments become ocean.
+drift_land_threshold = 0.038
+
+### Land is clipped inside these longitude and latitude limits, in degrees, so a
+### drifting continent never reaches the antimeridian seam or a pole where
+### coastline extraction would break; the excluded margins read as open ocean.
+safe_lon_limit = 168.0
+safe_lat_limit = 84.0
+
+### Continents whose centroid lies poleward of this latitude render as white
+### ice rather than green land, giving polar continents an ice-sheet look.
+ice_continent_lat = 60.0
+
+### Minimum size of a kept landmass, as a fraction of the largest, low enough to
+### preserve island arcs and archipelagos rather than only major continents.
+landmass_min_relative_size = 0.004
 
 #################################################
 ################ ANTARCTICA #####################

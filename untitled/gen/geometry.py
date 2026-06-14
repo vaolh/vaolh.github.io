@@ -76,6 +76,35 @@ def build_adjacency(points, neighbours):
     return unique_edges
 
 
+def rodrigues(points, axes, angle):
+    """Rotate each point about its own unit axis by a shared angle.
+
+    Uses the Rodrigues rotation formula vectorised over all points, which is how
+    rigid plate motion is advanced: every cell is carried about its plate's Euler
+    axis by the same angular amount for a given era.
+    """
+    cos_a = np.cos(angle)
+    sin_a = np.sin(angle)
+    dot = np.sum(axes * points, axis=1, keepdims=True)
+    cross = np.cross(axes, points)
+    return (points * cos_a + cross * sin_a + axes * dot * (1.0 - cos_a))
+
+
+def domain_warp(points, rng, amplitude, components, frequency_min,
+                frequency_max):
+    """Return points displaced by a smooth vector noise field on the sphere.
+
+    Warping positions before the nearest-seed test bends the otherwise straight
+    Voronoi plate boundaries into fractal, natural-looking lines, which carry
+    through to irregular coastlines once the supercontinent rifts apart.
+    """
+    displacement = np.column_stack([
+        sphere_noise(points, rng, components, frequency_min, frequency_max, 1.0)
+        for _ in range(3)])
+    warped = points + amplitude * displacement
+    return warped / np.linalg.norm(warped, axis=1, keepdims=True)
+
+
 def smooth_field(values, edges, passes):
     """Smooth a per-cell field by repeated averaging with adjacent cells.
 

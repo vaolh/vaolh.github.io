@@ -30,15 +30,14 @@
     let ocean_fill = css_color("--wm-ocean", "#bcd6ec");
     let ice_fill = css_color("--wm-ice", "#ffffff");
 
-    /* Latitudes poleward of which white ice is drawn: a small arctic sea-ice cap
-       in the north and a larger cap covering the antarctic continent. */
-    const arctic_ice_latitude = 74;
-    const antarctic_ice_latitude = 66;
-
     let meta = null;
     let is_globe = true;
     let selected_id = null;
     let hovered_id = null;
+
+    /* Loaded geojson for every era, and the era currently shown. */
+    let era_data = [];
+    let era_index = 0;
 
     /* Build the longitude and latitude graticule as a line feature set. */
     function graticule() {
@@ -55,22 +54,6 @@
             }
         }
         return { type: "FeatureCollection", features: features };
-    }
-
-    /* Return a polar ice cap as one polygon: a circle at the edge latitude
-       closed by a line just shy of the pole, which renders on the globe where a
-       ring through the exact pole would not. */
-    function _ice_cap(edge_lat, near_pole) {
-        const steps = 120;
-        const top = [];
-        const bottom = [];
-        for (let i = 0; i <= steps; i++) {
-            const lon = -179 + 358 * i / steps;
-            top.push([lon, edge_lat]);
-            bottom.push([-179 + 358 * (steps - i) / steps, near_pole]);
-        }
-        return { type: "Feature", geometry: { type: "Polygon",
-            coordinates: [top.concat(bottom, [top[0]])] } };
     }
 
     /* Show the popup anchored at a geographic point with a link to the article. */
@@ -109,12 +92,14 @@
         document.getElementById(map_id + "-tooltip").classList.remove("open");
     }
 
-    /* Reapply the fill colour expression after a hover, select or theme change. */
+    /* Reapply the fill colour expression after a hover, select or theme change.
+       Polar continents render as white ice, all others as green land. */
     function refresh_fill(map) {
         map.setPaintProperty("land-fill", "fill-color", [
             "case",
             ["boolean", ["feature-state", "selected"], false], highlight_fill,
             ["boolean", ["feature-state", "hover"], false], highlight_fill,
+            ["boolean", ["get", "polar"], false], ice_fill,
             land_fill
         ]);
     }
@@ -143,6 +128,35 @@
                 document.body.classList.toggle("vk-map-fullscreen", full);
                 setTimeout(function () { map.resize(); }, 60);
             });
+
+        document.getElementById("wm-btn-era").addEventListener("click",
+            function () {
+                era_index = (era_index + 1) % meta.eras.length;
+                show_era(map);
+            });
+    }
+
+    /* Switch the land source to the current era and relabel the era button. */
+    function show_era(map) {
+        clear_states(map);
+        map.getSource("land").setData(era_data[era_index]);
+        document.getElementById("wm-btn-era").textContent =
+            meta.eras[era_index].name;
+        hide_popup();
+    }
+
+    /* Drop any hover or selection feature-state before reloading the source. */
+    function clear_states(map) {
+        if (hovered_id !== null) {
+            map.setFeatureState({ source: "land", id: hovered_id },
+                                { hover: false });
+            hovered_id = null;
+        }
+        if (selected_id !== null) {
+            map.setFeatureState({ source: "land", id: selected_id },
+                                { selected: false });
+            selected_id = null;
+        }
     }
 
     /* React to colour-scheme changes so the globe matches the active theme. */
@@ -156,9 +170,6 @@
             ice_fill = css_color("--wm-ice", "#ffffff");
             if (map.getLayer("ocean-fill")) {
                 map.setPaintProperty("ocean-fill", "fill-color", ocean_fill);
-            }
-            if (map.getLayer("ice-fill")) {
-                map.setPaintProperty("ice-fill", "fill-color", ice_fill);
             }
             ["graticule-line", "equator-line", "land-line"].forEach(
                 function (id) {
@@ -223,36 +234,31 @@
                 paint: { "line-color": highlight, "line-width": 1,
                          "line-dasharray": [4, 4], "line-opacity": 0.5 } });
 
-            fetch(data_path + "land.geojson")
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    map.addSource("land", { type: "geojson", data: data,
-                                            generateId: true });
-                    map.addLayer({ id: "land-fill", type: "fill",
-                        source: "land",
-                        paint: { "fill-color": land_fill, "fill-opacity": 1 } });
-                    map.addLayer({ id: "land-line", type: "line",
-                        source: "land",
-                        paint: { "line-color": highlight, "line-width": [
-                            "interpolate", ["linear"], ["zoom"],
-                            2, 0.9, 6, 1.6, 10, 2.2] } });
-
-                    /* White polar ice caps drawn over both land and sea. */
-                    map.addSource("ice", { type: "geojson", data: {
-                        type: "FeatureCollection", features: [
-                            _ice_cap(arctic_ice_latitude, 89.9),
-                            _ice_cap(-antarctic_ice_latitude, -89.9)] } });
-                    map.addLayer({ id: "ice-fill", type: "fill", source: "ice",
-                        paint: { "fill-color": ice_fill } });
-
-                    refresh_fill(map);
-                    attach_interaction(map);
-
-                    const loader = document.getElementById(map_id + "-loader");
-                    if (loader) {
-                        loader.classList.add("hidden");
-                    }
+            Promise.all(meta.eras.map(function (era) {
+                return fetch(data_path + era.file).then(function (r) {
+                    return r.json();
                 });
+            })).then(function (loaded) {
+                era_data = loaded;
+                era_index = meta.eras.length - 1;
+                map.addSource("land", { type: "geojson",
+                    data: era_data[era_index], generateId: true });
+                map.addLayer({ id: "land-fill", type: "fill", source: "land",
+                    paint: { "fill-color": land_fill, "fill-opacity": 1 } });
+                map.addLayer({ id: "land-line", type: "line", source: "land",
+                    paint: { "line-color": highlight, "line-width": [
+                        "interpolate", ["linear"], ["zoom"],
+                        2, 0.9, 6, 1.6, 10, 2.2] } });
+                refresh_fill(map);
+                attach_interaction(map);
+                document.getElementById("wm-btn-era").textContent =
+                    meta.eras[era_index].name;
+
+                const loader = document.getElementById(map_id + "-loader");
+                if (loader) {
+                    loader.classList.add("hidden");
+                }
+            });
         });
 
         map.on("render", function () { reposition_popup(map); });

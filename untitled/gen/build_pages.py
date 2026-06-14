@@ -61,9 +61,10 @@ def build_index(meta):
     html += f"""<h1>{meta['world_name']}</h1>
 
 <p><b>{meta['world_name']}</b> is the world of an unnamed fantasy setting. Its
-surface is shaped by a simulated system of {meta['plate_count']} tectonic plates
-whose collisions raise mountain belts and whose drift carries the
-{count} continents across the globe. Drag to spin the globe, scroll to zoom,
+surface is shaped by a simulated system of {meta['plate_count']} tectonic plates.
+The <b>Era</b> button replays its geological history: one assembled
+supercontinent that rifts apart and drifts into {count} continents whose
+coastlines still fit back together. Drag to spin the globe, scroll to zoom,
 toggle the flat map, and click a continent to open its article.</p>
 
 <div id="world-map-outer">
@@ -76,6 +77,7 @@ toggle the flat map, and click a continent to open its article.</p>
     <div id="world-map-controls">
       <button id="wm-btn-globe" class="vk-ctrl-btn active" title="Toggle globe or flat map">Globe</button>
       <button id="wm-btn-reset" class="vk-ctrl-btn" title="Reset view">Reset</button>
+      <button id="wm-btn-era" class="vk-ctrl-btn" title="Step through the geological eras">Era</button>
       <button id="wm-btn-fs" class="vk-ctrl-btn" title="Toggle fullscreen">Fullscreen</button>
     </div>
   </div>
@@ -94,12 +96,13 @@ toggle the flat map, and click a continent to open its article.</p>
 
 
 def build_articles(meta):
-    """Write one stub article per landmass with a geography infobox."""
+    """Write one stub article per landmass that appears in any era."""
     wiki_dir = cfg.project_dir / "wiki"
     wiki_dir.mkdir(parents=True, exist_ok=True)
-    for land in meta["landmasses"]:
+    for land in meta["articles"]:
         name = land["name"]
         share = land["land_fraction"]
+        kind = "ice-capped continent" if land.get("polar") else "continent"
         html = _head(f"{name} – {meta['world_name']}", "../")
         html += f"""<h1>{name}</h1>
 
@@ -108,17 +111,16 @@ def build_articles(meta):
 <div class="infobox-section">Geography</div>
 <table><tbody>
 <tr><th>World</th><td><a href="../index.html">{meta['world_name']}</a></td></tr>
-<tr><th>Type</th><td>Continent</td></tr>
+<tr><th>Type</th><td>{kind.capitalize()}</td></tr>
 <tr><th>Area</th><td>{_land_km2(share):,} km&sup2;</td></tr>
 <tr><th>Share of globe</th><td>{round(share * 100, 1)}%</td></tr>
 </tbody></table>
 </div>
 
-<p><b>{name}</b> is a continent of {meta['world_name']}, one of
-{len(meta['landmasses'])} landmasses on a world shaped by {meta['plate_count']}
-drifting tectonic plates. It covers roughly {round(share * 100, 1)}% of the
-planet's surface. This article is a stub awaiting its geography, peoples and
-history.</p>
+<p><b>{name}</b> is a {kind} of {meta['world_name']}, a world shaped by
+{meta['plate_count']} drifting tectonic plates. It covers roughly
+{round(share * 100, 1)}% of the planet's surface. This article is a stub
+awaiting its name, geography, peoples and history.</p>
 
 <p><a href="../index.html">&larr; Back to the map of {meta['world_name']}</a></p>
 </body></html>
@@ -131,7 +133,7 @@ def main():
     meta = json.loads((cfg.data_dir / "meta.json").read_text())
     build_index(meta)
     build_articles(meta)
-    print(f"built index.html and {len(meta['landmasses'])} articles")
+    print(f"built index.html and {len(meta['articles'])} articles")
 
 
 if __name__ == "__main__":

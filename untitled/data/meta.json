@@ -1,43 +1,137 @@
 {
-  "world_name": "Reinufyodoria",
-  "era": "continents",
+  "world_name": "Auqhosuheim",
   "seed": 7,
   "mesh_cells": 26000,
   "plate_count": 44,
-  "land_fraction": 0.3272370912573763,
-  "highest_elevation": 1.8364898497433244,
   "center_lon": 0.0,
   "center_lat": 8.0,
+  "eras": [
+    {
+      "name": "Supercontinent",
+      "file": "land_era1.geojson",
+      "count": 2
+    },
+    {
+      "name": "First tectonic movements",
+      "file": "land_era2.geojson",
+      "count": 8
+    },
+    {
+      "name": "Earth-like continents",
+      "file": "land_era3.geojson",
+      "count": 8
+    }
+  ],
   "landmasses": [
     {
-      "name": "Draulyothal",
-      "slug": "draulyothal",
-      "land_fraction": 0.13739193011861006
+      "name": "Continent 1",
+      "slug": "continent-1",
+      "polar": true,
+      "land_fraction": 0.039366503588617055
     },
     {
-      "name": "Akrin",
-      "slug": "akrin",
-      "land_fraction": 0.05567926656549439
+      "name": "Continent 2",
+      "slug": "continent-2",
+      "polar": false,
+      "land_fraction": 0.048394079881497486
     },
     {
-      "name": "Vheikyorn",
-      "slug": "vheikyorn",
-      "land_fraction": 0.04474857673077985
+      "name": "Continent 3",
+      "slug": "continent-3",
+      "polar": false,
+      "land_fraction": 0.05015922054071613
     },
     {
-      "name": "Phadrauzaes",
-      "slug": "phadrauzaes",
-      "land_fraction": 0.023872589340156382
+      "name": "Continent 4",
+      "slug": "continent-4",
+      "polar": false,
+      "land_fraction": 0.05345182618218581
     },
     {
-      "name": "Reikiadreir",
-      "slug": "reikiadreir",
-      "land_fraction": 0.014941751651919086
+      "name": "Continent 5",
+      "slug": "continent-5",
+      "polar": false,
+      "land_fraction": 0.029092141285260678
     },
     {
-      "name": "Antarctica",
-      "slug": "antarctica",
-      "land_fraction": 0.05060297685041654
+      "name": "Continent 6",
+      "slug": "continent-6",
+      "polar": false,
+      "land_fraction": 0.001564032016736461
+    },
+    {
+      "name": "Continent 7",
+      "slug": "continent-7",
+      "polar": false,
+      "land_fraction": 0.0019651988591065073
+    },
+    {
+      "name": "Continent 8",
+      "slug": "continent-8",
+      "polar": false,
+      "land_fraction": 0.0011109687232135265
+    }
+  ],
+  "articles": [
+    {
+      "name": "Supercontinent",
+      "slug": "supercontinent",
+      "polar": false,
+      "land_fraction": 0.2038382089350125
+    },
+    {
+      "name": "Island 1",
+      "slug": "island-1",
+      "polar": true,
+      "land_fraction": 0.008102362919307984
+    },
+    {
+      "name": "Continent 1",
+      "slug": "continent-1",
+      "polar": true,
+      "land_fraction": 0.039366503588617055
+    },
+    {
+      "name": "Continent 2",
+      "slug": "continent-2",
+      "polar": false,
+      "land_fraction": 0.048394079881497486
+    },
+    {
+      "name": "Continent 3",
+      "slug": "continent-3",
+      "polar": false,
+      "land_fraction": 0.05015922054071613
+    },
+    {
+      "name": "Continent 4",
+      "slug": "continent-4",
+      "polar": false,
+      "land_fraction": 0.05345182618218581
+    },
+    {
+      "name": "Continent 5",
+      "slug": "continent-5",
+      "polar": false,
+      "land_fraction": 0.029092141285260678
+    },
+    {
+      "name": "Continent 6",
+      "slug": "continent-6",
+      "polar": false,
+      "land_fraction": 0.001564032016736461
+    },
+    {
+      "name": "Continent 7",
+      "slug": "continent-7",
+      "polar": false,
+      "land_fraction": 0.0019651988591065073
+    },
+    {
+      "name": "Continent 8",
+      "slug": "continent-8",
+      "polar": false,
+      "land_fraction": 0.0011109687232135265
     }
   ]
 }

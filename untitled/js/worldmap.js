@@ -35,10 +35,6 @@
     let selected_id = null;
     let hovered_id = null;
 
-    /* Loaded geojson for every era, and the era currently shown. */
-    let era_data = [];
-    let era_index = 0;
-
     /* Build the longitude and latitude graticule as a line feature set. */
     function graticule() {
         const features = [];
@@ -128,21 +124,6 @@
                 document.body.classList.toggle("vk-map-fullscreen", full);
                 setTimeout(function () { map.resize(); }, 60);
             });
-
-        document.getElementById("wm-btn-era").addEventListener("click",
-            function () {
-                era_index = (era_index + 1) % meta.eras.length;
-                show_era(map);
-            });
-    }
-
-    /* Switch the land source to the current era and relabel the era button. */
-    function show_era(map) {
-        clear_states(map);
-        map.getSource("land").setData(era_data[era_index]);
-        document.getElementById("wm-btn-era").textContent =
-            meta.eras[era_index].name;
-        hide_popup();
     }
 
     /* Drop any hover or selection feature-state before reloading the source. */
@@ -234,15 +215,11 @@
                 paint: { "line-color": highlight, "line-width": 1,
                          "line-dasharray": [4, 4], "line-opacity": 0.5 } });
 
-            Promise.all(meta.eras.map(function (era) {
-                return fetch(data_path + era.file).then(function (r) {
-                    return r.json();
-                });
-            })).then(function (loaded) {
-                era_data = loaded;
-                era_index = meta.eras.length - 1;
+            fetch(data_path + meta.eras[0].file)
+                .then(function (r) { return r.json(); })
+                .then(function (land_data) {
                 map.addSource("land", { type: "geojson",
-                    data: era_data[era_index], generateId: true });
+                    data: land_data, generateId: true });
                 map.addLayer({ id: "land-fill", type: "fill", source: "land",
                     paint: { "fill-color": land_fill, "fill-opacity": 1 } });
                 map.addLayer({ id: "land-line", type: "line", source: "land",
@@ -251,8 +228,6 @@
                         2, 0.9, 6, 1.6, 10, 2.2] } });
                 refresh_fill(map);
                 attach_interaction(map);
-                document.getElementById("wm-btn-era").textContent =
-                    meta.eras[era_index].name;
 
                 const loader = document.getElementById(map_id + "-loader");
                 if (loader) {

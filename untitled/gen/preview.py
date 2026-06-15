@@ -32,16 +32,49 @@ def _hexrgb(value):
                  for index in (1, 3, 5))
 
 
-def _hypsometric(elevation, land_grid):
+def _ice_mask(land_grid, lat):
+    """BFS from pole rows through land cells above 60 deg lat only.
+
+    The fractal polar landmass is naturally blob-shaped, like Antarctica.
+    The 60 deg cutoff stops the fill escaping through any narrow isthmus
+    that connects the polar land to a mid-latitude continent.
+    """
+    H, W = land_grid.shape
+    # rows where |lat| >= 60
+    polar_rows = np.where(np.abs(lat) >= 60.0)[0]
+    eligible = np.zeros((H, W), dtype=bool)
+    eligible[polar_rows, :] = True
+
+    ice = np.zeros((H, W), dtype=bool)
+    for pole_row in [H - 1, 0]:
+        queue = [(pole_row, c) for c in range(W)
+                 if land_grid[pole_row, c] and eligible[pole_row, c]]
+        for pos in queue:
+            ice[pos] = True
+        i = 0
+        while i < len(queue):
+            r, c = queue[i]; i += 1
+            for nr, nc in [(r+1,c),(r-1,c),(r,c+1),(r,c-1)]:
+                nc = nc % W
+                if (0 <= nr < H and eligible[nr, nc]
+                        and land_grid[nr, nc] and not ice[nr, nc]):
+                    ice[nr, nc] = True
+                    queue.append((nr, nc))
+    return ice
+
+
+def _hypsometric(elevation, land_grid, ice_grid):
     """Map the elevation grid to hypsometric tints for a readable preview.
 
     Ocean is shaded by depth, land ramps from coastal green through highland
-    brown, and terrain above the mountain threshold whitens toward peaks, so the
-    tectonic mountain belts stand out against the continental interior.
+    brown, terrain above the mountain threshold whitens toward peaks, and land
+    covered by polar ice (flood-filled from the poles, donjo-style) is painted
+    glacier-white.
     """
     deep, shallow = _hexrgb("#0a1830"), _hexrgb("#3a78b0")
     coast, upland = _hexrgb("#5f8f48"), _hexrgb("#7d6a3c")
     peak = _hexrgb("#f4f4f4")
+    ice = _hexrgb("#ddeeff")
     image = np.zeros(elevation.shape + (3,), dtype=np.float64)
 
     ocean = ~land_grid
@@ -63,6 +96,11 @@ def _hypsometric(elevation, land_grid):
         image[..., channel] = np.where(
             high, upland[channel] + (peak[channel] - upland[channel]) * snow,
             image[..., channel])
+
+    ### Polar ice: land reached by flood-fill from the poles, donjo-style.
+    for channel in range(3):
+        image[..., channel] = np.where(ice_grid, ice[channel],
+                                        image[..., channel])
     return image
 
 
@@ -74,17 +112,16 @@ def _render_tile(axis, seed):
     world = simulate(points, edges, rng)
 
     tree = cKDTree(points)
-    lon, lat, grid_xyz = build_grid()
+    _, lat, grid_xyz = build_grid()
     land_grid = rasterize_nearest(
         tree, world["is_land"].astype(np.int64), grid_xyz).astype(bool)
     elevation = rasterize_idw(tree, world["elevation"], grid_xyz)
+    ice_grid = _ice_mask(land_grid, lat)
 
-    axis.imshow(_hypsometric(elevation, land_grid), origin="lower",
+    axis.imshow(_hypsometric(elevation, land_grid, ice_grid), origin="lower",
                 extent=[-180, 180, -90, 90])
-    axis.set_xlim(cfg.supercontinent_center_lon - 110,
-                  cfg.supercontinent_center_lon + 110)
-    axis.set_ylim(cfg.supercontinent_center_lat - 80,
-                  cfg.supercontinent_center_lat + 80)
+    axis.set_xlim(-180, 180)
+    axis.set_ylim(-90, 90)
     axis.set_title(f"seed {seed}", fontsize=9)
     axis.set_xticks([])
     axis.set_yticks([])

@@ -30,7 +30,7 @@ preview_dir = data_dir / "previews"
 #################################################
 
 ### Default master seed; override on the command line to explore alternatives.
-default_seed = 7
+default_seed = 21390380201
 
 ### Fixed display name of the world; never generated.
 world_display_name = "The World"
@@ -108,7 +108,7 @@ supercontinent_bias_amplitude = 1.6
 ### Number of random great-circle faults summed into the fractal heightfield,
 ### the donjon / Mogensen fractal-planet method that gives crenulated fractal
 ### coastlines uniformly over the sphere, poles included.
-fault_count = 2200
+fault_count = 30000
 
 ### Weight of the high-pass fractal detail added to the continent templates. The
 ### fault field is high-passed so it supplies fractal coastline roughness without
@@ -120,7 +120,7 @@ fault_weight = 1.0
 fractal_reach_ref = 0.12
 
 ### Target fraction of the surface left above sea level.
-target_land_fraction = 0.30
+target_land_fraction = 0.29
 
 #################################################
 ############### POLAR CONTINENTS ################
@@ -136,6 +136,13 @@ antarctic_bias_center_lon = -70.0
 antarctic_bias_center_lat = -72.0
 polar_bias_amplitude = 2.4
 polar_bias_width = 16.0
+
+### Polar ice cap centre latitude and terrain-jitter amplitude. Every cell whose
+### |lat| exceeds (ice_base_lat - ice_jitter_deg * normalised_elevation) is
+### painted as ice. The jitter traces the same fault-fractal that shapes the
+### coastlines, giving a polar cap with an organic irregular edge.
+ice_base_lat = 72.0
+ice_jitter_deg = 10.0
 
 ### Continents whose centroid lies poleward of this latitude render as white ice.
 ice_continent_lat = 62.0
@@ -174,9 +181,8 @@ landmass_min_land_share = 0.0015
 ### continent is rotated toward the assembly centre to reach them. The earth-like
 ### era is the generated fractal world; larger angles pack the continents into
 ### the supercontinent.
-era_names = ["Supercontinent", "First tectonic movements",
-             "Earth-like continents"]
-era_assembly_radians = [0.95, 0.42, 0.0]
+era_names = ["World"]
+era_assembly_radians = [0.0]
 
 ### Geographic centre toward which continents are gathered to assemble the
 ### supercontinent, in degrees.
@@ -303,8 +309,8 @@ simplify_tolerance_deg = 0.05
 #################################################
 
 ### Mesh resolution used for fast multi-seed previews.
-preview_mesh_cells = 5000
+preview_mesh_cells = 20000
 
 ### Grid of seeds rendered by the preview montage.
-preview_grid_cols = 4
-preview_grid_rows = 3
+preview_grid_cols = 5
+preview_grid_rows = 2

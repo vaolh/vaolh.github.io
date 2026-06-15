@@ -121,8 +121,8 @@ def build_world(seed):
         continent_info[label] = {
             "axis": axis / norm if norm > 1e-6 else np.zeros(3),
             "polar": bool(reaches > cfg.ice_continent_lat),
-            "name": f"Continent {index + 1}",
-            "slug": f"continent-{index + 1}",
+            "name": "",
+            "slug": f"landmass-{index + 1}",
         }
 
     ### Tag each mesh land cell with the continent of its grid cell.

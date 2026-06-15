@@ -386,37 +386,15 @@ def _continent_cores(rng):
 
 
 def simulate(points, edges, rng):
-    """Generate the dispersed world of fractal continents the eras build from.
+    """Generate the world using the donjo fractal-fault method.
 
-    Continent template cores and two polar cores set where land sits and keep the
-    continents distinct; the donjon fault fractal is added on and around them to
-    carve fully fractal coastlines and coastal archipelagos, while open ocean is
-    left clear of speckle. Sea level is set for the target land fraction.
+    This is a direct port of the donjon / Mogensen fractal-planet algorithm:
+    accumulate random great-circle faults over the sphere, then threshold at the
+    sea level that gives the target land fraction. Nothing else is applied — no
+    gaussian continent templates, no polar biases. The fractal character of the
+    coastlines emerges entirely from the fault accumulation.
     """
-    fractal = fault_displacement(points, rng, cfg.fault_count)
-
-    ### Continent core gaussian uplifts anchor the fractal into distinct land
-    ### masses. Each craton is a broad bump whose size weight scales the peak so
-    ### that larger cratons dominate more surface area.
-    centres, sizes = _continent_cores(rng)
-    craton_field = np.zeros(points.shape[0], dtype=np.float64)
-    for centre, size in zip(centres, sizes):
-        craton_field += _gaussian_bias(points, centre,
-                                       cfg.craton_width,
-                                       size * cfg.craton_amplitude)
-
-    ### Two localised polar uplifts guarantee an arctic and antarctic continent;
-    ### otherwise the pure fault fractal sets the irregular, donjon-style shapes.
-    arctic = lonlat_to_xyz(cfg.arctic_bias_center_lon,
-                           cfg.arctic_bias_center_lat)[0]
-    antarctic = lonlat_to_xyz(cfg.antarctic_bias_center_lon,
-                              cfg.antarctic_bias_center_lat)[0]
-    polar = (_gaussian_bias(points, arctic, cfg.polar_bias_width,
-                            cfg.polar_bias_amplitude)
-             + _gaussian_bias(points, antarctic, cfg.polar_bias_width,
-                              cfg.polar_bias_amplitude))
-
-    elevation = cfg.fault_weight * fractal + craton_field + polar
+    elevation = fault_displacement(points, rng, cfg.fault_count)
     sea_level = np.quantile(elevation, 1.0 - cfg.target_land_fraction)
 
     return {

@@ -1,65 +1,55 @@
 {
   "world_name": "The World",
-  "seed": 449,
+  "seed": 21390380201,
   "mesh_cells": 26000,
   "continent_count": 3,
-  "center_lon": -94.91874762386668,
-  "center_lat": -74.77353208483895,
+  "center_lon": 61.665330954999,
+  "center_lat": 72.92950095966896,
   "eras": [
     {
-      "name": "Supercontinent",
+      "name": "World",
       "file": "land_era1.geojson",
-      "count": 3
-    },
-    {
-      "name": "First tectonic movements",
-      "file": "land_era2.geojson",
-      "count": 3
-    },
-    {
-      "name": "Earth-like continents",
-      "file": "land_era3.geojson",
       "count": 3
     }
   ],
   "landmasses": [
     {
-      "name": "Continent 1",
-      "slug": "continent-1",
+      "name": "",
+      "slug": "landmass-1",
       "polar": true,
-      "land_fraction": 0.31122073321693006
+      "land_fraction": 0.2355318763979724
     },
     {
-      "name": "Continent 2",
-      "slug": "continent-2",
+      "name": "",
+      "slug": "landmass-2",
       "polar": false,
-      "land_fraction": 0.044654983887883436
+      "land_fraction": 0.10650134793235248
     },
     {
-      "name": "Continent 3",
-      "slug": "continent-3",
+      "name": "",
+      "slug": "landmass-3",
       "polar": false,
-      "land_fraction": 0.025111460209718696
+      "land_fraction": 0.12682169133371807
     }
   ],
   "articles": [
     {
-      "name": "Continent 1",
-      "slug": "continent-1",
+      "name": "",
+      "slug": "landmass-1",
       "polar": true,
-      "land_fraction": 0.31122073321693006
+      "land_fraction": 0.2355318763979724
     },
     {
-      "name": "Continent 2",
-      "slug": "continent-2",
+      "name": "",
+      "slug": "landmass-2",
       "polar": false,
-      "land_fraction": 0.044654983887883436
+      "land_fraction": 0.10650134793235248
     },
     {
-      "name": "Continent 3",
-      "slug": "continent-3",
+      "name": "",
+      "slug": "landmass-3",
       "polar": false,
-      "land_fraction": 0.025111460209718696
+      "land_fraction": 0.12682169133371807
     }
   ]
 }

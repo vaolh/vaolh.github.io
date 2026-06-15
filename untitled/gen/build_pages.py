@@ -54,18 +54,11 @@ def build_index(meta):
              f'<script src="{maplibre_js}"></script>')
     landmasses = meta["landmasses"]
     links = "\n".join(
-        f'<div><a href="wiki/{land["slug"]}.html">{land["name"]}</a></div>'
+        f'<div><a href="wiki/{land["slug"]}.html">{land["slug"]}</a></div>'
         for land in landmasses)
     count = len(landmasses)
     html = _head(meta["world_name"], "", extra)
     html += f"""<h1>{meta['world_name']}</h1>
-
-<p><b>{meta['world_name']}</b> is the world of an unnamed fantasy setting, its
-coastlines shaped by a fractal terrain model. The <b>Era</b> button replays its
-geological history: {count} drifting continents that the Euler rotations of plate
-tectonics carry back together into one supercontinent and apart again. Drag to
-spin the globe, scroll to zoom, toggle the flat map, and click a continent to
-open its article.</p>
 
 <div id="world-map-outer">
   <div id="world-map-wrap">
@@ -77,14 +70,13 @@ open its article.</p>
     <div id="world-map-controls">
       <button id="wm-btn-globe" class="vk-ctrl-btn active" title="Toggle globe or flat map">Globe</button>
       <button id="wm-btn-reset" class="vk-ctrl-btn" title="Reset view">Reset</button>
-      <button id="wm-btn-era" class="vk-ctrl-btn" title="Step through the geological eras">Era</button>
       <button id="wm-btn-fs" class="vk-ctrl-btn" title="Toggle fullscreen">Fullscreen</button>
     </div>
   </div>
   <div id="world-map-tooltip"><div class="vkl-popup-inner"></div></div>
 </div>
 
-<h2>Continents</h2>
+<h2>Landmasses</h2>
 <div class="nation-list">
 {links}
 </div>
@@ -104,10 +96,10 @@ def build_articles(meta):
         share = land["land_fraction"]
         kind = "ice-capped continent" if land.get("polar") else "continent"
         html = _head(f"{name} – {meta['world_name']}", "../")
-        html += f"""<h1>{name}</h1>
+        html += f"""<h1>{land['slug']}</h1>
 
 <div class="infobox">
-<div class="infobox-title">{name}</div>
+<div class="infobox-title">{land['slug']}</div>
 <div class="infobox-section">Geography</div>
 <table><tbody>
 <tr><th>World</th><td><a href="../index.html">{meta['world_name']}</a></td></tr>
@@ -117,10 +109,7 @@ def build_articles(meta):
 </tbody></table>
 </div>
 
-<p><b>{name}</b> is a {kind} of {meta['world_name']}, a world shaped by
-fractal fault lines. It covers roughly
-{round(share * 100, 1)}% of the planet's surface. This article is a stub
-awaiting its name, geography, peoples and history.</p>
+<p>Unnamed. This article is a stub awaiting its name, geography, peoples and history.</p>
 
 <p><a href="../index.html">&larr; Back to the map of {meta['world_name']}</a></p>
 </body></html>

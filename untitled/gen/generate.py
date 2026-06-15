@@ -147,6 +147,18 @@ def build_world(seed):
 
     view_lonlat = xyz_to_lonlat(centroids[continents[0]][None])[0]
 
+    ### Build a direct label→continent-index lookup over the full grid.
+    ### This is pixel-for-pixel identical to the preview: every grid cell maps
+    ### to its nearest mesh cell with no gap threshold, no IDW blending, and no
+    ### island filtering — the exact same raster the preview PNG renders from.
+    max_label = int(grid_labels.max()) if grid_labels.max() >= 0 else 0
+    label_to_index = np.full(max_label + 1, -1, dtype=np.int64)
+    for grid_label, cont_label in component_continent.items():
+        label_to_index[grid_label] = continent_number[cont_label]
+    painted_base = label_to_index[
+        np.clip(grid_labels, 0, max_label)]
+    painted_base[grid_labels == 0] = -1   # ocean background
+
     cfg.data_dir.mkdir(parents=True, exist_ok=True)
 
     eras = []
@@ -154,9 +166,14 @@ def build_world(seed):
     final_landmasses = []
     for era_index, (era_name, angle) in enumerate(
             zip(cfg.era_names, cfg.era_assembly_radians)):
-        moved = rodrigues(land_xyz, land_axis, angle)
-        painted = rasterize_continents(moved, land_elevation, land_index,
-                                       world["sea_level"], grid_xyz, chord)
+        if angle == 0.0:
+            ### No drift: use the grid-label raster directly so the vector
+            ### output is indistinguishable from the preview PNG.
+            painted = painted_base
+        else:
+            moved = rodrigues(land_xyz, land_axis, angle)
+            painted = rasterize_continents(moved, land_elevation, land_index,
+                                           world["sea_level"], grid_xyz, chord)
 
         features = []
         landmasses = []

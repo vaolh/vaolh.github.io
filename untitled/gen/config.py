@@ -46,7 +46,7 @@ world_mode = "continents"
 
 ### Number of Fibonacci mesh cells sampled on the unit sphere. Higher values
 ### produce finer coastlines at the cost of generation time.
-mesh_cells = 60000
+mesh_cells = 20000
 
 ### Number of nearest neighbours used to approximate the mesh adjacency graph.
 mesh_neighbours = 7

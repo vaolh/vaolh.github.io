@@ -1,10 +1,10 @@
 {
   "world_name": "The World",
   "seed": 21390380201,
-  "mesh_cells": 60000,
+  "mesh_cells": 20000,
   "continent_count": 4,
-  "center_lon": 64.50333725956041,
-  "center_lat": 71.28077605940274,
+  "center_lon": 62.30687687373321,
+  "center_lat": 72.31662816793686,
   "eras": [
     {
       "name": "World",
@@ -17,25 +17,25 @@
       "name": "",
       "slug": "landmass-1",
       "polar": true,
-      "land_fraction": 0.24846562289067267
+      "land_fraction": 0.15154567486366494
     },
     {
       "name": "",
       "slug": "landmass-2",
       "polar": false,
-      "land_fraction": 0.0970408115929124
+      "land_fraction": 0.06570816400497348
     },
     {
       "name": "",
       "slug": "landmass-3",
       "polar": false,
-      "land_fraction": 0.07649418330758727
+      "land_fraction": 0.0351320605889334
     },
     {
       "name": "",
       "slug": "landmass-4",
-      "polar": true,
-      "land_fraction": 0.0673848835408811
+      "polar": false,
+      "land_fraction": 0.019344573565720172
     }
   ],
   "articles": [
@@ -43,25 +43,25 @@
       "name": "",
       "slug": "landmass-1",
       "polar": true,
-      "land_fraction": 0.24846562289067267
+      "land_fraction": 0.15154567486366494
     },
     {
       "name": "",
       "slug": "landmass-2",
       "polar": false,
-      "land_fraction": 0.0970408115929124
+      "land_fraction": 0.06570816400497348
     },
     {
       "name": "",
       "slug": "landmass-3",
       "polar": false,
-      "land_fraction": 0.07649418330758727
+      "land_fraction": 0.0351320605889334
     },
     {
       "name": "",
       "slug": "landmass-4",
-      "polar": true,
-      "land_fraction": 0.0673848835408811
+      "polar": false,
+      "land_fraction": 0.019344573565720172
     }
   ]
 }

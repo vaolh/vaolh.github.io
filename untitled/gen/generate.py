@@ -8,10 +8,11 @@ import json
 import numpy as np
 from scipy import ndimage
 from scipy.spatial import cKDTree
-from shapely.geometry import mapping
+from shapely.geometry import box, mapping
+from shapely.ops import unary_union
 
 import config as cfg
-from geometry import (fibonacci_sphere, build_adjacency, lonlat_to_xyz,
+from geometry import (fibonacci_sphere, lonlat_to_xyz,
                       xyz_to_lonlat, angular_distance, rodrigues)
 from tectonics import simulate
 from vectorize import (build_grid, mask_to_multipolygon, rasterize_continents,
@@ -62,6 +63,36 @@ def _area_fraction(mask, row_weight):
                  / (row_weight.sum() * cfg.grid_width))
 
 
+def _ice_bands(land_geoms):
+    """Return ice overlay features: the land clipped into latitude bands.
+
+    The combined land is intersected with successive latitude strips in both
+    hemispheres; each strip carries an ``ice`` opacity that ramps from zero at
+    ``ice_edge_lat`` to one at ``ice_full_lat``. Rendered white over the green
+    land, the disjoint strips read as a polar ice cap that fades toward the
+    temperate latitudes instead of whitening a whole continent.
+    """
+    if not land_geoms:
+        return []
+    land = unary_union(land_geoms)
+    edges = np.arange(cfg.ice_edge_lat, cfg.max_land_lat + cfg.ice_band_step,
+                      cfg.ice_band_step)
+    span = max(cfg.ice_full_lat - cfg.ice_edge_lat, 1e-6)
+    features = []
+    for low, high in zip(edges[:-1], edges[1:]):
+        iciness = float(np.clip(((low + high) / 2.0 - cfg.ice_edge_lat) / span,
+                                0.0, 1.0))
+        if iciness <= 0.0:
+            continue
+        strips = [land.intersection(box(-180.0, low, 180.0, high)),
+                  land.intersection(box(-180.0, -high, 180.0, -low))]
+        band = unary_union([strip for strip in strips if not strip.is_empty])
+        if band.is_empty:
+            continue
+        features.append(_feature(band, {"ice": round(iciness, 3)}))
+    return features
+
+
 def build_world(seed, write=True):
     """Generate the fractal world and assemble its three geological eras.
 
@@ -73,9 +104,11 @@ def build_world(seed, write=True):
     """
     rng = np.random.default_rng(seed)
 
+    ### The fault-fractal simulation depends only on the cell positions, so the
+    ### k-nearest-neighbour mesh graph is not built — it was pure overhead at this
+    ### cell count.
     points = fibonacci_sphere(cfg.mesh_cells)
-    edges = build_adjacency(points, cfg.mesh_neighbours)
-    world = simulate(points, edges, rng)
+    world = simulate(points, None, rng)
     is_land = world["is_land"]
 
     lon, lat, grid_xyz = build_grid()
@@ -92,6 +125,9 @@ def build_world(seed, write=True):
     tree = cKDTree(points)
     elevation_grid = rasterize_idw(tree, world["elevation"], grid_xyz)
     land_grid = elevation_grid > world["sea_level"]
+    ### Drop land within a few degrees of either pole so no polygon reaches the
+    ### singularity and tears open on the globe.
+    land_grid[np.abs(lat) > cfg.max_land_lat, :] = False
     grid_labels, count = ndimage.label(land_grid)
     indices = np.arange(1, count + 1)
     weighted = ndimage.sum(np.broadcast_to(row_weight, land_grid.shape),
@@ -187,6 +223,7 @@ def build_world(seed, write=True):
     eras = []
     articles = {}
     final_landmasses = []
+    final_geoms = []
     era_features = []
     for era_index, (era_name, angle) in enumerate(
             zip(cfg.era_names, cfg.era_assembly_radians)):
@@ -201,6 +238,7 @@ def build_world(seed, write=True):
 
         features = []
         landmasses = []
+        geoms = []
         for label in continents:
             info = continent_info[label]
             mask = painted == continent_number[label]
@@ -212,6 +250,7 @@ def build_world(seed, write=True):
             properties = {"name": info["name"], "slug": info["slug"],
                           "polar": info["polar"]}
             features.append(_feature(geometry, properties))
+            geoms.append(geometry)
             landmasses.append({**properties,
                                "land_fraction": _area_fraction(mask,
                                                                row_weight)})
@@ -226,6 +265,14 @@ def build_world(seed, write=True):
             articles[landmass["slug"]] = landmass
         if era_index == len(cfg.era_names) - 1:
             final_landmasses = landmasses
+            final_geoms = geoms
+
+    ### Polar ice as a latitude gradient: the real coastline clipped into bands
+    ### whose whiteness rises from none at ``ice_edge_lat`` to full at
+    ### ``ice_full_lat``, so high latitudes read as solid ice fading to green.
+    ice_features = _ice_bands(final_geoms)
+    if write:
+        _write_collection(cfg.data_dir / "ice.geojson", ice_features)
 
     meta = {
         "world_name": cfg.world_display_name,
@@ -235,12 +282,13 @@ def build_world(seed, write=True):
         "center_lon": float(view_lonlat[0]),
         "center_lat": float(view_lonlat[1]),
         "eras": eras,
+        "ice_file": "ice.geojson",
         "landmasses": final_landmasses,
         "articles": list(articles.values()),
     }
     if write:
         (cfg.data_dir / "meta.json").write_text(json.dumps(meta, indent=2))
-    return meta, era_features
+    return meta, era_features, ice_features
 
 
 def main():
@@ -251,7 +299,7 @@ def main():
                         help="master random seed for the world")
     arguments = parser.parse_args()
 
-    meta, _ = build_world(arguments.seed)
+    meta, _, _ = build_world(arguments.seed)
     print(f"world '{meta['world_name']}' built from seed {meta['seed']}")
     for era in meta["eras"]:
         print(f"  {era['name']}: {era['count']} landmasses ({era['file']})")

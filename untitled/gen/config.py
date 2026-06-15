@@ -142,14 +142,18 @@ antarctic_bias_center_lat = -72.0
 polar_bias_amplitude = 2.4
 polar_bias_width = 16.0
 
-### Polar ice cap centre latitude and terrain-jitter amplitude. Every cell whose
-### |lat| exceeds (ice_base_lat - ice_jitter_deg * normalised_elevation) is
-### painted as ice. The jitter traces the same fault-fractal that shapes the
-### coastlines, giving a polar cap with an organic irregular edge.
-ice_base_lat = 72.0
-ice_jitter_deg = 10.0
+### Polar ice is a LATITUDE GRADIENT, not a per-continent flag: land is solid
+### white poleward of ``ice_full_lat`` and the whiteness fades to none at
+### ``ice_edge_lat``, so a continent that merely reaches the arctic whitens only
+### its high-latitude part, like Greenland fading to green at its southern coast.
+### The fade is emitted as latitude bands (``ice_band_step`` degrees wide) clipped
+### from the real coastline, each carrying an ``ice`` opacity in [0, 1].
+ice_edge_lat = 58.0
+ice_full_lat = 80.0
+ice_band_step = 2.0
 
-### Continents whose centroid lies poleward of this latitude render as white ice.
+### Continents whose centroid lies poleward of this latitude are still tagged
+### ``polar`` in the metadata, but this no longer drives any colour.
 ice_continent_lat = 62.0
 
 #################################################
@@ -299,6 +303,11 @@ elevation_meters_per_unit = 3500
 ### a coarse stair-step of their own.
 grid_width = 8640
 grid_height = 4320
+
+### Land is dropped poleward of this latitude so no polygon reaches the ±90°
+### singularity, where a ring spanning all longitudes degenerates to a point and
+### tears open on the globe. The few degrees of cap left as ocean are invisible.
+max_land_lat = 88.0
 
 ### Number of neighbours blended by inverse-distance weighting for the
 ### continuous elevation raster.

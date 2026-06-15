@@ -2,22 +2,23 @@
   "world_name": "The World",
   "seed": 21390380201,
   "mesh_cells": 1200000,
-  "continent_count": 3,
-  "center_lon": -19.061702433086523,
-  "center_lat": -21.910689992694472,
+  "continent_count": 4,
+  "center_lon": 86.9312822670385,
+  "center_lat": 52.0736906878612,
   "eras": [
     {
       "name": "World",
       "file": "land_era1.geojson",
-      "count": 3
+      "count": 4
     }
   ],
+  "ice_file": "ice.geojson",
   "landmasses": [
     {
       "name": "",
       "slug": "landmass-1",
-      "polar": true,
-      "land_fraction": 0.1530063040323731
+      "polar": false,
+      "land_fraction": 0.10204856868744196
     },
     {
       "name": "",
@@ -28,16 +29,22 @@
     {
       "name": "",
       "slug": "landmass-3",
+      "polar": true,
+      "land_fraction": 0.05250140749161493
+    },
+    {
+      "name": "",
+      "slug": "landmass-4",
       "polar": false,
-      "land_fraction": 0.068828228511341
+      "land_fraction": 0.0670656042262935
     }
   ],
   "articles": [
     {
       "name": "",
       "slug": "landmass-1",
-      "polar": true,
-      "land_fraction": 0.1530063040323731
+      "polar": false,
+      "land_fraction": 0.10204856868744196
     },
     {
       "name": "",
@@ -48,8 +55,14 @@
     {
       "name": "",
       "slug": "landmass-3",
+      "polar": true,
+      "land_fraction": 0.05250140749161493
+    },
+    {
+      "name": "",
+      "slug": "landmass-4",
       "polar": false,
-      "land_fraction": 0.068828228511341
+      "land_fraction": 0.0670656042262935
     }
   ]
 }

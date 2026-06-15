@@ -65,15 +65,33 @@ def _densify(ring):
     return np.asarray(points)
 
 
-def _globe_land_image(features, view, east, north, size):
-    """Return an RGBA image of land and ice on the globe, ocean transparent.
+def _coverage(geojson_features, samples):
+    """Return, per sample point, whether it lies inside the given polygons."""
+    inside = np.zeros(samples.shape[0], dtype=bool)
+    for feature in geojson_features:
+        geometry = shape(feature["geometry"])
+        parts = (geometry.geoms if geometry.geom_type == "MultiPolygon"
+                 else [geometry])
+        for part in parts:
+            covered = Path(np.asarray(part.exterior.coords)).contains_points(
+                samples)
+            for ring in part.interiors:
+                covered &= ~Path(np.asarray(ring.coords)).contains_points(
+                    samples)
+            inside |= covered
+    return inside
+
+
+def _globe_land_image(features, ice_features, view, east, north, size):
+    """Return an RGBA image of land and graded ice on the globe, ocean clear.
 
     The visible disc is sampled on a screen grid, each pixel inverse-projected
     to a longitude and latitude, and tested against the actual land polygons.
     Filling by point-in-polygon rather than by clipping vector rings sidesteps
     every limb special case, so a continent curving over the globe edge is always
-    rendered correctly. Ocean is left transparent so the underlying ocean disc
-    and graticule show through, exactly as land covers them on the page.
+    rendered correctly. Land is green; the ice bands then blend white over it by
+    their per-band opacity, giving the polar fade. Ocean stays transparent so the
+    ocean disc and graticule show through, exactly as land covers them on the page.
     """
     axis = np.linspace(-1.0, 1.0, size)
     screen_x, screen_y = np.meshgrid(axis, axis)
@@ -86,25 +104,19 @@ def _globe_land_image(features, view, east, north, size):
     lat = np.degrees(np.arcsin(np.clip(point[..., 2], -1.0, 1.0)))
     samples = np.column_stack((lon.ravel(), lat.ravel()))
 
-    land = np.zeros(samples.shape[0], dtype=bool)
-    ice = np.zeros(samples.shape[0], dtype=bool)
-    for feature in features:
-        target = ice if _is_ice(feature) else land
-        geometry = shape(feature["geometry"])
-        parts = (geometry.geoms if geometry.geom_type == "MultiPolygon"
-                 else [geometry])
-        for part in parts:
-            covered = Path(np.asarray(part.exterior.coords)).contains_points(
-                samples)
-            for ring in part.interiors:
-                covered &= ~Path(np.asarray(ring.coords)).contains_points(
-                    samples)
-            target |= covered
+    land = _coverage(features, samples)
+    ice_alpha = np.zeros(samples.shape[0], dtype=np.float64)
+    for feature in ice_features:
+        opacity = float(feature["properties"]["ice"])
+        covered = _coverage([feature], samples)
+        ice_alpha = np.maximum(ice_alpha, np.where(covered, opacity, 0.0))
 
     image = np.zeros((size, size, 4), dtype=np.float64)
-    flat = inside.ravel()
-    image.reshape(-1, 4)[flat & land] = to_rgba(cfg.preview_land)
-    image.reshape(-1, 4)[flat & ice] = to_rgba(cfg.preview_ice)
+    flat = inside.ravel() & land
+    land_rgb = np.array(to_rgba(cfg.preview_land))
+    ice_rgb = np.array(to_rgba(cfg.preview_ice))
+    blend = ice_alpha[flat][:, None]
+    image.reshape(-1, 4)[flat] = land_rgb * (1.0 - blend) + ice_rgb * blend
     return image
 
 
@@ -134,7 +146,7 @@ def _coast_runs(ring, view, east, north):
 ################ PATH HELPERS ###################
 #################################################
 
-def _add_polygon(axis, polygon, facecolor):
+def _add_polygon(axis, polygon, facecolor, alpha=1.0):
     """Fill a shapely polygon, holes included, as a single matplotlib patch."""
     parts = polygon.geoms if polygon.geom_type == "MultiPolygon" else [polygon]
     vertices, codes = [], []
@@ -150,17 +162,13 @@ def _add_polygon(axis, polygon, facecolor):
     if not vertices:
         return
     axis.add_patch(PathPatch(Path(vertices, codes), facecolor=facecolor,
-                             edgecolor="none", linewidth=0, antialiased=True))
+                             edgecolor="none", linewidth=0, alpha=alpha,
+                             antialiased=True))
 
 
 #################################################
 ################ PANEL RENDERERS ################
 #################################################
-
-def _is_ice(feature):
-    """Return whether a feature is a polar continent the site renders white."""
-    return bool(feature["properties"].get("polar"))
-
 
 ### Graticule spacing in degrees, matching the website's worldmap.js.
 _grid_step_lon = 15
@@ -191,19 +199,21 @@ def _draw_globe_graticule(axis, view, east, north):
                       dashes=[4, 4] if equator else [], zorder=0.5)
 
 
-def _draw_globe(axis, features, center_lon, center_lat, fill_size=800):
+def _draw_globe(axis, features, ice_features, center_lon, center_lat,
+                fill_size=800):
     """Draw the features as the website's orthographic globe view.
 
     The ocean disc and graticule are drawn first, then a point-in-polygon raster
-    of the land and ice on top so it covers them the way land covers the ocean
-    and grid on the page, and finally the vector coastlines, which fade where
-    they pass behind the limb.
+    of the land and graded ice on top so it covers them the way land covers the
+    ocean and grid on the page, and finally the vector coastlines, which fade
+    where they pass behind the limb.
     """
     view, east, north = _view_basis(center_lon, center_lat)
     axis.add_patch(Circle((0.0, 0.0), 1.0, facecolor=cfg.preview_ocean,
                           edgecolor="none", zorder=0))
     _draw_globe_graticule(axis, view, east, north)
-    axis.imshow(_globe_land_image(features, view, east, north, fill_size),
+    axis.imshow(_globe_land_image(features, ice_features, view, east, north,
+                                  fill_size),
                 origin="lower", extent=[-1.0, 1.0, -1.0, 1.0], zorder=1,
                 interpolation="bilinear")
     for feature in features:
@@ -227,12 +237,14 @@ def _draw_globe(axis, features, center_lon, center_lat, fill_size=800):
     axis.set_yticks([])
 
 
-def _draw_flat(axis, features, xlim=(-180, 180), ylim=(-90, 90)):
+def _draw_flat(axis, features, ice_features, xlim=(-180, 180),
+               ylim=(-90, 90)):
     """Draw the features as the website's flat equirectangular view.
 
-    Passing a tight ``xlim``/``ylim`` zooms in on a coastline so its true
-    vector detail is visible, which is how the geojson is checked for the
-    faceting that reads as pixelation on the globe.
+    Land is filled green, the ice bands blend white over it for the polar fade,
+    and the coastline is stroked last so it stays on top. Passing a tight
+    ``xlim``/``ylim`` zooms in on a coastline so its true vector detail is
+    visible, which is how the geojson is checked for faceting.
     """
     axis.set_facecolor(cfg.preview_ocean)
     for coords, equator in _graticule_lines():
@@ -241,9 +253,12 @@ def _draw_flat(axis, features, xlim=(-180, 180), ylim=(-90, 90)):
                   alpha=0.5 if equator else 0.35,
                   dashes=[4, 4] if equator else [], zorder=0.5)
     for feature in features:
-        fill = cfg.preview_ice if _is_ice(feature) else cfg.preview_land
+        _add_polygon(axis, shape(feature["geometry"]), cfg.preview_land)
+    for feature in ice_features:
+        _add_polygon(axis, shape(feature["geometry"]), cfg.preview_ice,
+                     alpha=float(feature["properties"]["ice"]))
+    for feature in features:
         geometry = shape(feature["geometry"])
-        _add_polygon(axis, geometry, fill)
         parts = (geometry.geoms if geometry.geom_type == "MultiPolygon"
                  else [geometry])
         for part in parts:
@@ -263,10 +278,14 @@ def _draw_flat(axis, features, xlim=(-180, 180), ylim=(-90, 90)):
 #################################################
 
 def _load_shipped():
-    """Return the on-disk geojson features and view centre the website uses."""
+    """Return the on-disk land + ice features and view centre the website uses."""
     meta = json.loads((cfg.data_dir / "meta.json").read_text())
-    data = json.loads((cfg.data_dir / meta["eras"][0]["file"]).read_text())
-    return data["features"], meta["center_lon"], meta["center_lat"]
+    land = json.loads((cfg.data_dir / meta["eras"][0]["file"]).read_text())
+    ice_path = cfg.data_dir / meta.get("ice_file", "ice.geojson")
+    ice = (json.loads(ice_path.read_text())["features"]
+           if ice_path.exists() else [])
+    return (land["features"], ice,
+            meta["center_lon"], meta["center_lat"])
 
 
 ### Half-width, in degrees, of the coastline close-up panel.
@@ -279,15 +298,15 @@ def render_final():
     Three panels: the default globe, the whole flat map, and a tight coastline
     close-up so the zoomed-in detail can be inspected for faceting.
     """
-    features, center_lon, center_lat = _load_shipped()
+    features, ice, center_lon, center_lat = _load_shipped()
     cfg.preview_dir.mkdir(parents=True, exist_ok=True)
     figure, (globe, flat, zoom) = plt.subplots(1, 3, figsize=(18, 5.4))
     figure.patch.set_facecolor(cfg.preview_space)
-    _draw_globe(globe, features, center_lon, center_lat)
+    _draw_globe(globe, features, ice, center_lon, center_lat)
     globe.set_title("globe (default view)", fontsize=10)
-    _draw_flat(flat, features)
+    _draw_flat(flat, features, ice)
     flat.set_title("flat map (#flat)", fontsize=10)
-    _draw_flat(zoom, features,
+    _draw_flat(zoom, features, ice,
                xlim=(center_lon - _zoom_span, center_lon + _zoom_span),
                ylim=(center_lat - _zoom_span, center_lat + _zoom_span))
     zoom.set_title(f"coast close-up (±{_zoom_span:.0f}°)", fontsize=10)
@@ -297,17 +316,19 @@ def render_final():
     print(f"faithful preview of the shipped world written to {output}")
 
 
-def render_montage(start):
-    """Render a montage of candidate seeds as truthful globe thumbnails.
+def render_montage(seeds, name=None):
+    """Render a montage of the given seeds as truthful globe thumbnails.
 
     Every tile is built through the same generator and vectoriser as the shipped
     world, only on a coarser tracing grid for speed, so the coastlines are the
     real ones a seed would ship, drawn in the page palette.
     """
     cfg.preview_dir.mkdir(parents=True, exist_ok=True)
-    rows, cols = cfg.preview_grid_rows, cfg.preview_grid_cols
+    cols = cfg.preview_grid_cols
+    rows = max(1, (len(seeds) + cols - 1) // cols)
     figure, axes = plt.subplots(rows, cols, figsize=(cols * 2.7, rows * 2.7))
     figure.patch.set_facecolor(cfg.preview_space)
+    panels = np.atleast_1d(axes).ravel()
 
     ### Trace candidate seeds on the coarse preview grid; shape fidelity comes
     ### from the mesh, which is left at full resolution.
@@ -315,33 +336,96 @@ def render_montage(start):
     cfg.grid_width, cfg.grid_height = (cfg.preview_grid_width,
                                        cfg.preview_grid_height)
     try:
-        for index, axis in enumerate(np.atleast_1d(axes).ravel()):
-            seed = start + index
-            meta, era_features = build_world(seed, write=False)
-            _draw_globe(axis, era_features[0],
+        for axis, seed in zip(panels, seeds):
+            meta, era_features, ice_features = build_world(seed, write=False)
+            _draw_globe(axis, era_features[0], ice_features,
                         meta["center_lon"], meta["center_lat"], fill_size=420)
             axis.set_title(f"seed {seed}", fontsize=9)
+            print(f"  rendered seed {seed}")
     finally:
         cfg.grid_width, cfg.grid_height = full_grid
 
+    for axis in panels[len(seeds):]:
+        axis.axis("off")
+
     figure.tight_layout()
-    output = cfg.preview_dir / f"seeds_{start}.png"
+    output = cfg.preview_dir / f"seeds_{name or seeds[0]}.png"
     figure.savefig(output, dpi=120, facecolor=cfg.preview_space)
     print(f"montage written to {output}")
 
 
+### Longitude offsets, in degrees, of the four globe rotations shown per seed.
+_side_offsets = (0, 90, 180, 270)
+
+
+def render_sides(seed):
+    """Write one file for a seed: four globe rotations plus the flat 2-D map.
+
+    The world is built at full resolution, then shown spun about its axis in
+    ninety-degree steps so every side of the planet is visible, with the flat
+    map beneath, all in the website palette.
+    """
+    cfg.preview_dir.mkdir(parents=True, exist_ok=True)
+
+    ### Trace on the coarse preview grid for speed; shape fidelity comes from the
+    ### full-resolution mesh. The winning seed is confirmed at full detail with
+    ### `make all seed=N && make preview`.
+    full_grid = (cfg.grid_width, cfg.grid_height)
+    cfg.grid_width, cfg.grid_height = (cfg.preview_grid_width,
+                                       cfg.preview_grid_height)
+    try:
+        meta, era_features, ice_features = build_world(seed, write=False)
+    finally:
+        cfg.grid_width, cfg.grid_height = full_grid
+    features = era_features[0]
+    center_lon, center_lat = meta["center_lon"], meta["center_lat"]
+
+    figure = plt.figure(figsize=(16, 9))
+    figure.patch.set_facecolor(cfg.preview_space)
+    grid = figure.add_gridspec(2, 4, height_ratios=[1.15, 1.0],
+                               hspace=0.12, wspace=0.05)
+    for column, offset in enumerate(_side_offsets):
+        axis = figure.add_subplot(grid[0, column])
+        lon = center_lon + offset
+        _draw_globe(axis, features, ice_features, lon, center_lat,
+                    fill_size=440)
+        axis.set_title(f"lon {((lon + 180) % 360) - 180:.0f}°", fontsize=9)
+    flat = figure.add_subplot(grid[1, :])
+    _draw_flat(flat, features, ice_features)
+    flat.set_title("flat map (#flat)", fontsize=9)
+    figure.suptitle(f"seed {seed}", fontsize=13)
+
+    output = cfg.preview_dir / f"seed_{seed}.png"
+    figure.savefig(output, dpi=130, facecolor=cfg.preview_space)
+    plt.close(figure)
+    print(f"wrote {output}")
+
+
 def main():
-    """Render either the faithful single-world preview or a seed montage."""
+    """Render the single-world preview, a seed montage, or per-seed side views."""
     parser = argparse.ArgumentParser(
         description="Preview the world exactly as the website draws it.")
     parser.add_argument("--montage", action="store_true",
                         help="render a grid of candidate seeds instead")
+    parser.add_argument("--sides", action="store_true",
+                        help="render one file per seed: 4 globe sides + 2-D")
     parser.add_argument("--start", type=int, default=cfg.default_seed,
-                        help="first seed in the montage")
+                        help="first seed of a consecutive montage")
+    parser.add_argument("--seeds", type=str, default=None,
+                        help="comma-separated explicit seeds")
     arguments = parser.parse_args()
 
-    if arguments.montage:
-        render_montage(arguments.start)
+    seeds = ([int(token) for token in arguments.seeds.split(",")
+              if token.strip()] if arguments.seeds else None)
+
+    if arguments.sides and seeds:
+        for seed in seeds:
+            render_sides(seed)
+    elif seeds:
+        render_montage(seeds, name="selection")
+    elif arguments.montage:
+        count = cfg.preview_grid_rows * cfg.preview_grid_cols
+        render_montage([arguments.start + offset for offset in range(count)])
     else:
         render_final()
 

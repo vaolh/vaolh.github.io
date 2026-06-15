@@ -89,15 +89,33 @@
     }
 
     /* Reapply the fill colour expression after a hover, select or theme change.
-       Polar continents render as white ice, all others as green land. */
+       All land is green; the white polar ice is a separate gradient overlay. */
     function refresh_fill(map) {
         map.setPaintProperty("land-fill", "fill-color", [
             "case",
             ["boolean", ["feature-state", "selected"], false], highlight_fill,
             ["boolean", ["feature-state", "hover"], false], highlight_fill,
-            ["boolean", ["get", "polar"], false], ice_fill,
             land_fill
         ]);
+    }
+
+    /* Load the polar ice overlay: latitude bands whose per-feature "ice" value
+       is the white opacity, so the cap is solid at the poles and fades out.
+       Inserted beneath the coastline so the blue coast still reads through. */
+    function add_ice(map) {
+        fetch(data_path + (meta.ice_file || "ice.geojson"))
+            .then(function (r) { return r.json(); })
+            .then(function (ice_data) {
+                if (!ice_data.features || !ice_data.features.length) {
+                    return;
+                }
+                map.addSource("ice", { type: "geojson", data: ice_data });
+                map.addLayer({ id: "ice-fill", type: "fill", source: "ice",
+                    paint: { "fill-color": ice_fill,
+                             "fill-opacity": ["get", "ice"] } },
+                    map.getLayer("land-line") ? "land-line" : undefined);
+            })
+            .catch(function () {});
     }
 
     /* Wire the reset, globe-toggle and fullscreen controls. */
@@ -151,6 +169,9 @@
             ice_fill = css_color("--wm-ice", "#ffffff");
             if (map.getLayer("ocean-fill")) {
                 map.setPaintProperty("ocean-fill", "fill-color", ocean_fill);
+            }
+            if (map.getLayer("ice-fill")) {
+                map.setPaintProperty("ice-fill", "fill-color", ice_fill);
             }
             ["graticule-line", "equator-line", "land-line"].forEach(
                 function (id) {
@@ -222,6 +243,7 @@
                     data: land_data, generateId: true });
                 map.addLayer({ id: "land-fill", type: "fill", source: "land",
                     paint: { "fill-color": land_fill, "fill-opacity": 1 } });
+                add_ice(map);
                 map.addLayer({ id: "land-line", type: "line", source: "land",
                     paint: { "line-color": highlight, "line-width": [
                         "interpolate", ["linear"], ["zoom"],

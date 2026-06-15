@@ -69,6 +69,7 @@ def build_index(meta):
     </div>
     <div id="world-map-controls">
       <button id="wm-btn-globe" class="vk-ctrl-btn active" title="Toggle globe or flat map">Globe</button>
+      <button id="wm-btn-basin" class="vk-ctrl-btn" title="Flat map framed on the ocean basin">Basin</button>
       <button id="wm-btn-reset" class="vk-ctrl-btn" title="Reset view">Reset</button>
       <button id="wm-btn-fs" class="vk-ctrl-btn" title="Toggle fullscreen">Fullscreen</button>
     </div>

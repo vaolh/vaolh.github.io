@@ -12,6 +12,7 @@ from matplotlib.colors import to_rgba
 from matplotlib.patches import Circle, PathPatch
 from matplotlib.path import Path
 import numpy as np
+from shapely.affinity import translate
 from shapely.geometry import shape
 
 import config as cfg
@@ -254,27 +255,40 @@ def _draw_globe(axis, features, ice_features, center_lon, center_lat,
     axis.set_yticks([])
 
 
-def _draw_flat(axis, features, ice_features, xlim=(-180, 180),
-               ylim=(-90, 90)):
-    """Draw the features as the website's flat equirectangular view.
+### Longitude copies drawn so geometry wraps cleanly across the chosen seam.
+_lon_copies = (-360.0, 0.0, 360.0)
 
-    Land is filled green, the ice bands blend white over it for the polar fade,
-    and the coastline is stroked last so it stays on top. Passing a tight
-    ``xlim``/``ylim`` zooms in on a coastline so its true vector detail is
-    visible, which is how the geojson is checked for faceting.
+
+def _draw_flat(axis, features, ice_features, center_lon=0.0):
+    """Draw the features as the website's flat map centred on ``center_lon``.
+
+    The central meridian sets the framing: each feature is drawn in three
+    longitude copies and clipped to the ±180° window, so a landmass that would
+    fall on the seam wraps to both edges instead of being cut. Land is green, the
+    ice bands blend white over it, the coastline is stroked, and the solid pole
+    caps go on top.
     """
+    bands, caps = _split_ice(ice_features)
+    low, high = center_lon - 180.0, center_lon + 180.0
     axis.set_facecolor(cfg.preview_ocean)
     for coords, equator in _graticule_lines():
-        axis.plot(coords[:, 0], coords[:, 1], color=cfg.preview_coast,
-                  linewidth=0.6 if equator else 0.4,
-                  alpha=0.5 if equator else 0.35,
-                  dashes=[4, 4] if equator else [], zorder=0.5)
-    bands, caps = _split_ice(ice_features)
+        for offset in _lon_copies:
+            axis.plot(coords[:, 0] + offset, coords[:, 1],
+                      color=cfg.preview_coast,
+                      linewidth=0.6 if equator else 0.4,
+                      alpha=0.5 if equator else 0.35,
+                      dashes=[4, 4] if equator else [], zorder=0.5)
     for feature in features:
-        _add_polygon(axis, shape(feature["geometry"]), cfg.preview_land)
+        geometry = shape(feature["geometry"])
+        for offset in _lon_copies:
+            _add_polygon(axis, translate(geometry, xoff=offset),
+                         cfg.preview_land)
     for feature in bands:
-        _add_polygon(axis, shape(feature["geometry"]), cfg.preview_ice,
-                     alpha=float(feature["properties"]["ice"]))
+        geometry = shape(feature["geometry"])
+        opacity = float(feature["properties"]["ice"])
+        for offset in _lon_copies:
+            _add_polygon(axis, translate(geometry, xoff=offset),
+                         cfg.preview_ice, alpha=opacity)
     for feature in features:
         geometry = shape(feature["geometry"])
         parts = (geometry.geoms if geometry.geom_type == "MultiPolygon"
@@ -282,13 +296,16 @@ def _draw_flat(axis, features, ice_features, xlim=(-180, 180),
         for part in parts:
             for ring in [part.exterior, *part.interiors]:
                 coords = np.asarray(ring.coords)
-                axis.plot(coords[:, 0], coords[:, 1], color=cfg.preview_coast,
-                          linewidth=0.6)
-    ### Solid caps last so they cover the coastline near the pole, as on the site.
+                for offset in _lon_copies:
+                    axis.plot(coords[:, 0] + offset, coords[:, 1],
+                              color=cfg.preview_coast, linewidth=0.6)
     for feature in caps:
-        _add_polygon(axis, shape(feature["geometry"]), cfg.preview_ice)
-    axis.set_xlim(*xlim)
-    axis.set_ylim(*ylim)
+        geometry = shape(feature["geometry"])
+        for offset in _lon_copies:
+            _add_polygon(axis, translate(geometry, xoff=offset),
+                         cfg.preview_ice)
+    axis.set_xlim(low, high)
+    axis.set_ylim(-90, 90)
     axis.set_aspect("equal")
     axis.set_xticks([])
     axis.set_yticks([])
@@ -309,28 +326,22 @@ def _load_shipped():
             meta["center_lon"], meta["center_lat"])
 
 
-### Half-width, in degrees, of the coastline close-up panel.
-_zoom_span = 14.0
-
-
 def render_final():
     """Render the chosen, already-built world exactly as the page shows it.
 
-    Three panels: the default globe, the whole flat map, and a tight coastline
-    close-up so the zoomed-in detail can be inspected for faceting.
+    Three panels: the default globe, the land-centred flat map, and the basin
+    view centred opposite the main landmass so it frames the central ocean.
     """
     features, ice, center_lon, center_lat = _load_shipped()
     cfg.preview_dir.mkdir(parents=True, exist_ok=True)
-    figure, (globe, flat, zoom) = plt.subplots(1, 3, figsize=(18, 5.4))
+    figure, (globe, flat, basin) = plt.subplots(1, 3, figsize=(18, 5.4))
     figure.patch.set_facecolor(cfg.preview_space)
     _draw_globe(globe, features, ice, center_lon, center_lat)
     globe.set_title("globe (default view)", fontsize=10)
-    _draw_flat(flat, features, ice)
-    flat.set_title("flat map (#flat)", fontsize=10)
-    _draw_flat(zoom, features, ice,
-               xlim=(center_lon - _zoom_span, center_lon + _zoom_span),
-               ylim=(center_lat - _zoom_span, center_lat + _zoom_span))
-    zoom.set_title(f"coast close-up (±{_zoom_span:.0f}°)", fontsize=10)
+    _draw_flat(flat, features, ice, center_lon=0.0)
+    flat.set_title("flat map — land centred", fontsize=10)
+    _draw_flat(basin, features, ice, center_lon=center_lon + 180.0)
+    basin.set_title("flat map — basin view", fontsize=10)
     figure.tight_layout()
     output = cfg.preview_dir / "world.png"
     figure.savefig(output, dpi=150, facecolor=cfg.preview_space)
@@ -412,8 +423,8 @@ def render_sides(seed):
                     fill_size=440)
         axis.set_title(f"lon {((lon + 180) % 360) - 180:.0f}°", fontsize=9)
     flat = figure.add_subplot(grid[1, :])
-    _draw_flat(flat, features, ice_features)
-    flat.set_title("flat map (#flat)", fontsize=9)
+    _draw_flat(flat, features, ice_features, center_lon=0.0)
+    flat.set_title("flat map (land centred)", fontsize=9)
     figure.suptitle(f"seed {seed}", fontsize=13)
 
     output = cfg.preview_dir / f"seed_{seed}.png"

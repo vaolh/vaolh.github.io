@@ -125,22 +125,52 @@
             .catch(function () {});
     }
 
-    /* Wire the reset, globe-toggle and fullscreen controls. */
+    /* Latitude the flat views centre on, and zoom they open at. */
+    const flat_lat = -10;
+    const flat_zoom = 0.3;
+
+    /* Sync the globe button label to the current projection. */
+    function set_globe_button(on_globe) {
+        const button = document.getElementById("wm-btn-globe");
+        button.classList.toggle("active", on_globe);
+        button.textContent = on_globe ? "Globe" : "Flat map";
+    }
+
+    /* Show the spherical globe centred on the main landmass. */
+    function show_globe(map) {
+        is_globe = true;
+        map.setProjection({ type: "globe" });
+        map.flyTo({ center: [meta.center_lon, meta.center_lat],
+                    zoom: reset_zoom, speed: 1.6 });
+        set_globe_button(true);
+    }
+
+    /* Show the flat mercator map centred on a chosen longitude. Centring on the
+       landmass keeps it whole; centring opposite it frames the ocean basin with
+       the landmass wrapping to both edges. */
+    function show_flat(map, lon) {
+        is_globe = false;
+        map.setProjection({ type: "mercator" });
+        map.flyTo({ center: [lon, flat_lat], zoom: flat_zoom, speed: 1.4 });
+        set_globe_button(false);
+    }
+
+    /* Wire the globe-toggle, basin, reset and fullscreen controls. */
     function attach_controls(map) {
         document.getElementById("wm-btn-reset").addEventListener("click",
-            function () {
-                map.flyTo({
-                    center: [meta.center_lon, meta.center_lat],
-                    zoom: reset_zoom, speed: 1.6 });
-            });
+            function () { show_globe(map); });
 
         document.getElementById("wm-btn-globe").addEventListener("click",
             function () {
-                is_globe = !is_globe;
-                map.setProjection({ type: is_globe ? "globe" : "mercator" });
-                this.classList.toggle("active", is_globe);
-                this.textContent = is_globe ? "Globe" : "Flat map";
+                if (is_globe) {
+                    show_flat(map, 0);
+                } else {
+                    show_globe(map);
+                }
             });
+
+        document.getElementById("wm-btn-basin").addEventListener("click",
+            function () { show_flat(map, meta.center_lon + 180); });
 
         document.getElementById("wm-btn-fs").addEventListener("click",
             function () {
@@ -212,7 +242,7 @@
                            paint: { "background-color": "rgba(0,0,0,0)" } }]
             },
             center: is_globe ? [meta.center_lon, meta.center_lat] : [0, -10],
-            zoom: is_globe ? reset_zoom : 0.2,
+            zoom: is_globe ? reset_zoom : 0.3,
             dragRotate: false, minZoom: 0, maxZoom: 20
         });
 

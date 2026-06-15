@@ -63,6 +63,32 @@ def _area_fraction(mask, row_weight):
                  / (row_weight.sum() * cfg.grid_width))
 
 
+def _seam_shift(land_grid):
+    """Return the column roll that moves the emptiest meridian to the ±180 seam.
+
+    The flat map is cut along ±180°; if a continent straddles that meridian it is
+    split across the two edges. Rolling the world in longitude so the widest
+    ocean gap sits on the seam means no continent is ever divided, and the map
+    can then be framed on the land or on the basin without a cut.
+    """
+    has_land = land_grid.any(axis=0)
+    width = has_land.size
+    if has_land.all():
+        return -int(np.argmin(land_grid.sum(axis=0)))
+    ocean = np.concatenate([~has_land, ~has_land])
+    best_len = best_start = run_len = run_start = 0
+    for index in range(2 * width):
+        if ocean[index]:
+            run_start = index if run_len == 0 else run_start
+            run_len += 1
+            if run_len > best_len:
+                best_len, best_start = run_len, run_start
+        else:
+            run_len = 0
+    center = (best_start + min(best_len, width) // 2) % width
+    return -center
+
+
 def _ice_bands(land_geoms):
     """Return ice overlay features: the land clipped into latitude bands.
 
@@ -138,6 +164,14 @@ def build_world(seed, write=True):
     ### Drop land within a few degrees of either pole so no polygon reaches the
     ### singularity and tears open on the globe.
     land_grid[np.abs(lat) > cfg.max_land_lat, :] = False
+
+    ### Rotate the world in longitude so the antimeridian seam lands in the
+    ### sparsest meridian; then the main continents are not split across the flat
+    ### map's edge. Only the land mask is rolled — the coordinate grid already
+    ### maps each column to its longitude, so rolling the mask alone places the
+    ### land at its new longitude and keeps the centroids in that same frame.
+    land_grid = np.roll(land_grid, _seam_shift(land_grid), axis=1)
+
     grid_labels, count = ndimage.label(land_grid)
     indices = np.arange(1, count + 1)
     weighted = ndimage.sum(np.broadcast_to(row_weight, land_grid.shape),

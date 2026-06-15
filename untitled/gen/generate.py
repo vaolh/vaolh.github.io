@@ -14,7 +14,8 @@ import config as cfg
 from geometry import (fibonacci_sphere, build_adjacency, lonlat_to_xyz,
                       xyz_to_lonlat, angular_distance, rodrigues)
 from tectonics import simulate
-from vectorize import build_grid, mask_to_multipolygon, rasterize_continents
+from vectorize import (build_grid, mask_to_multipolygon, rasterize_continents,
+                       rasterize_idw)
 
 ### REPLICATION FILE: generate.py
 ### PYTHON VERSION:   3.13+
@@ -81,10 +82,16 @@ def build_world(seed, write=True):
     row_weight = np.cos(np.radians(lat))[:, None]
     chord = 2.0 * np.sin(cfg.drift_land_threshold / 2.0)
 
-    ### Separate landmasses on the grid by true sea connectivity.
+    ### Separate landmasses on the grid by true sea connectivity. The land mask
+    ### comes from the elevation field interpolated onto the grid and thresholded
+    ### at sea level, NOT from each grid cell snapping to its nearest mesh cell:
+    ### nearest-cell snapping makes the coastline the blocky Voronoi-cell edge,
+    ### which reads as stair-step faceting when zoomed in. Inverse-distance
+    ### interpolation over the dense mesh yields a smooth sub-cell contour that
+    ### still follows the fine fault detail.
     tree = cKDTree(points)
-    _, nearest = tree.query(grid_xyz, workers=-1)
-    land_grid = is_land[nearest].reshape(cfg.grid_height, cfg.grid_width)
+    elevation_grid = rasterize_idw(tree, world["elevation"], grid_xyz)
+    land_grid = elevation_grid > world["sea_level"]
     grid_labels, count = ndimage.label(land_grid)
     indices = np.arange(1, count + 1)
     weighted = ndimage.sum(np.broadcast_to(row_weight, land_grid.shape),
@@ -117,19 +124,21 @@ def build_world(seed, write=True):
     continent_number = {label: index for index, label in enumerate(continents)}
 
     ### Each continent gets an Euler axis toward the assembly centre and an ice
-    ### flag when polar.
+    ### flag when polar. Polar is judged by the continent's CENTROID latitude,
+    ### its centre of mass, not the furthest latitude it reaches: a continent
+    ### centred on the equator that merely sends a cape past the ice latitude is
+    ### temperate land, not an ice cap, and must render green.
     assembly = lonlat_to_xyz(cfg.assembly_center_lon, cfg.assembly_center_lat)[0]
     continent_info = {}
     for label in continents:
         here = centroids[label]
         axis = np.cross(here, assembly)
         norm = np.linalg.norm(axis)
-        rows = np.where(np.any(grid_labels == label, axis=1))[0]
-        reaches = float(np.max(np.abs(lat[rows]))) if rows.size else 0.0
+        centroid_lat = np.degrees(np.arcsin(np.clip(here[2], -1.0, 1.0)))
         index = continent_number[label]
         continent_info[label] = {
             "axis": axis / norm if norm > 1e-6 else np.zeros(3),
-            "polar": bool(reaches > cfg.ice_continent_lat),
+            "polar": bool(abs(centroid_lat) > cfg.ice_continent_lat),
             "name": "",
             "slug": f"landmass-{index + 1}",
         }

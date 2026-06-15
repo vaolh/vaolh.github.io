@@ -227,8 +227,13 @@ def _draw_globe(axis, features, center_lon, center_lat, fill_size=800):
     axis.set_yticks([])
 
 
-def _draw_flat(axis, features):
-    """Draw the features as the website's flat equirectangular view."""
+def _draw_flat(axis, features, xlim=(-180, 180), ylim=(-90, 90)):
+    """Draw the features as the website's flat equirectangular view.
+
+    Passing a tight ``xlim``/``ylim`` zooms in on a coastline so its true
+    vector detail is visible, which is how the geojson is checked for the
+    faceting that reads as pixelation on the globe.
+    """
     axis.set_facecolor(cfg.preview_ocean)
     for coords, equator in _graticule_lines():
         axis.plot(coords[:, 0], coords[:, 1], color=cfg.preview_coast,
@@ -246,8 +251,8 @@ def _draw_flat(axis, features):
                 coords = np.asarray(ring.coords)
                 axis.plot(coords[:, 0], coords[:, 1], color=cfg.preview_coast,
                           linewidth=0.6)
-    axis.set_xlim(-180, 180)
-    axis.set_ylim(-90, 90)
+    axis.set_xlim(*xlim)
+    axis.set_ylim(*ylim)
     axis.set_aspect("equal")
     axis.set_xticks([])
     axis.set_yticks([])
@@ -264,16 +269,28 @@ def _load_shipped():
     return data["features"], meta["center_lon"], meta["center_lat"]
 
 
+### Half-width, in degrees, of the coastline close-up panel.
+_zoom_span = 14.0
+
+
 def render_final():
-    """Render the chosen, already-built world exactly as the page shows it."""
+    """Render the chosen, already-built world exactly as the page shows it.
+
+    Three panels: the default globe, the whole flat map, and a tight coastline
+    close-up so the zoomed-in detail can be inspected for faceting.
+    """
     features, center_lon, center_lat = _load_shipped()
     cfg.preview_dir.mkdir(parents=True, exist_ok=True)
-    figure, (globe, flat) = plt.subplots(1, 2, figsize=(13, 5.2))
+    figure, (globe, flat, zoom) = plt.subplots(1, 3, figsize=(18, 5.4))
     figure.patch.set_facecolor(cfg.preview_space)
     _draw_globe(globe, features, center_lon, center_lat)
     globe.set_title("globe (default view)", fontsize=10)
     _draw_flat(flat, features)
     flat.set_title("flat map (#flat)", fontsize=10)
+    _draw_flat(zoom, features,
+               xlim=(center_lon - _zoom_span, center_lon + _zoom_span),
+               ylim=(center_lat - _zoom_span, center_lat + _zoom_span))
+    zoom.set_title(f"coast close-up (±{_zoom_span:.0f}°)", fontsize=10)
     figure.tight_layout()
     output = cfg.preview_dir / "world.png"
     figure.savefig(output, dpi=150, facecolor=cfg.preview_space)

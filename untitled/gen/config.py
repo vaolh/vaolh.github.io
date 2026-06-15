@@ -45,10 +45,10 @@ world_mode = "continents"
 #################################################
 
 ### Number of Fibonacci mesh cells sampled on the unit sphere. The coastline can
-### never be finer than these Voronoi cells, so this is the master detail dial:
-### at 200000 cells each patch is ~0.45 deg across, fine enough that the traced
-### coastline reads as a natural fractal rather than faceted blocks.
-mesh_cells = 200000
+### never be finer than these Voronoi cells, so this is the master detail dial.
+### At 1.2M cells each patch is ~0.18 deg (~20 km) across, so the coast stays a
+### crisp fractal even zoomed well in on the globe rather than showing facets.
+mesh_cells = 1_200_000
 
 ### Number of nearest neighbours used to approximate the mesh adjacency graph.
 mesh_neighbours = 7
@@ -109,7 +109,10 @@ supercontinent_bias_amplitude = 1.6
 
 ### Number of random great-circle faults summed into the fractal heightfield,
 ### the donjon / Mogensen fractal-planet method that gives crenulated fractal
-### coastlines uniformly over the sphere, poles included.
+### coastlines uniformly over the sphere, poles included. NOTE: this (with the
+### seed and the fault chunk size) fixes the actual fault field, hence the
+### continent shapes — changing it gives a different world. Detail is raised by
+### sampling the SAME field on a finer mesh/grid, not by adding faults.
 fault_count = 30000
 
 ### Weight of the high-pass fractal detail added to the continent templates. The
@@ -294,8 +297,8 @@ elevation_meters_per_unit = 3500
 ### well above the mesh density (here ~6x finer than a mesh cell) so the marching
 ### squares trace the true Voronoi coastline smoothly rather than re-introducing
 ### a coarse stair-step of their own.
-grid_width = 4800
-grid_height = 2400
+grid_width = 8640
+grid_height = 4320
 
 ### Number of neighbours blended by inverse-distance weighting for the
 ### continuous elevation raster.
@@ -310,15 +313,15 @@ min_island_pixels = 400
 min_lake_pixels = 300
 
 ### Chaikin corner-cutting iterations applied to each coastline ring to round
-### the marching-squares stair-steps into natural curves.
-coastline_smoothing_iterations = 2
+### any residual marching-squares stair-steps into natural curves.
+coastline_smoothing_iterations = 3
 
 ### Douglas-Peucker simplification tolerance applied to emitted rings, in
 ### degrees. The fine mesh and tracing grid produce hundreds of thousands of
 ### near-collinear coastline vertices; this collapses the redundant ones at
 ### ~1.6 km, far below what is visible on the globe, so the coast stays crisp
 ### while the emitted geojson is small enough to fetch and parse quickly.
-simplify_tolerance_deg = 0.015
+simplify_tolerance_deg = 0.003
 
 ### Decimal places kept on emitted coordinates. Four places is ~11 m, finer than
 ### the coastline detail, and trims the geojson well below full float precision.

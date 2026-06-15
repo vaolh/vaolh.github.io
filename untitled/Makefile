@@ -13,7 +13,7 @@ seed := 7
 python := .venv/bin/python
 gen := gen
 
-.PHONY: all world pages preview clean
+.PHONY: all world pages preview montage clean
 
 ### Build the geojson world and then the wiki pages for the chosen seed.
 all: world pages
@@ -26,9 +26,13 @@ world:
 pages:
 	$(python) $(gen)/build_pages.py
 
-### Render a montage of candidate seeds for visual selection.
+### Render the built world exactly as the website draws it (globe + flat map).
 preview:
-	$(python) $(gen)/preview.py --start $(seed)
+	$(python) $(gen)/preview.py
+
+### Render a montage of candidate seeds, each drawn in the page's true style.
+montage:
+	$(python) $(gen)/preview.py --montage --start $(seed)
 
 ### Remove generated data and pages, leaving the source untouched.
 clean:

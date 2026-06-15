@@ -31,12 +31,21 @@ different world, which is how a preferred one is chosen.
 """
 
 
+def _round_coords(value):
+    """Recursively round coordinate floats to the configured precision."""
+    if isinstance(value, (list, tuple)):
+        return [_round_coords(item) for item in value]
+    return round(value, cfg.coordinate_decimals)
+
+
 def _feature(geometry, properties):
     """Wrap a shapely geometry and property dictionary as a geojson feature."""
+    shape = mapping(geometry)
+    shape["coordinates"] = _round_coords(shape["coordinates"])
     return {
         "type": "Feature",
         "properties": properties,
-        "geometry": mapping(geometry),
+        "geometry": shape,
     }
 
 
@@ -52,7 +61,7 @@ def _area_fraction(mask, row_weight):
                  / (row_weight.sum() * cfg.grid_width))
 
 
-def build_world(seed):
+def build_world(seed, write=True):
     """Generate the fractal world and assemble its three geological eras.
 
     Continents are separated on the raster grid, where narrow seas truly divide
@@ -145,7 +154,11 @@ def build_world(seed):
                           for label in land_component])
     land_elevation = world["elevation"][land_cells]
 
-    view_lonlat = xyz_to_lonlat(centroids[continents[0]][None])[0]
+    ### Open the globe on the largest non-polar continent so the default view
+    ### lands on green land rather than a white polar ice cap at the pole.
+    view_label = next((label for label in continents
+                       if not continent_info[label]["polar"]), continents[0])
+    view_lonlat = xyz_to_lonlat(centroids[view_label][None])[0]
 
     ### Build a direct label→continent-index lookup over the full grid.
     ### This is pixel-for-pixel identical to the preview: every grid cell maps
@@ -159,11 +172,13 @@ def build_world(seed):
         np.clip(grid_labels, 0, max_label)]
     painted_base[grid_labels == 0] = -1   # ocean background
 
-    cfg.data_dir.mkdir(parents=True, exist_ok=True)
+    if write:
+        cfg.data_dir.mkdir(parents=True, exist_ok=True)
 
     eras = []
     articles = {}
     final_landmasses = []
+    era_features = []
     for era_index, (era_name, angle) in enumerate(
             zip(cfg.era_names, cfg.era_assembly_radians)):
         if angle == 0.0:
@@ -193,7 +208,9 @@ def build_world(seed):
                                                                row_weight)})
 
         filename = f"land_era{era_index + 1}.geojson"
-        _write_collection(cfg.data_dir / filename, features)
+        if write:
+            _write_collection(cfg.data_dir / filename, features)
+        era_features.append(features)
         eras.append({"name": era_name, "file": filename,
                      "count": len(features)})
         for landmass in landmasses:
@@ -212,8 +229,9 @@ def build_world(seed):
         "landmasses": final_landmasses,
         "articles": list(articles.values()),
     }
-    (cfg.data_dir / "meta.json").write_text(json.dumps(meta, indent=2))
-    return meta
+    if write:
+        (cfg.data_dir / "meta.json").write_text(json.dumps(meta, indent=2))
+    return meta, era_features
 
 
 def main():
@@ -224,7 +242,7 @@ def main():
                         help="master random seed for the world")
     arguments = parser.parse_args()
 
-    meta = build_world(arguments.seed)
+    meta, _ = build_world(arguments.seed)
     print(f"world '{meta['world_name']}' built from seed {meta['seed']}")
     for era in meta["eras"]:
         print(f"  {era['name']}: {era['count']} landmasses ({era['file']})")

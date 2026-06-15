@@ -44,9 +44,11 @@ world_mode = "continents"
 ################ SPHERE MESH ####################
 #################################################
 
-### Number of Fibonacci mesh cells sampled on the unit sphere. Higher values
-### produce finer coastlines at the cost of generation time.
-mesh_cells = 20000
+### Number of Fibonacci mesh cells sampled on the unit sphere. The coastline can
+### never be finer than these Voronoi cells, so this is the master detail dial:
+### at 200000 cells each patch is ~0.45 deg across, fine enough that the traced
+### coastline reads as a natural fractal rather than faceted blocks.
+mesh_cells = 200000
 
 ### Number of nearest neighbours used to approximate the mesh adjacency graph.
 mesh_neighbours = 7
@@ -288,29 +290,61 @@ elevation_meters_per_unit = 3500
 ################ RASTERISATION ##################
 #################################################
 
-### Equirectangular grid resolution used to vectorise fields into polygons.
-grid_width = 2400
-grid_height = 1200
+### Equirectangular grid resolution used to vectorise fields into polygons. Kept
+### well above the mesh density (here ~6x finer than a mesh cell) so the marching
+### squares trace the true Voronoi coastline smoothly rather than re-introducing
+### a coarse stair-step of their own.
+grid_width = 4800
+grid_height = 2400
 
 ### Number of neighbours blended by inverse-distance weighting for the
 ### continuous elevation raster.
 raster_idw_neighbours = 3
+
+### Connected land specks and inland pinhole lakes smaller than these pixel
+### areas are removed before a landmass is traced. Thresholding the fault field
+### right at sea level leaves salt-and-pepper noise — single-cell islands and
+### lakes everywhere — that reads as grime on the map; clearing it keeps the
+### fractal coastline detailed while losing only sub-100 km specks.
+min_island_pixels = 400
+min_lake_pixels = 300
 
 ### Chaikin corner-cutting iterations applied to each coastline ring to round
 ### the marching-squares stair-steps into natural curves.
 coastline_smoothing_iterations = 2
 
 ### Douglas-Peucker simplification tolerance applied to emitted rings, in
-### degrees, kept small so simplification does not reintroduce angular coasts.
-simplify_tolerance_deg = 0.0
+### degrees. The fine mesh and tracing grid produce hundreds of thousands of
+### near-collinear coastline vertices; this collapses the redundant ones at
+### ~1.6 km, far below what is visible on the globe, so the coast stays crisp
+### while the emitted geojson is small enough to fetch and parse quickly.
+simplify_tolerance_deg = 0.015
+
+### Decimal places kept on emitted coordinates. Four places is ~11 m, finer than
+### the coastline detail, and trims the geojson well below full float precision.
+coordinate_decimals = 4
 
 #################################################
 ################ PREVIEW ########################
 #################################################
 
-### Mesh resolution used for fast multi-seed previews.
-preview_mesh_cells = 80000
+### The preview renders the exact vector geojson the website loads, with the
+### website's flat palette and an orthographic globe, so a chosen world looks
+### identical on the page. The montage builds each candidate seed through the
+### same generator and vectoriser (so its shapes are truthful) but traces them
+### on a coarser grid for speed, since shape fidelity comes from the mesh, not
+### the tracing grid.
+preview_grid_width = 1600
+preview_grid_height = 800
 
 ### Grid of seeds rendered by the preview montage.
 preview_grid_cols = 5
 preview_grid_rows = 2
+
+### Website palette (light theme) mirrored from css/world.css so the preview
+### colours match the page exactly.
+preview_ocean = "#bcd6ec"
+preview_land = "#d6e8bf"
+preview_ice = "#ffffff"
+preview_coast = "#3a72ad"
+preview_space = "#ffffff"

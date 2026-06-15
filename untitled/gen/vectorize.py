@@ -5,7 +5,7 @@
 import numpy as np
 from scipy import ndimage
 from scipy.spatial import cKDTree
-from skimage import measure
+from skimage import measure, morphology
 from shapely.geometry import LineString, Polygon, MultiPolygon, mapping
 
 import config as cfg
@@ -169,7 +169,18 @@ def _col_to_lon(cols):
 
 
 def mask_to_multipolygon(mask):
-    """Trace a boolean grid mask into a shapely multipolygon with holes."""
+    """Trace a boolean grid mask into a shapely multipolygon with holes.
+
+    Before tracing, land specks and inland pinhole lakes below the configured
+    pixel areas are removed, so the salt-and-pepper noise left by thresholding
+    the fault field at sea level does not become hundreds of tiny rings while
+    the fractal coastline of the real landmass is preserved.
+    """
+    mask = morphology.remove_small_objects(np.ascontiguousarray(mask),
+                                           max_size=cfg.min_island_pixels)
+    mask = morphology.remove_small_holes(mask, max_size=cfg.min_lake_pixels)
+    if not mask.any():
+        return None
     padded = np.pad(mask.astype(float), 1)
     contours = measure.find_contours(padded, 0.5)
     rings = []

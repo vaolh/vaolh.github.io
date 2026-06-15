@@ -59,21 +59,18 @@ def rasterize_continents(moved_xyz, cell_elevation, continent_index, sea_level,
                          grid_xyz, gap_chord):
     """Paint each grid cell with the continent it belongs to in an era.
 
-    Elevation is interpolated from the moved land cells by inverse-distance
-    weighting and thresholded at sea level, so the coastline follows the fractal
-    elevation contour rather than the cell positions and stays crenulated. A grid
-    cell beyond the gap distance from any land cell is ocean, which opens the
-    seas between separated continents. Land cells take the continent of their
-    nearest moved cell.
+    Nearest-neighbour lookup is used for both the elevation threshold and the
+    continent assignment. IDW blending between sparse mesh cells produces smooth
+    oval transitions — the "circles" artefact — because the interpolated surface
+    is smooth and its threshold is round. Nearest-neighbour snaps each grid cell
+    to its closest mesh cell, so the coastline follows the actual fractal
+    boundaries between cells rather than a smooth gradient.
     """
     tree = cKDTree(moved_xyz)
-    distance, nearest = tree.query(grid_xyz, k=cfg.raster_idw_neighbours,
-                                   workers=-1)
-    weight = 1.0 / (distance + 1e-9)
-    elevation = np.sum(weight * cell_elevation[nearest], axis=1) \
-        / np.sum(weight, axis=1)
-    land = (elevation > sea_level) & (distance[:, 0] < gap_chord)
-    painted = np.where(land, continent_index[nearest[:, 0]], -1)
+    distance, nearest = tree.query(grid_xyz, workers=-1)
+    elevation = cell_elevation[nearest]
+    land = (elevation > sea_level) & (distance < gap_chord)
+    painted = np.where(land, continent_index[nearest], -1)
     return painted.reshape(cfg.grid_height, cfg.grid_width)
 
 

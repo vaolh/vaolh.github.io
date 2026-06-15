@@ -169,33 +169,20 @@ def _col_to_lon(cols):
 
 
 def mask_to_multipolygon(mask):
-    """Trace a boolean grid mask into a shapely multipolygon with holes.
-
-    Upsampling the mask 2x before contouring and halving the coordinates back
-    snaps every contour vertex to a grid-cell edge rather than the midpoint
-    between cells. This makes the vector polygon match the raster grid exactly:
-    no diagonal cuts across corners, no Chaikin smoothing rounding required.
-    """
-    # 2x nearest-neighbour upsample so contours land on cell edges
-    upsampled = mask.repeat(2, axis=0).repeat(2, axis=1)
-    padded = np.pad(upsampled.astype(float), 1)
+    """Trace a boolean grid mask into a shapely multipolygon with holes."""
+    padded = np.pad(mask.astype(float), 1)
     contours = measure.find_contours(padded, 0.5)
     rings = []
     for contour in contours:
         if contour.shape[0] < 4:
             continue
-        # halve back to original grid space, then subtract the padding offset
-        rows = (contour[:, 0] - 1.0) / 2.0
-        cols = (contour[:, 1] - 1.0) / 2.0
-        lon = np.clip(_col_to_lon(cols), -180.0, 180.0)
-        lat = np.clip(_row_to_lat(rows), -90.0, 90.0)
+        lon = np.clip(_col_to_lon(contour[:, 1] - 1.0), -180.0, 180.0)
+        lat = np.clip(_row_to_lat(contour[:, 0] - 1.0), -90.0, 90.0)
         polygon = Polygon(_chaikin(np.column_stack((lon, lat))))
         if not polygon.is_valid:
             polygon = polygon.buffer(0)
         if polygon.is_empty or polygon.area == 0.0:
             continue
-        ### Smoothing can make a ring self-intersect, in which case buffer(0)
-        ### returns several polygons; treat each part as its own ring.
         parts = (polygon.geoms if polygon.geom_type == "MultiPolygon"
                  else [polygon])
         rings.extend(parts)

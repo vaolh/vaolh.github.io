@@ -298,7 +298,7 @@ raster_idw_neighbours = 3
 
 ### Chaikin corner-cutting iterations applied to each coastline ring to round
 ### the marching-squares stair-steps into natural curves.
-coastline_smoothing_iterations = 0
+coastline_smoothing_iterations = 2
 
 ### Douglas-Peucker simplification tolerance applied to emitted rings, in
 ### degrees, kept small so simplification does not reintroduce angular coasts.
@@ -309,7 +309,7 @@ simplify_tolerance_deg = 0.0
 #################################################
 
 ### Mesh resolution used for fast multi-seed previews.
-preview_mesh_cells = 20000
+preview_mesh_cells = 80000
 
 ### Grid of seeds rendered by the preview montage.
 preview_grid_cols = 5

@@ -99,9 +99,12 @@
         ]);
     }
 
-    /* Load the polar ice overlay: latitude bands whose per-feature "ice" value
-       is the white opacity, so the cap is solid at the poles and fades out.
-       Inserted beneath the coastline so the blue coast still reads through. */
+    /* Load the polar ice overlay. The latitude bands carry a per-feature "ice"
+       opacity (solid at the poles, fading out toward the temperate latitudes)
+       and sit beneath the coastline so the blue coast still reads through. The
+       pole caps (cap === true) are solid white and sit ABOVE the coastline so
+       they hide the ragged seams where continents are clamped short of the pole,
+       leaving one clean ice cap. */
     function add_ice(map) {
         fetch(data_path + (meta.ice_file || "ice.geojson"))
             .then(function (r) { return r.json(); })
@@ -111,9 +114,13 @@
                 }
                 map.addSource("ice", { type: "geojson", data: ice_data });
                 map.addLayer({ id: "ice-fill", type: "fill", source: "ice",
+                    filter: ["!=", ["get", "cap"], true],
                     paint: { "fill-color": ice_fill,
                              "fill-opacity": ["get", "ice"] } },
                     map.getLayer("land-line") ? "land-line" : undefined);
+                map.addLayer({ id: "ice-cap", type: "fill", source: "ice",
+                    filter: ["==", ["get", "cap"], true],
+                    paint: { "fill-color": ice_fill, "fill-opacity": 1 } });
             })
             .catch(function () {});
     }
@@ -170,9 +177,11 @@
             if (map.getLayer("ocean-fill")) {
                 map.setPaintProperty("ocean-fill", "fill-color", ocean_fill);
             }
-            if (map.getLayer("ice-fill")) {
-                map.setPaintProperty("ice-fill", "fill-color", ice_fill);
-            }
+            ["ice-fill", "ice-cap"].forEach(function (id) {
+                if (map.getLayer(id)) {
+                    map.setPaintProperty(id, "fill-color", ice_fill);
+                }
+            });
             ["graticule-line", "equator-line", "land-line"].forEach(
                 function (id) {
                     if (map.getLayer(id)) {

@@ -90,6 +90,16 @@ def _ice_bands(land_geoms):
         if band.is_empty:
             continue
         features.append(_feature(band, {"ice": round(iciness, 3)}))
+
+    ### Solid pole caps, added only for a pole that actually has nearby land, so
+    ### the ragged clamp seams are hidden under one clean full-longitude disc.
+    _, low_lat, _, high_lat = land.bounds
+    if high_lat > cfg.ice_cap_lat:
+        features.append(_feature(box(-180.0, cfg.ice_cap_lat, 180.0, 90.0),
+                                 {"ice": 1.0, "cap": True}))
+    if low_lat < -cfg.ice_cap_lat:
+        features.append(_feature(box(-180.0, -90.0, 180.0, -cfg.ice_cap_lat),
+                                 {"ice": 1.0, "cap": True}))
     return features
 
 

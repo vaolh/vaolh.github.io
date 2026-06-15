@@ -82,7 +82,14 @@ def _coverage(geojson_features, samples):
     return inside
 
 
-def _globe_land_image(features, ice_features, view, east, north, size):
+def _split_ice(ice_features):
+    """Split ice features into fading bands and solid pole caps."""
+    bands = [f for f in ice_features if not f["properties"].get("cap")]
+    caps = [f for f in ice_features if f["properties"].get("cap")]
+    return bands, caps
+
+
+def _globe_land_image(features, bands, caps, view, east, north, size):
     """Return an RGBA image of land and graded ice on the globe, ocean clear.
 
     The visible disc is sampled on a screen grid, each pixel inverse-projected
@@ -106,30 +113,37 @@ def _globe_land_image(features, ice_features, view, east, north, size):
 
     land = _coverage(features, samples)
     ice_alpha = np.zeros(samples.shape[0], dtype=np.float64)
-    for feature in ice_features:
+    for feature in bands:
         opacity = float(feature["properties"]["ice"])
         covered = _coverage([feature], samples)
         ice_alpha = np.maximum(ice_alpha, np.where(covered, opacity, 0.0))
 
     image = np.zeros((size, size, 4), dtype=np.float64)
-    flat = inside.ravel() & land
+    visible = inside.ravel()
     land_rgb = np.array(to_rgba(cfg.preview_land))
     ice_rgb = np.array(to_rgba(cfg.preview_ice))
-    blend = ice_alpha[flat][:, None]
-    image.reshape(-1, 4)[flat] = land_rgb * (1.0 - blend) + ice_rgb * blend
+    on_land = visible & land
+    blend = ice_alpha[on_land][:, None]
+    image.reshape(-1, 4)[on_land] = land_rgb * (1.0 - blend) + ice_rgb * blend
+    ### Solid pole caps cover land and ocean alike, hiding the clamp seams.
+    if caps:
+        image.reshape(-1, 4)[visible & _coverage(caps, samples)] = ice_rgb
     return image
 
 
-def _coast_runs(ring, view, east, north):
+def _coast_runs(ring, view, east, north, max_lat=None):
     """Return projected polylines of the ring that lie on the near hemisphere.
 
     The coastline is broken wherever it passes behind the limb, so the globe
-    edge itself is never drawn as a coast, matching how the sphere hides the
-    far side on the page.
+    edge itself is never drawn as a coast, matching how the sphere hides the far
+    side on the page. Points poleward of ``max_lat`` are also dropped so the
+    coast never draws over the solid ice cap.
     """
-    dense = _densify(np.asarray(ring))
+    dense = np.asarray(_densify(np.asarray(ring)))
     xyz = lonlat_to_xyz(dense[:, 0], dense[:, 1])
     visible = (xyz @ view) > 0
+    if max_lat is not None:
+        visible &= np.abs(dense[:, 1]) <= max_lat
     runs, current = [], []
     for point, seen in zip(xyz, visible):
         if seen:
@@ -209,20 +223,23 @@ def _draw_globe(axis, features, ice_features, center_lon, center_lat,
     where they pass behind the limb.
     """
     view, east, north = _view_basis(center_lon, center_lat)
+    bands, caps = _split_ice(ice_features)
     axis.add_patch(Circle((0.0, 0.0), 1.0, facecolor=cfg.preview_ocean,
                           edgecolor="none", zorder=0))
     _draw_globe_graticule(axis, view, east, north)
-    axis.imshow(_globe_land_image(features, ice_features, view, east, north,
+    axis.imshow(_globe_land_image(features, bands, caps, view, east, north,
                                   fill_size),
                 origin="lower", extent=[-1.0, 1.0, -1.0, 1.0], zorder=1,
                 interpolation="bilinear")
+    coast_max_lat = cfg.ice_cap_lat if caps else None
     for feature in features:
         geometry = shape(feature["geometry"])
         parts = (geometry.geoms if geometry.geom_type == "MultiPolygon"
                  else [geometry])
         for part in parts:
             for ring in [part.exterior, *part.interiors]:
-                for run in _coast_runs(ring.coords, view, east, north):
+                for run in _coast_runs(ring.coords, view, east, north,
+                                       max_lat=coast_max_lat):
                     run = np.asarray(run)
                     axis.plot(run[:, 0], run[:, 1], color=cfg.preview_coast,
                               linewidth=0.7, zorder=3)
@@ -252,9 +269,10 @@ def _draw_flat(axis, features, ice_features, xlim=(-180, 180),
                   linewidth=0.6 if equator else 0.4,
                   alpha=0.5 if equator else 0.35,
                   dashes=[4, 4] if equator else [], zorder=0.5)
+    bands, caps = _split_ice(ice_features)
     for feature in features:
         _add_polygon(axis, shape(feature["geometry"]), cfg.preview_land)
-    for feature in ice_features:
+    for feature in bands:
         _add_polygon(axis, shape(feature["geometry"]), cfg.preview_ice,
                      alpha=float(feature["properties"]["ice"]))
     for feature in features:
@@ -266,6 +284,9 @@ def _draw_flat(axis, features, ice_features, xlim=(-180, 180),
                 coords = np.asarray(ring.coords)
                 axis.plot(coords[:, 0], coords[:, 1], color=cfg.preview_coast,
                           linewidth=0.6)
+    ### Solid caps last so they cover the coastline near the pole, as on the site.
+    for feature in caps:
+        _add_polygon(axis, shape(feature["geometry"]), cfg.preview_ice)
     axis.set_xlim(*xlim)
     axis.set_ylim(*ylim)
     axis.set_aspect("equal")

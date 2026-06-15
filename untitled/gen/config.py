@@ -152,6 +152,14 @@ ice_edge_lat = 58.0
 ice_full_lat = 80.0
 ice_band_step = 2.0
 
+### When land reaches the polar region, the few degrees right at the pole are
+### capped with a solid white disc spanning all longitudes. A full-longitude
+### polygon that closes at the pole is the one shape that fills cleanly on the
+### globe (the ocean is drawn the same way), so the cap hides the ragged clamp
+### seams where continents are cut just short of the pole, leaving a clean ice
+### cap instead of a torn hole. Only added for a pole that actually has land.
+ice_cap_lat = 85.0
+
 ### Continents whose centroid lies poleward of this latitude are still tagged
 ### ``polar`` in the metadata, but this no longer drives any colour.
 ice_continent_lat = 62.0

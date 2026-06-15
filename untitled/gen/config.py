@@ -298,11 +298,11 @@ raster_idw_neighbours = 3
 
 ### Chaikin corner-cutting iterations applied to each coastline ring to round
 ### the marching-squares stair-steps into natural curves.
-coastline_smoothing_iterations = 1
+coastline_smoothing_iterations = 0
 
 ### Douglas-Peucker simplification tolerance applied to emitted rings, in
 ### degrees, kept small so simplification does not reintroduce angular coasts.
-simplify_tolerance_deg = 0.05
+simplify_tolerance_deg = 0.0
 
 #################################################
 ################ PREVIEW ########################

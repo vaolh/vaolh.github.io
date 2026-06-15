@@ -171,21 +171,24 @@ def _col_to_lon(cols):
 def mask_to_multipolygon(mask):
     """Trace a boolean grid mask into a shapely multipolygon with holes.
 
-    The mask is padded with an ocean border so that land touching the grid edge,
-    at the antimeridian or a pole, still closes into a valid ring rather than an
-    open contour; coordinates are clamped to the lon/lat bounds, putting any seam
-    exactly on the antimeridian where it is invisible on the globe. Rings are
-    nested by containment parity: an even depth is an outer shell and an odd
-    depth a hole attached to the smallest shell that encloses it.
+    Upsampling the mask 2x before contouring and halving the coordinates back
+    snaps every contour vertex to a grid-cell edge rather than the midpoint
+    between cells. This makes the vector polygon match the raster grid exactly:
+    no diagonal cuts across corners, no Chaikin smoothing rounding required.
     """
-    padded = np.pad(mask.astype(float), 1)
+    # 2x nearest-neighbour upsample so contours land on cell edges
+    upsampled = mask.repeat(2, axis=0).repeat(2, axis=1)
+    padded = np.pad(upsampled.astype(float), 1)
     contours = measure.find_contours(padded, 0.5)
     rings = []
     for contour in contours:
         if contour.shape[0] < 4:
             continue
-        lon = np.clip(_col_to_lon(contour[:, 1] - 1.0), -180.0, 180.0)
-        lat = np.clip(_row_to_lat(contour[:, 0] - 1.0), -90.0, 90.0)
+        # halve back to original grid space, then subtract the padding offset
+        rows = (contour[:, 0] - 1.0) / 2.0
+        cols = (contour[:, 1] - 1.0) / 2.0
+        lon = np.clip(_col_to_lon(cols), -180.0, 180.0)
+        lat = np.clip(_row_to_lat(rows), -90.0, 90.0)
         polygon = Polygon(_chaikin(np.column_stack((lon, lat))))
         if not polygon.is_valid:
             polygon = polygon.buffer(0)

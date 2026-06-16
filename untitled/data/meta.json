@@ -2,14 +2,14 @@
   "world_name": "The World",
   "seed": 21390380201,
   "mesh_cells": 1200000,
-  "continent_count": 5,
-  "center_lon": -38.62696103952772,
-  "center_lat": 49.338963370992616,
+  "continent_count": 9,
+  "center_lon": -37.34313493249495,
+  "center_lat": 51.46049285574569,
   "eras": [
     {
       "name": "World",
       "file": "land_era1.geojson",
-      "count": 5
+      "count": 9
     }
   ],
   "ice_file": "ice.geojson",
@@ -20,31 +20,55 @@
       "name": "",
       "slug": "landmass-1",
       "polar": false,
-      "land_fraction": 0.15959633445656607
+      "land_fraction": 0.1504323339066777
     },
     {
       "name": "",
-      "slug": "landmass-2",
+      "slug": "landmass-8",
       "polar": false,
-      "land_fraction": 0.048350625106310954
+      "land_fraction": 0.04777808018623913
+    },
+    {
+      "name": "",
+      "slug": "landmass-7",
+      "polar": false,
+      "land_fraction": 0.03850400008456821
+    },
+    {
+      "name": "",
+      "slug": "landmass-6",
+      "polar": false,
+      "land_fraction": 0.013856374155474357
     },
     {
       "name": "",
       "slug": "landmass-3",
       "polar": false,
-      "land_fraction": 0.046520350128649544
+      "land_fraction": 0.008384694601418866
     },
     {
       "name": "",
       "slug": "landmass-4",
       "polar": false,
-      "land_fraction": 0.004425857166185041
+      "land_fraction": 0.006236830238305268
     },
     {
       "name": "",
-      "slug": "landmass-6",
-      "polar": true,
-      "land_fraction": 0.003570632096385991
+      "slug": "landmass-5",
+      "polar": false,
+      "land_fraction": 0.004439499929975051
+    },
+    {
+      "name": "",
+      "slug": "landmass-2",
+      "polar": false,
+      "land_fraction": 0.0042295111941954506
+    },
+    {
+      "name": "",
+      "slug": "landmass-9",
+      "polar": false,
+      "land_fraction": 0.0004998886070710037
     }
   ],
   "articles": [
@@ -52,31 +76,55 @@
       "name": "",
       "slug": "landmass-1",
       "polar": false,
-      "land_fraction": 0.15959633445656607
+      "land_fraction": 0.1504323339066777
     },
     {
       "name": "",
-      "slug": "landmass-2",
+      "slug": "landmass-8",
       "polar": false,
-      "land_fraction": 0.048350625106310954
+      "land_fraction": 0.04777808018623913
+    },
+    {
+      "name": "",
+      "slug": "landmass-7",
+      "polar": false,
+      "land_fraction": 0.03850400008456821
+    },
+    {
+      "name": "",
+      "slug": "landmass-6",
+      "polar": false,
+      "land_fraction": 0.013856374155474357
     },
     {
       "name": "",
       "slug": "landmass-3",
       "polar": false,
-      "land_fraction": 0.046520350128649544
+      "land_fraction": 0.008384694601418866
     },
     {
       "name": "",
       "slug": "landmass-4",
       "polar": false,
-      "land_fraction": 0.004425857166185041
+      "land_fraction": 0.006236830238305268
     },
     {
       "name": "",
-      "slug": "landmass-6",
-      "polar": true,
-      "land_fraction": 0.003570632096385991
+      "slug": "landmass-5",
+      "polar": false,
+      "land_fraction": 0.004439499929975051
+    },
+    {
+      "name": "",
+      "slug": "landmass-2",
+      "polar": false,
+      "land_fraction": 0.0042295111941954506
+    },
+    {
+      "name": "",
+      "slug": "landmass-9",
+      "polar": false,
+      "land_fraction": 0.0004998886070710037
     }
   ]
 }

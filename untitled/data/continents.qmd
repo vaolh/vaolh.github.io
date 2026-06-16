@@ -22,7 +22,7 @@
   <crs>
     <spatialrefsys nativeFormat="Wkt">
       <wkt></wkt>
-      <proj4></proj4>
+      <proj4>+proj=longlat +datum=WGS84 +no_defs</proj4>
       <srsid>0</srsid>
       <srid>0</srid>
       <authid></authid>

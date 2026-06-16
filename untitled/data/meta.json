@@ -2,14 +2,14 @@
   "world_name": "The World",
   "seed": 21390380201,
   "mesh_cells": 1200000,
-  "continent_count": 4,
-  "center_lon": 130.9139891978865,
-  "center_lat": -21.910689992694575,
+  "continent_count": 5,
+  "center_lon": -38.62696103952772,
+  "center_lat": 49.338963370992616,
   "eras": [
     {
       "name": "World",
       "file": "land_era1.geojson",
-      "count": 4
+      "count": 5
     }
   ],
   "ice_file": "ice.geojson",
@@ -19,52 +19,64 @@
     {
       "name": "",
       "slug": "landmass-1",
-      "polar": true,
-      "land_fraction": 0.14644298681866041
+      "polar": false,
+      "land_fraction": 0.15959633445656607
     },
     {
       "name": "",
       "slug": "landmass-2",
       "polar": false,
-      "land_fraction": 0.05258586100200954
+      "land_fraction": 0.048350625106310954
     },
     {
       "name": "",
       "slug": "landmass-3",
       "polar": false,
-      "land_fraction": 0.04264537529031806
+      "land_fraction": 0.046520350128649544
     },
     {
       "name": "",
       "slug": "landmass-4",
+      "polar": false,
+      "land_fraction": 0.004425857166185041
+    },
+    {
+      "name": "",
+      "slug": "landmass-6",
       "polar": true,
-      "land_fraction": 0.0361603228496083
+      "land_fraction": 0.003570632096385991
     }
   ],
   "articles": [
     {
       "name": "",
       "slug": "landmass-1",
-      "polar": true,
-      "land_fraction": 0.14644298681866041
+      "polar": false,
+      "land_fraction": 0.15959633445656607
     },
     {
       "name": "",
       "slug": "landmass-2",
       "polar": false,
-      "land_fraction": 0.05258586100200954
+      "land_fraction": 0.048350625106310954
     },
     {
       "name": "",
       "slug": "landmass-3",
       "polar": false,
-      "land_fraction": 0.04264537529031806
+      "land_fraction": 0.046520350128649544
     },
     {
       "name": "",
       "slug": "landmass-4",
+      "polar": false,
+      "land_fraction": 0.004425857166185041
+    },
+    {
+      "name": "",
+      "slug": "landmass-6",
       "polar": true,
-      "land_fraction": 0.0361603228496083
+      "land_fraction": 0.003570632096385991
     }
   ]
 }

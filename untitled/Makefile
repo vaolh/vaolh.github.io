@@ -4,22 +4,29 @@
 
 ### REPLICATION FILE: Makefile
 ### MAKE VERSION:     4.0+
-### LAST EDIT:        2026-06-11 by vao2116
+### LAST EDIT:        2026-06-16 by vao2116
 
-### Master seed for the world; override as `make all seed=42`.
+### Master seed for drawing a fresh candidate world; override as `make seed seed=42`.
 seed := 7
 
 ### Interpreter and source layout.
 python := .venv/bin/python
 gen := gen
 
-.PHONY: all world pages preview montage clean
+.PHONY: all world seed pages preview montage clean
 
-### Build the geojson world and then the wiki pages for the chosen seed.
+### Rebuild the shipped world from the hand-edited continents, then the pages.
 all: world pages
 
-### Generate every geojson layer and the metadata for the seed.
+### Rebuild every geojson layer and the metadata from data/continents.geojson:
+### the authored land grouped into landmasses, the ice overlay, and the rivers
+### and elevation model re-routed onto the moved continents.
 world:
+	$(python) $(gen)/build_from_continents.py
+
+### Draw a fresh procedural candidate world from a seed (the source the author
+### then edits in QGIS into data/continents.geojson).
+seed:
 	$(python) $(gen)/generate.py --seed $(seed)
 
 ### Render the wiki home page and the nation articles from the metadata.

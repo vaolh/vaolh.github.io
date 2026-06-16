@@ -13,6 +13,8 @@
     }
   ],
   "ice_file": "ice.geojson",
+  "rivers_file": "rivers.geojson",
+  "dem_file": "elevation.asc",
   "landmasses": [
     {
       "name": "",

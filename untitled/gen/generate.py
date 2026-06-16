@@ -14,6 +14,7 @@ from shapely.ops import unary_union
 import config as cfg
 from geometry import (fibonacci_sphere, lonlat_to_xyz,
                       xyz_to_lonlat, angular_distance, rodrigues)
+from rivers import build_rivers
 from tectonics import simulate
 from vectorize import (build_grid, mask_to_multipolygon, rasterize_continents,
                        rasterize_idw)
@@ -55,6 +56,38 @@ def _write_collection(path, features):
     """Write a list of features to disk as a geojson feature collection."""
     collection = {"type": "FeatureCollection", "features": features}
     path.write_text(json.dumps(collection))
+
+
+def _round_features(features):
+    """Round the coordinates of already-built geojson features in place."""
+    for feature in features:
+        feature["geometry"]["coordinates"] = _round_coords(
+            feature["geometry"]["coordinates"])
+    return features
+
+
+def _write_dem(path, elevation_grid):
+    """Write the relief as an ESRI ASCII grid in metres for QGIS.
+
+    The grid is reduced to the export resolution, scaled to metres and written
+    north-row first in EPSG:4326, so QGIS reads it as a digital elevation model
+    that can be colour-ramped or hillshaded to render the mountains.
+    """
+    height, width = cfg.dem_grid_height, cfg.dem_grid_width
+    block_h = elevation_grid.shape[0] // height
+    block_w = elevation_grid.shape[1] // width
+    reduced = (elevation_grid[:height * block_h, :width * block_w]
+               .reshape(height, block_h, width, block_w).mean(axis=(1, 3)))
+    metres = reduced * cfg.elevation_meters_per_unit
+    header = (f"ncols {width}\n"
+              f"nrows {height}\n"
+              "xllcorner -180\n"
+              "yllcorner -90\n"
+              f"cellsize {360.0 / width}\n"
+              "NODATA_value -9999\n")
+    rows = "\n".join(" ".join(f"{value:.1f}" for value in row)
+                     for row in metres[::-1])
+    path.write_text(header + rows + "\n")
 
 
 def _area_fraction(mask, row_weight):
@@ -129,7 +162,7 @@ def _ice_bands(land_geoms):
     return features
 
 
-def build_world(seed, write=True):
+def build_world(seed, write=True, with_rivers=None):
     """Generate the fractal world and assemble its three geological eras.
 
     Continents are separated on the raster grid, where narrow seas truly divide
@@ -139,6 +172,7 @@ def build_world(seed, write=True):
     the supercontinent era is the continents packed back together.
     """
     rng = np.random.default_rng(seed)
+    with_rivers = write if with_rivers is None else with_rivers
 
     ### The fault-fractal simulation depends only on the cell positions, so the
     ### k-nearest-neighbour mesh graph is not built — it was pure overhead at this
@@ -167,10 +201,13 @@ def build_world(seed, write=True):
 
     ### Rotate the world in longitude so the antimeridian seam lands in the
     ### sparsest meridian; then the main continents are not split across the flat
-    ### map's edge. Only the land mask is rolled — the coordinate grid already
-    ### maps each column to its longitude, so rolling the mask alone places the
-    ### land at its new longitude and keeps the centroids in that same frame.
-    land_grid = np.roll(land_grid, _seam_shift(land_grid), axis=1)
+    ### map's edge. Only the masks are rolled — the coordinate grid already maps
+    ### each column to its longitude, so rolling the data alone places the land
+    ### at its new longitude and keeps the centroids in that same frame. The
+    ### elevation grid is rolled with it so rivers and the DEM share the frame.
+    shift = _seam_shift(land_grid)
+    land_grid = np.roll(land_grid, shift, axis=1)
+    elevation_grid = np.roll(elevation_grid, shift, axis=1)
 
     grid_labels, count = ndimage.label(land_grid)
     indices = np.arange(1, count + 1)
@@ -318,6 +355,16 @@ def build_world(seed, write=True):
     if write:
         _write_collection(cfg.data_dir / "ice.geojson", ice_features)
 
+    ### Rivers routed from the relief, plus the elevation model for QGIS. These
+    ### are skipped for the fast in-memory builds the previews use.
+    river_features = []
+    if with_rivers:
+        river_features = _round_features(
+            build_rivers(elevation_grid, land_grid))
+    if write:
+        _write_collection(cfg.data_dir / "rivers.geojson", river_features)
+        _write_dem(cfg.data_dir / "elevation.asc", elevation_grid)
+
     meta = {
         "world_name": cfg.world_display_name,
         "seed": int(seed),
@@ -327,12 +374,14 @@ def build_world(seed, write=True):
         "center_lat": float(view_lonlat[1]),
         "eras": eras,
         "ice_file": "ice.geojson",
+        "rivers_file": "rivers.geojson",
+        "dem_file": "elevation.asc",
         "landmasses": final_landmasses,
         "articles": list(articles.values()),
     }
     if write:
         (cfg.data_dir / "meta.json").write_text(json.dumps(meta, indent=2))
-    return meta, era_features, ice_features
+    return meta, era_features, ice_features, river_features
 
 
 def main():
@@ -343,7 +392,7 @@ def main():
                         help="master random seed for the world")
     arguments = parser.parse_args()
 
-    meta, _, _ = build_world(arguments.seed)
+    meta, _, _, _ = build_world(arguments.seed)
     print(f"world '{meta['world_name']}' built from seed {meta['seed']}")
     for era in meta["eras"]:
         print(f"  {era['name']}: {era['count']} landmasses ({era['file']})")

@@ -284,6 +284,29 @@ island_max_relative_size = 0.03
 mountain_elevation = 1.3
 
 #################################################
+################ RIVERS AND DEM ################
+#################################################
+
+### Rivers are derived from the elevation field by hydrological flow routing on
+### a coarser grid: depressions are filled so every land cell drains to the sea,
+### each cell flows to its lowest neighbour, and the upstream cell count gives
+### the drainage. Cells whose drainage exceeds the threshold are rivers, traced
+### into reaches whose width scales with flow. Rivers are a preview / QGIS layer
+### only — they are NOT drawn on the website globe.
+river_grid_width = 1080
+river_grid_height = 540
+
+### Minimum upstream cell count for a cell to be a river; raise for fewer, only
+### the major rivers, lower for a denser network down to the small streams.
+river_min_cells = 40
+
+### Resolution of the elevation model written for QGIS, as an ESRI ASCII grid
+### (data/elevation.asc, EPSG:4326). Open it in QGIS and apply a colour ramp or
+### hillshade to shade and colour the mountains from the real relief.
+dem_grid_width = 2160
+dem_grid_height = 1080
+
+#################################################
 ################ COUNTRIES ######################
 #################################################
 
@@ -367,4 +390,5 @@ preview_ocean = "#bcd6ec"
 preview_land = "#d6e8bf"
 preview_ice = "#ffffff"
 preview_coast = "#3a72ad"
+preview_river = "#4f93cf"
 preview_space = "#ffffff"

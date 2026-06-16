@@ -259,14 +259,14 @@ def _draw_globe(axis, features, ice_features, center_lon, center_lat,
 _lon_copies = (-360.0, 0.0, 360.0)
 
 
-def _draw_flat(axis, features, ice_features, center_lon=0.0):
+def _draw_flat(axis, features, ice_features, rivers=(), center_lon=0.0):
     """Draw the features as the website's flat map centred on ``center_lon``.
 
     The central meridian sets the framing: each feature is drawn in three
     longitude copies and clipped to the ±180° window, so a landmass that would
     fall on the seam wraps to both edges instead of being cut. Land is green, the
-    ice bands blend white over it, the coastline is stroked, and the solid pole
-    caps go on top.
+    ice bands blend white over it, the coastline is stroked, rivers are traced in
+    blue with a width set by their flow, and the solid pole caps go on top.
     """
     bands, caps = _split_ice(ice_features)
     low, high = center_lon - 180.0, center_lon + 180.0
@@ -299,6 +299,13 @@ def _draw_flat(axis, features, ice_features, center_lon=0.0):
                 for offset in _lon_copies:
                     axis.plot(coords[:, 0] + offset, coords[:, 1],
                               color=cfg.preview_coast, linewidth=0.6)
+    for feature in rivers:
+        coords = np.asarray(feature["geometry"]["coordinates"])
+        width = 0.18 * float(feature["properties"].get("order", 1))
+        for offset in _lon_copies:
+            axis.plot(coords[:, 0] + offset, coords[:, 1],
+                      color=cfg.preview_river, linewidth=width,
+                      solid_capstyle="round", zorder=2.5)
     for feature in caps:
         geometry = shape(feature["geometry"])
         for offset in _lon_copies:
@@ -315,33 +322,35 @@ def _draw_flat(axis, features, ice_features, center_lon=0.0):
 ################ ENTRY POINTS ###################
 #################################################
 
+def _load_features(name):
+    """Return the features of a geojson file under the data directory, or []."""
+    path = cfg.data_dir / name
+    return (json.loads(path.read_text())["features"] if path.exists() else [])
+
+
 def _load_shipped():
-    """Return the on-disk land + ice features and view centre the website uses."""
+    """Return the on-disk land, ice and river features and the view centre."""
     meta = json.loads((cfg.data_dir / "meta.json").read_text())
-    land = json.loads((cfg.data_dir / meta["eras"][0]["file"]).read_text())
-    ice_path = cfg.data_dir / meta.get("ice_file", "ice.geojson")
-    ice = (json.loads(ice_path.read_text())["features"]
-           if ice_path.exists() else [])
-    return (land["features"], ice,
-            meta["center_lon"], meta["center_lat"])
+    land = _load_features(meta["eras"][0]["file"])
+    ice = _load_features(meta.get("ice_file", "ice.geojson"))
+    rivers = _load_features(meta.get("rivers_file", "rivers.geojson"))
+    return land, ice, rivers, meta["center_lon"], meta["center_lat"]
 
 
 def render_final():
     """Render the chosen, already-built world exactly as the page shows it.
 
-    Three panels: the default globe, the land-centred flat map, and the basin
-    view centred opposite the main landmass so it frames the central ocean.
+    The globe matches the website (land, ice, no rivers); the flat map adds the
+    river network, which is a preview and QGIS layer only.
     """
-    features, ice, center_lon, center_lat = _load_shipped()
+    features, ice, rivers, center_lon, center_lat = _load_shipped()
     cfg.preview_dir.mkdir(parents=True, exist_ok=True)
-    figure, (globe, flat, basin) = plt.subplots(1, 3, figsize=(18, 5.4))
+    figure, (globe, flat) = plt.subplots(1, 2, figsize=(13, 5.2))
     figure.patch.set_facecolor(cfg.preview_space)
     _draw_globe(globe, features, ice, center_lon, center_lat)
     globe.set_title("globe (default view)", fontsize=10)
-    _draw_flat(flat, features, ice, center_lon=0.0)
-    flat.set_title("flat map — land centred", fontsize=10)
-    _draw_flat(basin, features, ice, center_lon=center_lon + 180.0)
-    basin.set_title("flat map — basin view", fontsize=10)
+    _draw_flat(flat, features, ice, rivers=rivers, center_lon=0.0)
+    flat.set_title("flat map — land centred, with rivers", fontsize=10)
     figure.tight_layout()
     output = cfg.preview_dir / "world.png"
     figure.savefig(output, dpi=150, facecolor=cfg.preview_space)
@@ -369,7 +378,8 @@ def render_montage(seeds, name=None):
                                        cfg.preview_grid_height)
     try:
         for axis, seed in zip(panels, seeds):
-            meta, era_features, ice_features = build_world(seed, write=False)
+            meta, era_features, ice_features, _ = build_world(
+                seed, write=False)
             _draw_globe(axis, era_features[0], ice_features,
                         meta["center_lon"], meta["center_lat"], fill_size=420)
             axis.set_title(f"seed {seed}", fontsize=9)
@@ -406,7 +416,8 @@ def render_sides(seed):
     cfg.grid_width, cfg.grid_height = (cfg.preview_grid_width,
                                        cfg.preview_grid_height)
     try:
-        meta, era_features, ice_features = build_world(seed, write=False)
+        meta, era_features, ice_features, _ = build_world(
+                seed, write=False)
     finally:
         cfg.grid_width, cfg.grid_height = full_grid
     features = era_features[0]

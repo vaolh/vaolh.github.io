@@ -145,9 +145,7 @@
         set_globe_button(true);
     }
 
-    /* Show the flat mercator map centred on a chosen longitude. Centring on the
-       landmass keeps it whole; centring opposite it frames the ocean basin with
-       the landmass wrapping to both edges. */
+    /* Show the flat mercator map centred on a chosen longitude. */
     function show_flat(map, lon) {
         is_globe = false;
         map.setProjection({ type: "mercator" });
@@ -155,7 +153,7 @@
         set_globe_button(false);
     }
 
-    /* Wire the globe-toggle, basin, reset and fullscreen controls. */
+    /* Wire the globe-toggle, reset and fullscreen controls. */
     function attach_controls(map) {
         document.getElementById("wm-btn-reset").addEventListener("click",
             function () { show_globe(map); });
@@ -168,9 +166,6 @@
                     show_globe(map);
                 }
             });
-
-        document.getElementById("wm-btn-basin").addEventListener("click",
-            function () { show_flat(map, meta.center_lon + 180); });
 
         document.getElementById("wm-btn-fs").addEventListener("click",
             function () {

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>County Editor — The World</title>
+<link href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css" rel="stylesheet" />
+<script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
+<!-- Site wiki styling. wiki.css linked relatively too so it still applies when
+     the file is opened directly (file://), where world.css's absolute @import fails. -->
+<link rel="stylesheet" href="../../assets/css/wiki.css" />
+<link rel="stylesheet" href="../css/world.css" />
+<style>
+  /* This page reuses world.css for #world-map-wrap, #world-map-controls and
+     .vk-ctrl-btn, exactly like the main map. Only editor-specific bits below. */
+  .editor-hint { color: var(--wm-highlight); font-size: 0.85rem; margin: 0 0 12px; }
+
+  /* Assign panel + legend: floating cards over the map (infobox look). */
+  #panel, #legend {
+    position: absolute; z-index: 12; background: var(--wm-space); color: inherit;
+    border: 1px solid var(--wm-border); border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.22); font-size: 0.85rem;
+  }
+  #panel { top: 10px; left: 10px; width: 290px; max-height: calc(100% - 20px); overflow: auto; padding: 14px; display: none; }
+  #panel h2 { margin: 0 0 4px; font-size: 0.95rem; }
+  #panel .sub { opacity: .65; font-size: 0.74rem; margin-bottom: 10px; }
+  #panel label { display: block; font-size: 0.74rem; font-weight: 700; margin: 10px 0 3px; }
+  #panel input { width: 100%; padding: 6px 8px; font: inherit; font-size: 0.85rem; color: inherit;
+    background: var(--wm-space); border: 1px solid var(--wm-border); border-radius: 4px; }
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; }
+  #panel .btns { display: flex; gap: 8px; margin-top: 14px; }
+  #panel .btns .vk-ctrl-btn { flex: 1; }
+
+  #legend { bottom: 10px; left: 10px; padding: 8px 10px; max-height: 45%; overflow: auto; max-width: 220px; display: none; }
+  #legend .item { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+  #legend .sw { width: 13px; height: 13px; border-radius: 2px; border: 1px solid var(--wm-border); flex: none; }
+
+  /* Timeline + stat below the map, within the wiki column. */
+  #timeline { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+  #timeline .year { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 700; white-space: nowrap; }
+  #timeline .year small { font-weight: 400; font-size: 0.7rem; opacity: .6; }
+  #yearSlider { flex: 1; accent-color: var(--wm-highlight); }
+  #stat { font-size: 0.8rem; opacity: .7; margin-top: 8px; }
+
+  .boxdraw { position: absolute; background: var(--wm-highlight-bg); border: 1.5px solid var(--wm-highlight); pointer-events: none; z-index: 14; }
+
+  /* Keep the timeline visible in fullscreen (leave room below the map). */
+  #world-map-outer.vk-fullscreen #world-map-wrap { height: calc(100vh - 72px) !important; border-radius: 0 !important; }
+  #world-map-outer.vk-fullscreen #timeline { padding: 0 14px; margin-top: 8px; }
+  #world-map-outer.vk-fullscreen #stat { padding: 0 14px; }
+
+  /* Data-load fallback overlay (only shown if auto-fetch is blocked). */
+  #loader { position: fixed; inset: 0; z-index: 50; background: var(--wm-space); color: inherit;
+    display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+  #loader.hidden { display: none; }
+  #loader .card { border: 1px solid var(--wm-border); border-radius: 4px; padding: 24px; max-width: 460px; }
+  #loader .drop { margin-top: 14px; border: 2px dashed var(--wm-border); border-radius: 4px; padding: 20px; cursor: pointer; }
+  #loader .drop.hover { border-color: var(--wm-highlight); background: var(--wm-highlight-bg); }
+  #loader label { display: block; text-align: left; font-size: 0.78rem; margin-top: 10px; }
+  #loader input[type=file] { width: 100%; font-size: 0.78rem; margin-top: 4px; color: inherit; }
+  #loader .err { color: #c0392b; font-size: 0.78rem; min-height: 16px; }
+</style>
+</head>
+<body>
+<h1>County Editor</h1>
+<p class="editor-hint">Click a county to assign. Shift-click toggles a county; shift-drag a box to select many.</p>
+
+<div id="world-map-outer">
+  <div id="world-map-wrap">
+    <div id="world-map"></div>
+
+    <div id="world-map-loader">
+      <div class="vk-loader-spinner"></div>
+      <span class="vk-loader-text">Loading map&hellip;</span>
+    </div>
+
+    <div id="world-map-controls">
+      <button class="vk-ctrl-btn active" id="projBtn" title="Toggle globe or flat map">Globe</button>
+      <button class="vk-ctrl-btn" id="legendBtn" title="Toggle the polity legend">Legend</button>
+      <button class="vk-ctrl-btn" id="saveBtn" title="Download history.json">Save</button>
+      <button class="vk-ctrl-btn" id="fsBtn" title="Toggle fullscreen">Fullscreen</button>
+    </div>
+
+    <div id="panel">
+      <h2 id="panelTitle">Assign county</h2>
+      <div class="sub" id="panelSub"></div>
+
+      <label for="fName">Polity name</label>
+      <input id="fName" list="polityNames" autocomplete="off" placeholder="e.g. Aurelian Empire" />
+      <datalist id="polityNames"></datalist>
+
+      <label for="fType">Polity type</label>
+      <input id="fType" list="polityTypes" autocomplete="off" placeholder="type your own&hellip;" />
+      <datalist id="polityTypes">
+        <option value="empire"></option>
+        <option value="kingdom"></option>
+        <option value="republic"></option>
+        <option value="thalassocracy"></option>
+        <option value="tribal"></option>
+        <option value="sultanate"></option>
+        <option value="colony"></option>
+      </datalist>
+
+      <div class="row">
+        <div>
+          <label for="fStart">Start year</label>
+          <input id="fStart" type="number" min="0" max="2000" step="1" value="0" />
+        </div>
+        <div>
+          <label for="fEnd">End year</label>
+          <input id="fEnd" type="number" min="0" max="2000" step="1" value="2000" />
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="vk-ctrl-btn active" id="applyBtn">Assign</button>
+        <button class="vk-ctrl-btn" id="cancelBtn">Cancel</button>
+      </div>
+    </div>
+
+    <div id="legend"></div>
+  </div>
+
+  <div id="timeline">
+    <span class="year"><span id="yearLabel">1000</span> <small>year</small></span>
+    <input id="yearSlider" type="range" min="0" max="2000" step="1" value="1000" />
+  </div>
+  <div id="stat">0 records · 0 polities</div>
+</div>
+
+<div id="loader">
+  <div class="card">
+    <h2>Load atlas data</h2>
+    <p>Trying to load <code>counties_fractal.geojson</code> automatically. If your browser
+       blocks local file access (opened via <code>file://</code>), drop the file below or pick it.</p>
+    <div class="drop" id="drop">Drop <b>counties_fractal.geojson</b> here, or click to browse</div>
+    <label>Counties geometry (required)
+      <input type="file" id="fileCounties" accept=".geojson,.json" />
+    </label>
+    <label>Existing history.json (optional)
+      <input type="file" id="fileHistory" accept=".json" />
+    </label>
+    <div class="err" id="loadErr"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// Palette read straight from the wiki theme (css/world.css --wm-* variables),
+// so the map matches the main world map in both light and dark mode.
+function cssVar(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+function palette() {
+  return {
+    ocean: cssVar("--wm-ocean", "#bcd6ec"),
+    land: cssVar("--wm-land", "#d6e8bf"),
+    ice: cssVar("--wm-ice", "#ffffff"),
+    highlight: cssVar("--wm-highlight", "#3a72ad"),
+    page: cssVar("--wm-space", "#ffffff"),
+  };
+}
+let PAL = palette();
+const GRAY = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
+  ? "#566472" : "#d9d9d9";       // unassigned counties: neutral gray
+const COUNTIES_SRC = "counties";
+const FILL_LAYER = "counties-fill";
+const LINE_LAYER = "counties-line";
+let isGlobe = true;
+
+// ----- In-memory state -----
+let history = [];                 // [{county_id, polity_name, polity_type, start_year, end_year}]
+let countiesGeoJSON = null;
+let countyIds = [];               // all numeric ids
+let recordsByCounty = new Map();  // id -> [records]
+const colorCache = {};            // polity_name -> color (deterministic)
+let selected = new Set();         // currently selected county ids
+let currentYear = 1000;
+let map = null;
+let mapMeta = null;               // meta.json (center_lon/lat), optional
+
+// ====================================================================
+// Deterministic color per polity name (same name -> same color always)
+// ====================================================================
+function colorFor(name) {
+  if (colorCache[name]) return colorCache[name];
+  let h = 2166136261;                       // FNV-ish hash for a stable hue
+  for (let i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = Math.imul(h, 16777619); }
+  const hue = (h >>> 0) % 360;
+  const sat = 55 + ((h >>> 9) % 25);        // 55–80%
+  const light = 45 + ((h >>> 17) % 18);     // 45–63%
+  const c = `hsl(${hue}, ${sat}%, ${light}%)`;
+  colorCache[name] = c;
+  return c;
+}
+
+// ====================================================================
+// History indexing & active-record lookup
+// ====================================================================
+function reindex() {
+  recordsByCounty = new Map();
+  for (const r of history) {
+    if (!recordsByCounty.has(r.county_id)) recordsByCounty.set(r.county_id, []);
+    recordsByCounty.get(r.county_id).push(r);
+  }
+}
+
+// Active record for a county at a given year. If several overlap, the most
+// recently founded (largest start_year) wins.
+function activeRecord(id, year) {
+  const recs = recordsByCounty.get(id);
+  if (!recs) return null;
+  let best = null;
+  for (const r of recs) {
+    if (year >= r.start_year && year <= r.end_year) {
+      if (!best || r.start_year > best.start_year) best = r;
+    }
+  }
+  return best;
+}
+
+function uniquePolityNames() {
+  return [...new Set(history.map(r => r.polity_name))].sort((a, b) => a.localeCompare(b));
+}
+
+// ====================================================================
+// Map recoloring (via feature-state — fast for 672 features)
+// ====================================================================
+function recolor() {
+  if (!map || !map.getSource(COUNTIES_SRC)) return;
+  for (const id of countyIds) {
+    const rec = activeRecord(id, currentYear);
+    map.setFeatureState(
+      { source: COUNTIES_SRC, id },
+      { color: rec ? colorFor(rec.polity_name) : GRAY }
+    );
+  }
+}
+
+function applySelectionState(prev) {
+  // turn off the ones no longer selected, on the ones now selected
+  if (prev) for (const id of prev) if (!selected.has(id))
+    map.setFeatureState({ source: COUNTIES_SRC, id }, { selected: false });
+  for (const id of selected)
+    map.setFeatureState({ source: COUNTIES_SRC, id }, { selected: true });
+}
+
+function setSelected(newSet) {
+  const prev = selected;
+  selected = newSet;
+  applySelectionState(prev);
+}
+
+// ====================================================================
+// UI: panel, legend, stats, datalist
+// ====================================================================
+const panel = document.getElementById("panel");
+const elName = document.getElementById("fName");
+const elType = document.getElementById("fType");
+const elStart = document.getElementById("fStart");
+const elEnd = document.getElementById("fEnd");
+
+function openPanel() {
+  if (selected.size === 0) { closePanel(); return; }
+  document.getElementById("panelTitle").textContent =
+    selected.size === 1 ? "Assign county" : `Assign ${selected.size} counties`;
+  const ids = [...selected];
+  document.getElementById("panelSub").textContent =
+    "County id" + (ids.length > 1 ? "s: " : ": ") + ids.slice(0, 12).join(", ") + (ids.length > 12 ? " …" : "");
+
+  // Prefill from the active record of the first selected county, if any.
+  const rec = activeRecord(ids[0], currentYear);
+  if (rec) {
+    elName.value = rec.polity_name;
+    elType.value = rec.polity_type;
+    elStart.value = rec.start_year;
+    elEnd.value = rec.end_year;
+  } else if (!elName.value) {
+    elStart.value = currentYear;
+    elEnd.value = 2000;
+  }
+  panel.style.display = "block";
+  elName.focus();
+}
+function closePanel() { panel.style.display = "none"; }
+
+function refreshDatalist() {
+  const dl = document.getElementById("polityNames");
+  dl.innerHTML = "";
+  for (const n of uniquePolityNames()) {
+    const o = document.createElement("option");
+    o.value = n;
+    dl.appendChild(o);
+  }
+}
+
+function refreshStats() {
+  document.getElementById("stat").textContent =
+    `${history.length} records · ${uniquePolityNames().length} polities`;
+}
+
+function refreshLegend() {
+  const box = document.getElementById("legend");
+  const names = uniquePolityNames();
+  box.innerHTML = "";
+  if (!names.length) { box.innerHTML = "<i>No polities yet</i>"; return; }
+  for (const n of names) {
+    const row = document.createElement("div");
+    row.className = "item";
+    row.innerHTML = `<span class="sw" style="background:${colorFor(n)}"></span><span>${n}</span>`;
+    box.appendChild(row);
+  }
+}
+
+// ====================================================================
+// Apply assignment
+// ====================================================================
+document.getElementById("applyBtn").addEventListener("click", () => {
+  const name = elName.value.trim();
+  if (!name) { elName.focus(); elName.style.borderColor = "#ef4444"; return; }
+  elName.style.borderColor = "#ccc";
+  const type = elType.value;
+  let s = parseInt(elStart.value, 10);
+  let e = parseInt(elEnd.value, 10);
+  if (isNaN(s)) s = 0;
+  if (isNaN(e)) e = 2000;
+  if (e < s) { const t = s; s = e; e = t; }
+
+  for (const id of selected) {
+    history.push({ county_id: id, polity_name: name, polity_type: type, start_year: s, end_year: e });
+  }
+  reindex();
+  refreshDatalist();
+  refreshStats();
+  refreshLegend();
+  recolor();
+  setSelected(new Set());
+  closePanel();
+});
+
+document.getElementById("cancelBtn").addEventListener("click", () => {
+  setSelected(new Set());
+  closePanel();
+});
+
+// ====================================================================
+// Save
+// ====================================================================
+document.getElementById("saveBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(history, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "history.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
+document.getElementById("legendBtn").addEventListener("click", () => {
+  const l = document.getElementById("legend");
+  l.style.display = l.style.display === "block" ? "none" : "block";
+});
+
+document.getElementById("projBtn").addEventListener("click", () => {
+  if (!map) return;
+  isGlobe = !isGlobe;
+  setProjection();
+});
+
+document.getElementById("fsBtn").addEventListener("click", () => {
+  const outer = document.getElementById("world-map-outer");
+  const full = outer.classList.toggle("vk-fullscreen");
+  document.body.classList.toggle("vk-map-fullscreen", full);
+  setTimeout(() => { if (map) map.resize(); }, 60);
+});
+
+// ====================================================================
+// Timeline
+// ====================================================================
+const slider = document.getElementById("yearSlider");
+const yearLabel = document.getElementById("yearLabel");
+let rafPending = false;
+slider.addEventListener("input", () => {
+  currentYear = parseInt(slider.value, 10);
+  yearLabel.textContent = currentYear;
+  if (!rafPending) {
+    rafPending = true;
+    requestAnimationFrame(() => { rafPending = false; recolor(); });
+  }
+});
+
+// ====================================================================
+// Map setup
+// ====================================================================
+function computeBounds(geojson) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const walk = (c) => {
+    if (typeof c[0] === "number") {
+      if (c[0] < minX) minX = c[0]; if (c[0] > maxX) maxX = c[0];
+      if (c[1] < minY) minY = c[1]; if (c[1] > maxY) maxY = c[1];
+    } else for (const x of c) walk(x);
+  };
+  for (const f of geojson.features) walk(f.geometry.coordinates);
+  return [[minX, minY], [maxX, maxY]];
+}
+
+// Longitude/latitude graticule, matching the main world map.
+function graticule(stepLon = 15, stepLat = 10) {
+  const features = [];
+  for (let lng = -180; lng <= 180; lng += stepLon)
+    features.push({ type: "Feature", geometry: { type: "LineString", coordinates: [[lng, -85], [lng, 85]] } });
+  for (let lat = -80; lat <= 80; lat += stepLat)
+    if (lat !== 0) features.push({ type: "Feature", geometry: { type: "LineString", coordinates: [[-180, lat], [180, lat]] } });
+  return { type: "FeatureCollection", features };
+}
+
+function setProjection() {
+  map.setProjection({ type: isGlobe ? "globe" : "mercator" });
+  const btn = document.getElementById("projBtn");
+  btn.textContent = isGlobe ? "Globe" : "Flat";
+  btn.classList.toggle("active", isGlobe);
+}
+
+function initMap() {
+  countyIds = countiesGeoJSON.features.map(f => f.properties.id);
+  document.getElementById("world-map").style.background = PAL.page;
+
+  map = new maplibregl.Map({
+    container: "world-map",
+    attributionControl: false,
+    // Blank style: a transparent background only -- NO real-world base map.
+    style: {
+      version: 8,
+      sources: {},
+      layers: [{ id: "space", type: "background", paint: { "background-color": "rgba(0,0,0,0)" } }],
+    },
+    center: mapMeta ? [mapMeta.center_lon, mapMeta.center_lat] : [0, 10],
+    zoom: 2,
+    dragRotate: false,
+    minZoom: 0,
+    maxZoom: 20,
+  });
+  window.__map = map; // debug handle
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+  map.boxZoom.disable();   // we use shift+drag for selection instead
+
+  map.on("load", () => {
+    setProjection();
+    map.setSky({ "atmosphere-blend": 0 });   // no blue halo around the globe
+
+    // Ocean fills the whole sphere; the transparent space layer shows the page
+    // background outside the globe.
+    map.addSource("ocean", { type: "geojson", data: {
+      type: "FeatureCollection", features: [{ type: "Feature", geometry: {
+        type: "Polygon", coordinates: [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]] } }] } });
+    map.addLayer({ id: "ocean-fill", type: "fill", source: "ocean", paint: { "fill-color": PAL.ocean } });
+
+    map.addSource("graticule", { type: "geojson", data: graticule() });
+    map.addLayer({ id: "graticule-line", type: "line", source: "graticule",
+      paint: { "line-color": PAL.highlight, "line-width": 0.5, "line-opacity": 0.4 } });
+
+    map.addSource("equator", { type: "geojson", data: {
+      type: "FeatureCollection", features: [{ type: "Feature", geometry: {
+        type: "LineString", coordinates: [[-180, 0], [180, 0]] } }] } });
+    map.addLayer({ id: "equator-line", type: "line", source: "equator",
+      paint: { "line-color": PAL.highlight, "line-width": 1, "line-dasharray": [4, 4], "line-opacity": 0.5 } });
+
+    map.addSource(COUNTIES_SRC, {
+      type: "geojson",
+      data: countiesGeoJSON,
+      promoteId: "id",     // use the numeric `id` property as the feature id
+    });
+
+    map.addLayer({
+      id: FILL_LAYER,
+      type: "fill",
+      source: COUNTIES_SRC,
+      paint: {
+        "fill-color": ["to-color", ["coalesce", ["feature-state", "color"], GRAY]],
+        "fill-opacity": 1,
+      },
+    });
+
+    map.addLayer({
+      id: LINE_LAYER,
+      type: "line",
+      source: COUNTIES_SRC,
+      paint: {
+        "line-color": ["case", ["boolean", ["feature-state", "selected"], false], "#e11d48", PAL.highlight],
+        // zoom interpolation must be top-level; selection thickness goes in the
+        // output stops so a selected county always draws a bold outline.
+        "line-width": ["interpolate", ["linear"], ["zoom"],
+          2, ["case", ["boolean", ["feature-state", "selected"], false], 3, 0.5],
+          6, ["case", ["boolean", ["feature-state", "selected"], false], 3, 1.1],
+          10, ["case", ["boolean", ["feature-state", "selected"], false], 3.5, 1.8]],
+      },
+    });
+
+    recolor();
+    refreshDatalist(); refreshStats(); refreshLegend();
+    setupInteractions();
+    const ldr = document.getElementById("world-map-loader");
+    if (ldr) ldr.classList.add("hidden");
+  });
+}
+
+// ====================================================================
+// Interactions: click select, shift-click toggle, shift-drag box select
+// ====================================================================
+function setupInteractions() {
+  map.on("mouseenter", FILL_LAYER, () => { map.getCanvas().style.cursor = "pointer"; });
+  map.on("mouseleave", FILL_LAYER, () => { map.getCanvas().style.cursor = ""; });
+
+  // Plain click (no shift): select single county, or clear if clicking empty.
+  map.on("click", (e) => {
+    if (e.originalEvent.shiftKey) return; // shift handled by box/toggle logic
+    const fs = map.queryRenderedFeatures(e.point, { layers: [FILL_LAYER] });
+    if (fs.length) { setSelected(new Set([fs[0].id])); openPanel(); }
+    else { setSelected(new Set()); closePanel(); }
+  });
+
+  // Shift+drag box select / shift+click toggle.
+  const canvas = map.getCanvasContainer();
+  let start = null, boxEl = null;
+
+  const mousePos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    return [e.clientX - rect.left, e.clientY - rect.top];
+  };
+
+  canvas.addEventListener("mousedown", (e) => {
+    if (!e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    map.dragPan.disable();
+    start = mousePos(e);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+
+  function onMove(e) {
+    const cur = mousePos(e);
+    if (!boxEl) {
+      if (Math.abs(cur[0] - start[0]) + Math.abs(cur[1] - start[1]) < 4) return; // wait for real drag
+      boxEl = document.createElement("div");
+      boxEl.className = "boxdraw";
+      canvas.appendChild(boxEl);
+    }
+    const minX = Math.min(start[0], cur[0]), maxX = Math.max(start[0], cur[0]);
+    const minY = Math.min(start[1], cur[1]), maxY = Math.max(start[1], cur[1]);
+    boxEl.style.left = minX + "px";
+    boxEl.style.top = minY + "px";
+    boxEl.style.width = (maxX - minX) + "px";
+    boxEl.style.height = (maxY - minY) + "px";
+  }
+
+  function onUp(e) {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    map.dragPan.enable();
+    const cur = mousePos(e);
+
+    if (boxEl) {
+      // Box drag: add every county intersecting the box to the selection.
+      const bbox = [
+        [Math.min(start[0], cur[0]), Math.min(start[1], cur[1])],
+        [Math.max(start[0], cur[0]), Math.max(start[1], cur[1])],
+      ];
+      const fs = map.queryRenderedFeatures(bbox, { layers: [FILL_LAYER] });
+      const next = new Set(selected);
+      for (const f of fs) next.add(f.id);
+      setSelected(next);
+      boxEl.remove(); boxEl = null;
+      if (selected.size) openPanel();
+    } else {
+      // Shift+click (no drag): toggle the county under the cursor.
+      const fs = map.queryRenderedFeatures([cur[0], cur[1]], { layers: [FILL_LAYER] });
+      if (fs.length) {
+        const id = fs[0].id;
+        const next = new Set(selected);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        setSelected(next);
+        if (selected.size) openPanel(); else closePanel();
+      }
+    }
+    start = null;
+  }
+}
+
+// ====================================================================
+// Data loading: try fetch, fall back to manual file picking
+// ====================================================================
+const loader = document.getElementById("loader");
+const loadErr = document.getElementById("loadErr");
+
+function startApp() {
+  reindex();
+  loader.classList.add("hidden");
+  initMap();
+}
+
+function ingestCounties(text) {
+  const gj = JSON.parse(text);
+  if (!gj.features || !gj.features.length) throw new Error("No features in GeoJSON");
+  if (gj.features[0].properties.id === undefined) throw new Error("Features lack an `id` property");
+  countiesGeoJSON = gj;
+}
+
+async function tryAutoLoad() {
+  const candidates = ["counties_fractal.geojson", "data/counties_fractal.geojson"];
+  for (const url of candidates) {
+    try {
+      const r = await fetch(url, { cache: "no-store" });
+      if (!r.ok) continue;
+      ingestCounties(await r.text());
+      // optional history alongside
+      try {
+        const hurl = url.replace("counties_fractal.geojson", "history.json");
+        const hr = await fetch(hurl, { cache: "no-store" });
+        if (hr.ok) { const h = await hr.json(); if (Array.isArray(h)) history = h; }
+      } catch (_) {}
+      // optional meta.json for the initial globe centre
+      try {
+        const murl = url.replace("counties_fractal.geojson", "meta.json");
+        const mr = await fetch(murl, { cache: "no-store" });
+        if (mr.ok) { const m = await mr.json(); if (m && typeof m.center_lon === "number") mapMeta = m; }
+      } catch (_) {}
+      startApp();
+      return true;
+    } catch (_) { /* try next / fall back to manual */ }
+  }
+  return false;
+}
+
+// Manual file inputs / drag-drop
+const drop = document.getElementById("drop");
+const fileCounties = document.getElementById("fileCounties");
+const fileHistory = document.getElementById("fileHistory");
+
+drop.addEventListener("click", () => fileCounties.click());
+["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("hover"); }));
+["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("hover"); }));
+drop.addEventListener("drop", e => { if (e.dataTransfer.files.length) handleCountiesFile(e.dataTransfer.files[0]); });
+
+function handleCountiesFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try { ingestCounties(reader.result); maybeStart(); }
+    catch (err) { loadErr.textContent = "Counties: " + err.message; }
+  };
+  reader.readAsText(file);
+}
+fileCounties.addEventListener("change", e => { if (e.target.files.length) handleCountiesFile(e.target.files[0]); });
+fileHistory.addEventListener("change", e => {
+  if (!e.target.files.length) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const h = JSON.parse(reader.result);
+      if (!Array.isArray(h)) throw new Error("history.json must be an array");
+      history = h; loadErr.textContent = "";
+    } catch (err) { loadErr.textContent = "History: " + err.message; }
+  };
+  reader.readAsText(e.target.files[0]);
+});
+
+// Start only once counties are loaded (history optional).
+function maybeStart() { if (countiesGeoJSON) startApp(); }
+
+// Kick off: attempt auto-load; if it fails the loader overlay stays for manual pick.
+tryAutoLoad().then(ok => { if (!ok) loadErr.textContent = ""; });
+</script>
+</body>
+</html>

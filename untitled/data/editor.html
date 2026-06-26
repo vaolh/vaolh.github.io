@@ -74,6 +74,9 @@
   #loader label { display: block; text-align: left; font-size: 0.78rem; margin-top: 10px; }
   #loader input[type=file] { width: 100%; font-size: 0.78rem; margin-top: 4px; color: inherit; }
   #loader .err { color: #c0392b; font-size: 0.78rem; min-height: 16px; }
+
+  /* Autosave status chip next to the controls. */
+  #saveStatus { align-self: center; font-size: 0.72rem; opacity: .7; padding: 0 4px; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -92,8 +95,9 @@
     <div id="world-map-controls">
       <button class="vk-ctrl-btn active" id="projBtn" title="Toggle globe or flat map">Globe</button>
       <button class="vk-ctrl-btn" id="legendBtn" title="Toggle the polity legend">Legend</button>
-      <button class="vk-ctrl-btn" id="saveBtn" title="Download history.json">Save</button>
+      <button class="vk-ctrl-btn" id="saveBtn" title="Save history to a file (no download dialog where supported)">Save file</button>
       <button class="vk-ctrl-btn" id="fsBtn" title="Toggle fullscreen">Fullscreen</button>
+      <span id="saveStatus" title="Your work autosaves in this browser"></span>
     </div>
 
     <div id="panel">
@@ -203,6 +207,80 @@ let selected = new Set();         // currently selected county ids
 let currentYear = 1000;
 let map = null;
 let mapMeta = null;               // meta.json (center_lon/lat), optional
+const countyCentroid = new Map(); // id -> [lng, lat] for placing flags
+const FLAG_SRC = "polity-flags";
+const FLAG_LAYER = "polity-flags";
+const flagImages = new Set();     // image ids already registered with the map
+const flagVersion = new Map();    // name -> version (bumped when a flag changes)
+
+// Map-image id for a polity's current flag (version makes a replacement load
+// fresh instead of serving the cached icon).
+function flagImageId(name) { return "flag::" + name + "::" + (flagVersion.get(name) || 0); }
+function bumpFlag(name) { flagVersion.set(name, (flagVersion.get(name) || 0) + 1); }
+
+// Rasterise a polity flag (data-URL) to a fixed-size map image, once.
+function ensureFlagImage(name) {
+  const id = flagImageId(name);
+  if (flagImages.has(id) || !flags[name] || !map) return;
+  flagImages.add(id);
+  const img = new Image();
+  img.onload = () => {
+    const W = 36, H = 24;
+    const cv = document.createElement("canvas");
+    cv.width = W; cv.height = H;
+    cv.getContext("2d").drawImage(img, 0, 0, W, H);
+    if (!map.hasImage(id)) {
+      map.addImage(id, cv.getContext("2d").getImageData(0, 0, W, H));
+    }
+    refreshFlagMarkers();          // now that the icon exists, draw it
+  };
+  img.onerror = () => { flagImages.delete(id); };
+  img.src = flags[name];
+}
+
+// One flag per polity active at currentYear, placed at the mean of its
+// counties' centroids. Counties + flags therefore show together for the year.
+function refreshFlagMarkers() {
+  if (!map || !map.getSource(FLAG_SRC)) return;
+  const byPolity = new Map();      // name -> [[lng,lat], ...]
+  for (const id of countyIds) {
+    const rec = activeRecord(id, currentYear);
+    if (!rec || !flags[rec.polity_name]) continue;
+    const c = countyCentroid.get(id);
+    if (!c) continue;
+    if (!byPolity.has(rec.polity_name)) byPolity.set(rec.polity_name, []);
+    byPolity.get(rec.polity_name).push(c);
+  }
+  const feats = [];
+  for (const [name, pts] of byPolity) {
+    ensureFlagImage(name);
+    const iid = flagImageId(name);
+    if (!map.hasImage(iid)) continue;   // not loaded yet; will re-run on load
+    const lng = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+    const lat = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+    feats.push({ type: "Feature", properties: { icon: iid },
+                 geometry: { type: "Point", coordinates: [lng, lat] } });
+  }
+  map.getSource(FLAG_SRC).setData({ type: "FeatureCollection", features: feats });
+}
+
+// Rough area-weighted centroid of a county's largest polygon (for flag anchor).
+function centroidOf(geom) {
+  let bestRing = null, bestArea = -1;
+  for (const poly of geom.coordinates) {       // MultiPolygon
+    const ring = poly[0];
+    let a = 0;
+    for (let i = 0; i < ring.length - 1; i++) {
+      a += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+    }
+    a = Math.abs(a / 2);
+    if (a > bestArea) { bestArea = a; bestRing = ring; }
+  }
+  if (!bestRing) return null;
+  let x = 0, y = 0, n = bestRing.length - 1;
+  for (let i = 0; i < n; i++) { x += bestRing[i][0]; y += bestRing[i][1]; }
+  return [x / n, y / n];
+}
 
 // ====================================================================
 // Deterministic color per polity name (same name -> same color always)
@@ -248,6 +326,16 @@ function uniquePolityNames() {
   return [...new Set(history.map(r => r.polity_name))].sort((a, b) => a.localeCompare(b));
 }
 
+// Polity names that actually own a county at `year` (sorted). Drives the
+// year-aware legend and map flags so only the present polities show.
+function activePolityNames(year) {
+  const set = new Set();
+  for (const r of history) {
+    if (year >= r.start_year && year <= r.end_year) set.add(r.polity_name);
+  }
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
 // Accept both the legacy array form and the new {records, flags} object form.
 function ingestHistory(parsed) {
   if (Array.isArray(parsed)) {
@@ -258,6 +346,53 @@ function ingestHistory(parsed) {
   } else {
     throw new Error("history.json must be an array or {records, flags}");
   }
+}
+
+// ====================================================================
+// Persistence: autosave to this browser so work survives closing the tab,
+// plus an explicit "Save file" that writes a real file (no download dialog
+// where the File System Access API is available).
+// ====================================================================
+const LS_KEY = "vk_county_editor_history";
+let fileHandle = null;            // bound history.json handle (Chromium only)
+let historyExplicit = false;      // user picked a history file -> don't override
+
+function setSaveStatus(text) {
+  const el = document.getElementById("saveStatus");
+  if (el) el.textContent = text;
+}
+
+function snapshot() { return JSON.stringify({ records: history, flags }, null, 2); }
+
+// Silent autosave into localStorage after every change.
+function autosave() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ records: history, flags }));
+    const t = new Date().toLocaleTimeString();
+    setSaveStatus("autosaved " + t);
+    // If a real file is bound, mirror the change to it too.
+    if (fileHandle) writeToHandle().catch(() => {});
+  } catch (err) {
+    setSaveStatus(err && err.name === "QuotaExceededError"
+      ? "autosave full — use Save file (flags too big for browser storage)"
+      : "autosave failed");
+  }
+}
+
+// Load in-progress work saved in this browser. Returns true if anything loaded.
+function loadAutosave() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    ingestHistory(JSON.parse(raw));
+    return true;
+  } catch (_) { return false; }
+}
+
+async function writeToHandle() {
+  const w = await fileHandle.createWritable();
+  await w.write(snapshot());
+  await w.close();
 }
 
 // ====================================================================
@@ -272,6 +407,7 @@ function recolor() {
       { color: rec ? colorFor(rec.polity_name) : GRAY }
     );
   }
+  refreshFlagMarkers();
 }
 
 function applySelectionState(prev) {
@@ -321,8 +457,11 @@ elFlag.addEventListener("change", () => {
   const reader = new FileReader();
   reader.onload = () => {
     flags[name] = reader.result;
+    bumpFlag(name);                // force a fresh map icon for the new image
     showFlagPreview(name);
     refreshLegend();
+    refreshFlagMarkers();
+    autosave();
     elFlag.value = "";  // allow re-uploading the same file later
   };
   reader.readAsDataURL(file);
@@ -332,8 +471,11 @@ elFlagClear.addEventListener("click", () => {
   const name = elName.value.trim();
   if (name && flags[name]) {
     delete flags[name];
+    bumpFlag(name);
     showFlagPreview(name);
     refreshLegend();
+    refreshFlagMarkers();
+    autosave();
   }
   elFlag.value = "";
 });
@@ -349,17 +491,22 @@ function openPanel() {
   document.getElementById("panelSub").textContent =
     "County id" + (ids.length > 1 ? "s: " : ": ") + ids.slice(0, 12).join(", ") + (ids.length > 12 ? " …" : "");
 
-  // Prefill from the active record of the first selected county, if any.
+  // Prefill from the active record of the first selected county. A county that
+  // is CLEAN at the current year always starts a fresh assignment -- it must
+  // never inherit whatever polity happened to be in the form last time.
   const rec = activeRecord(ids[0], currentYear);
   if (rec) {
     elName.value = rec.polity_name;
-    elType.value = rec.polity_type;
+    elType.value = rec.polity_type || "";
     elStart.value = rec.start_year;
     elEnd.value = rec.end_year;
-  } else if (!elName.value) {
+  } else {
+    elName.value = "";
+    elType.value = "";
     elStart.value = currentYear;
     elEnd.value = 2000;
   }
+  elName.style.borderColor = "#ccc";
   showFlagPreview(elName.value.trim());
   panel.style.display = "block";
   elName.focus();
@@ -383,9 +530,12 @@ function refreshStats() {
 
 function refreshLegend() {
   const box = document.getElementById("legend");
-  const names = uniquePolityNames();
+  const names = activePolityNames(currentYear);
   box.innerHTML = "";
-  if (!names.length) { box.innerHTML = "<i>No polities yet</i>"; return; }
+  if (!names.length) {
+    box.innerHTML = "<i>No polities in " + currentYear + "</i>";
+    return;
+  }
   for (const n of names) {
     const row = document.createElement("div");
     row.className = "item";
@@ -420,6 +570,7 @@ document.getElementById("applyBtn").addEventListener("click", () => {
   refreshStats();
   refreshLegend();
   recolor();
+  autosave();
   setSelected(new Set());
   closePanel();
 });
@@ -432,9 +583,27 @@ document.getElementById("cancelBtn").addEventListener("click", () => {
 // ====================================================================
 // Save
 // ====================================================================
-document.getElementById("saveBtn").addEventListener("click", () => {
-  const payload = { records: history, flags };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+document.getElementById("saveBtn").addEventListener("click", async () => {
+  // Preferred path: write straight to a real file (Chromium). Pick the file
+  // once; after that, autosave mirrors every change into it silently.
+  if (window.showSaveFilePicker) {
+    try {
+      if (!fileHandle) {
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: "history.json",
+          types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+        });
+      }
+      await writeToHandle();
+      setSaveStatus("saved to " + fileHandle.name);
+      return;
+    } catch (err) {
+      if (err && err.name === "AbortError") return;   // user cancelled picker
+      // fall through to download on any other failure
+    }
+  }
+  // Fallback: download (browsers without the File System Access API).
+  const blob = new Blob([snapshot()], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "history.json";
@@ -442,6 +611,7 @@ document.getElementById("saveBtn").addEventListener("click", () => {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  setSaveStatus("downloaded history.json");
 });
 
 document.getElementById("legendBtn").addEventListener("click", () => {
@@ -473,7 +643,11 @@ slider.addEventListener("input", () => {
   yearLabel.textContent = currentYear;
   if (!rafPending) {
     rafPending = true;
-    requestAnimationFrame(() => { rafPending = false; recolor(); });
+    requestAnimationFrame(() => {
+      rafPending = false;
+      recolor();          // fills + flag markers reflect the new year
+      refreshLegend();    // the legend lists only this year's polities
+    });
   }
 });
 
@@ -511,6 +685,11 @@ function setProjection() {
 
 function initMap() {
   countyIds = countiesGeoJSON.features.map(f => f.properties.id);
+  countyCentroid.clear();
+  for (const f of countiesGeoJSON.features) {
+    const c = centroidOf(f.geometry);
+    if (c) countyCentroid.set(f.properties.id, c);
+  }
   document.getElementById("world-map").style.background = PAL.page;
 
   map = new maplibregl.Map({
@@ -581,6 +760,19 @@ function initMap() {
           2, ["case", ["boolean", ["feature-state", "selected"], false], 3, 0.5],
           6, ["case", ["boolean", ["feature-state", "selected"], false], 3, 1.1],
           10, ["case", ["boolean", ["feature-state", "selected"], false], 3.5, 1.8]],
+      },
+    });
+
+    // Flag markers: one icon per polity active in the current year.
+    map.addSource(FLAG_SRC, { type: "geojson",
+      data: { type: "FeatureCollection", features: [] } });
+    map.addLayer({
+      id: FLAG_LAYER, type: "symbol", source: FLAG_SRC,
+      layout: {
+        "icon-image": ["get", "icon"],
+        "icon-size": 1,
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
       },
     });
 
@@ -705,6 +897,12 @@ const loader = document.getElementById("loader");
 const loadErr = document.getElementById("loadErr");
 
 function startApp() {
+  // Resume in-browser work unless the user explicitly loaded a history file.
+  if (!historyExplicit && loadAutosave()) {
+    setSaveStatus("resumed your saved work");
+  } else {
+    setSaveStatus("autosave on");
+  }
   reindex();
   loader.classList.add("hidden");
   initMap();
@@ -768,6 +966,7 @@ fileHistory.addEventListener("change", e => {
   reader.onload = () => {
     try {
       ingestHistory(JSON.parse(reader.result));
+      historyExplicit = true;     // honour the picked file over autosave
       loadErr.textContent = "";
     } catch (err) { loadErr.textContent = "History: " + err.message; }
   };

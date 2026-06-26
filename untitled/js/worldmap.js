@@ -102,9 +102,9 @@
     /* Load the polar ice overlay. The latitude bands carry a per-feature "ice"
        opacity (solid at the poles, fading out toward the temperate latitudes)
        and sit beneath the coastline so the blue coast still reads through. The
-       pole caps (cap === true) are solid white and sit ABOVE the coastline so
-       they hide the ragged seams where continents are clamped short of the pole,
-       leaving one clean ice cap. */
+       solid pole-cap polygon (cap === true) is deliberately NOT rendered: on
+       the globe it shows up as a hard white disc around the pole. Only the
+       fading bands remain. */
     function add_ice(map) {
         fetch(data_path + (meta.ice_file || "ice.geojson"))
             .then(function (r) { return r.json(); })
@@ -118,9 +118,6 @@
                     paint: { "fill-color": ice_fill,
                              "fill-opacity": ["get", "ice"] } },
                     map.getLayer("land-line") ? "land-line" : undefined);
-                map.addLayer({ id: "ice-cap", type: "fill", source: "ice",
-                    filter: ["==", ["get", "cap"], true],
-                    paint: { "fill-color": ice_fill, "fill-opacity": 1 } });
             })
             .catch(function () {});
     }
@@ -202,7 +199,7 @@
             if (map.getLayer("ocean-fill")) {
                 map.setPaintProperty("ocean-fill", "fill-color", ocean_fill);
             }
-            ["ice-fill", "ice-cap"].forEach(function (id) {
+            ["ice-fill"].forEach(function (id) {
                 if (map.getLayer(id)) {
                     map.setPaintProperty(id, "fill-color", ice_fill);
                 }

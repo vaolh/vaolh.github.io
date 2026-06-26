@@ -262,10 +262,22 @@ def build_topology(county_geoms):
 # Displacement
 # --------------------------------------------------------------------------- #
 def displacement(pts, noise_x, noise_y, amp_scale):
-    """Vector displacement of an (N,2) point array, before the per-point AMP scaling."""
-    dx = noise_x.fbm(pts[:, 0], pts[:, 1], OCTAVES, PERSISTENCE, LACUNARITY, 1.0 / BASE_WAVELENGTH)
-    dy = noise_y.fbm(pts[:, 0], pts[:, 1], OCTAVES, PERSISTENCE, LACUNARITY, 1.0 / BASE_WAVELENGTH)
-    return np.column_stack([dx, dy]) * amp_scale
+    """Vector displacement of an (N,2) point array, before the per-point AMP scaling.
+
+    The noise is sampled and applied in TRUE SURFACE distance, not in raw lon/lat
+    degrees: longitude is scaled by cos(lat) so the wiggle has the same wavelength
+    and amplitude everywhere on the globe (otherwise a fixed degree-wavelength
+    collapses toward the poles, leaving northern borders smooth and southern ones
+    jagged). It stays a pure function of (lon, lat), so a vertex shared by two
+    counties is displaced identically and the partition stays gap/overlap-free."""
+    lat = pts[:, 1]
+    coslat = np.clip(np.cos(np.radians(lat)), 0.05, 1.0)
+    u = pts[:, 0] * coslat                       # surface-uniform longitude
+    v = lat
+    dx = noise_x.fbm(u, v, OCTAVES, PERSISTENCE, LACUNARITY, 1.0 / BASE_WAVELENGTH)
+    dy = noise_y.fbm(u, v, OCTAVES, PERSISTENCE, LACUNARITY, 1.0 / BASE_WAVELENGTH)
+    # surface offset -> degree offset: longitude span grows as 1/cos(lat).
+    return np.column_stack([dx / coslat, dy]) * amp_scale
 
 
 def compute_edge_curves(edges, node_counties, coast_nodes, factors,
@@ -292,7 +304,10 @@ def compute_edge_curves(edges, node_counties, coast_nodes, factors,
         # offset proportional to segment length and prevents short borders from
         # folding over themselves. Both owners see the same length -> identical.
         ax, ay = e["A"]; bx, by = e["B"]
-        length = math.hypot(bx - ax, by - ay)
+        # Surface length (longitude scaled by cos of the edge's mean latitude), so
+        # the cap bounds the real on-globe offset uniformly at every latitude.
+        mcos = max(0.05, math.cos(math.radians(0.5 * (ay + by))))
+        length = math.hypot((bx - ax) * mcos, by - ay)
         edge_cap = min(1.0, (EDGE_DISP_FRAC * length) / amp_scale) if amp_scale > 0 else 0.0
 
         # Endpoints (shared nodes) must NOT be capped per-edge, or a node shared
@@ -392,11 +407,15 @@ def main():
 
     continents = unary_union([shape(f["geometry"]) for f in continents_gj["features"]]).buffer(0)
 
-    # Typical county diameter (median bbox diagonal) -> displacement amplitude.
+    # Typical county diameter (median bbox diagonal, in SURFACE distance) ->
+    # displacement amplitude. Longitude is scaled by cos(lat) so the equal-on-
+    # globe counties give a stable median instead of one inflated by the
+    # degree-stretched northern cells.
     diags = []
     for g in county_geoms:
         minx, miny, maxx, maxy = g.bounds
-        diags.append(math.hypot(maxx - minx, maxy - miny))
+        mc = max(0.05, math.cos(math.radians(0.5 * (miny + maxy))))
+        diags.append(math.hypot((maxx - minx) * mc, maxy - miny))
     typ_diam = float(np.median(diags))
     amp_scale = AMPLITUDE_PCT * typ_diam
     print(f"counties: {n_counties}  typical diameter: {typ_diam:.3f} deg  "

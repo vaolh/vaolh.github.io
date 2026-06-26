@@ -25,12 +25,26 @@
   #panel h2 { margin: 0 0 4px; font-size: 0.95rem; }
   #panel .sub { opacity: .65; font-size: 0.74rem; margin-bottom: 10px; }
   #panel label { display: block; font-size: 0.74rem; font-weight: 700; margin: 10px 0 3px; }
-  #panel input { width: 100%; padding: 6px 8px; font: inherit; font-size: 0.85rem; color: inherit;
+  #panel input { box-sizing: border-box; width: 100%; padding: 6px 8px; font: inherit; font-size: 0.85rem; color: inherit;
     background: var(--wm-space); border: 1px solid var(--wm-border); border-radius: 4px; }
   .row { display: flex; gap: 8px; }
   .row > div { flex: 1; }
   #panel .btns { display: flex; gap: 8px; margin-top: 14px; }
   #panel .btns .vk-ctrl-btn { flex: 1; }
+
+  /* Per-polity-name flag: upload control + thumbnail in the assign panel. */
+  #panel .flagrow { display: flex; align-items: center; gap: 8px; }
+  #panel .flagrow input[type=file] { flex: 1; min-width: 0; width: auto; padding: 4px; font-size: 0.74rem; }
+  #panel .flagrow .vk-ctrl-btn { flex: none; padding: 4px 9px; }
+  #panel .flagprev { width: 42px; height: 28px; object-fit: cover; flex: none; display: none;
+    border: 1px solid var(--wm-border); border-radius: 3px; background: var(--wm-space); }
+  #panel .flagprev.show { display: block; }
+  #legend .flagsw { width: 20px; height: 13px; object-fit: cover; flex: none;
+    border: 1px solid var(--wm-border); border-radius: 2px; }
+  .flag-popup .maplibregl-popup-content { padding: 5px 8px; font-size: 0.8rem; }
+  .flag-popup .fp { display: flex; align-items: center; gap: 7px; }
+  .flag-popup .fp img { width: 26px; height: 17px; object-fit: cover;
+    border: 1px solid var(--wm-border); border-radius: 2px; flex: none; }
 
   #legend { bottom: 10px; left: 10px; padding: 8px 10px; max-height: 45%; overflow: auto; max-width: 220px; display: none; }
   #legend .item { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
@@ -89,6 +103,13 @@
       <label for="fName">Polity name</label>
       <input id="fName" list="polityNames" autocomplete="off" placeholder="e.g. Aurelian Empire" />
       <datalist id="polityNames"></datalist>
+
+      <label>Flag <small style="font-weight:400;opacity:.6">(per polity name)</small></label>
+      <div class="flagrow">
+        <img id="fFlagPreview" class="flagprev" alt="" />
+        <input id="fFlag" type="file" accept="image/*" />
+        <button type="button" id="fFlagClear" class="vk-ctrl-btn" title="Remove this polity's flag">✕</button>
+      </div>
 
       <label for="fType">Polity type</label>
       <input id="fType" list="polityTypes" autocomplete="off" placeholder="type your own&hellip;" />
@@ -173,6 +194,7 @@ let isGlobe = true;
 
 // ----- In-memory state -----
 let history = [];                 // [{county_id, polity_name, polity_type, start_year, end_year}]
+let flags = {};                   // polity_name -> flag image data-URL
 let countiesGeoJSON = null;
 let countyIds = [];               // all numeric ids
 let recordsByCounty = new Map();  // id -> [records]
@@ -226,6 +248,18 @@ function uniquePolityNames() {
   return [...new Set(history.map(r => r.polity_name))].sort((a, b) => a.localeCompare(b));
 }
 
+// Accept both the legacy array form and the new {records, flags} object form.
+function ingestHistory(parsed) {
+  if (Array.isArray(parsed)) {
+    history = parsed; flags = {};
+  } else if (parsed && Array.isArray(parsed.records)) {
+    history = parsed.records;
+    flags = (parsed.flags && typeof parsed.flags === "object") ? parsed.flags : {};
+  } else {
+    throw new Error("history.json must be an array or {records, flags}");
+  }
+}
+
 // ====================================================================
 // Map recoloring (via feature-state — fast for 672 features)
 // ====================================================================
@@ -262,6 +296,50 @@ const elName = document.getElementById("fName");
 const elType = document.getElementById("fType");
 const elStart = document.getElementById("fStart");
 const elEnd = document.getElementById("fEnd");
+const elFlag = document.getElementById("fFlag");
+const elFlagPreview = document.getElementById("fFlagPreview");
+const elFlagClear = document.getElementById("fFlagClear");
+
+// Show the flag thumbnail for a polity name (or hide it if none).
+function showFlagPreview(name) {
+  const url = name && flags[name];
+  if (url) { elFlagPreview.src = url; elFlagPreview.classList.add("show"); }
+  else { elFlagPreview.removeAttribute("src"); elFlagPreview.classList.remove("show"); }
+}
+
+// Upload: store the chosen image (data-URL) against the current polity name.
+elFlag.addEventListener("change", () => {
+  const file = elFlag.files[0];
+  if (!file) return;
+  const name = elName.value.trim();
+  if (!name) {
+    elName.focus(); elName.style.borderColor = "#ef4444";
+    elFlag.value = "";
+    return;
+  }
+  elName.style.borderColor = "#ccc";
+  const reader = new FileReader();
+  reader.onload = () => {
+    flags[name] = reader.result;
+    showFlagPreview(name);
+    refreshLegend();
+    elFlag.value = "";  // allow re-uploading the same file later
+  };
+  reader.readAsDataURL(file);
+});
+
+elFlagClear.addEventListener("click", () => {
+  const name = elName.value.trim();
+  if (name && flags[name]) {
+    delete flags[name];
+    showFlagPreview(name);
+    refreshLegend();
+  }
+  elFlag.value = "";
+});
+
+// Update the preview as the polity name changes.
+elName.addEventListener("input", () => showFlagPreview(elName.value.trim()));
 
 function openPanel() {
   if (selected.size === 0) { closePanel(); return; }
@@ -282,6 +360,7 @@ function openPanel() {
     elStart.value = currentYear;
     elEnd.value = 2000;
   }
+  showFlagPreview(elName.value.trim());
   panel.style.display = "block";
   elName.focus();
 }
@@ -310,7 +389,11 @@ function refreshLegend() {
   for (const n of names) {
     const row = document.createElement("div");
     row.className = "item";
-    row.innerHTML = `<span class="sw" style="background:${colorFor(n)}"></span><span>${n}</span>`;
+    const mark = flags[n]
+      ? `<img class="flagsw" src="${flags[n]}" alt="" />`
+      : `<span class="sw" style="background:${colorFor(n)}"></span>`;
+    row.innerHTML = `${mark}<span></span>`;
+    row.lastElementChild.textContent = n;
     box.appendChild(row);
   }
 }
@@ -350,7 +433,8 @@ document.getElementById("cancelBtn").addEventListener("click", () => {
 // Save
 // ====================================================================
 document.getElementById("saveBtn").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(history, null, 2)], { type: "application/json" });
+  const payload = { records: history, flags };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "history.json";
@@ -512,8 +596,32 @@ function initMap() {
 // Interactions: click select, shift-click toggle, shift-drag box select
 // ====================================================================
 function setupInteractions() {
+  const flagPopup = new maplibregl.Popup({
+    closeButton: false, closeOnClick: false, className: "flag-popup", offset: 10,
+  });
+
   map.on("mouseenter", FILL_LAYER, () => { map.getCanvas().style.cursor = "pointer"; });
-  map.on("mouseleave", FILL_LAYER, () => { map.getCanvas().style.cursor = ""; });
+  map.on("mouseleave", FILL_LAYER, () => {
+    map.getCanvas().style.cursor = "";
+    flagPopup.remove();
+  });
+
+  // Hovering an assigned county shows its polity name and flag (if uploaded).
+  map.on("mousemove", FILL_LAYER, (e) => {
+    if (!e.features.length) { flagPopup.remove(); return; }
+    const rec = activeRecord(e.features[0].id, currentYear);
+    if (!rec) { flagPopup.remove(); return; }
+    const name = rec.polity_name;
+    const img = flags[name]
+      ? `<img src="${flags[name]}" alt="" />`
+      : `<span class="sw" style="display:inline-block;width:13px;height:13px;border-radius:2px;background:${colorFor(name)}"></span>`;
+    const label = document.createElement("span");
+    label.textContent = name;
+    flagPopup
+      .setLngLat(e.lngLat)
+      .setHTML(`<div class="fp">${img}${label.outerHTML}</div>`)
+      .addTo(map);
+  });
 
   // Plain click (no shift): select single county, or clear if clicking empty.
   map.on("click", (e) => {
@@ -620,7 +728,7 @@ async function tryAutoLoad() {
       try {
         const hurl = url.replace("counties_fractal.geojson", "history.json");
         const hr = await fetch(hurl, { cache: "no-store" });
-        if (hr.ok) { const h = await hr.json(); if (Array.isArray(h)) history = h; }
+        if (hr.ok) { ingestHistory(await hr.json()); }
       } catch (_) {}
       // optional meta.json for the initial globe centre
       try {
@@ -659,9 +767,8 @@ fileHistory.addEventListener("change", e => {
   const reader = new FileReader();
   reader.onload = () => {
     try {
-      const h = JSON.parse(reader.result);
-      if (!Array.isArray(h)) throw new Error("history.json must be an array");
-      history = h; loadErr.textContent = "";
+      ingestHistory(JSON.parse(reader.result));
+      loadErr.textContent = "";
     } catch (err) { loadErr.textContent = "History: " + err.message; }
   };
   reader.readAsText(e.target.files[0]);

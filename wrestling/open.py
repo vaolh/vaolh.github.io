@@ -47,7 +47,7 @@ Each block has an 8-seed bracket + a match card. Fill them like this:
           1 Men    2 Women  3 Women  4 Men
           5 Women  6 Men    7 Women  8 Men
         Day-2 SEMIFINALS (4 rows) then FINALS (2 rows):
-          1 Men    2 Women  3 Men    4 Women
+          1 Men    2 Women  3 Women  4 Men
           5 Women's Final   6 Men's Final
 
   * Notes carry the gender + round, e.g. "Men's Open Tournament Semifinals".
@@ -813,8 +813,8 @@ def generate_template(path, year, date_str=None):
     # bottom) + 2 finals (women's final first, then men's).
     day2_notes = ["Men's Open Tournament Semifinals",
                   "Women's Open Tournament Semifinals",
-                  "Men's Open Tournament Semifinals",
                   "Women's Open Tournament Semifinals",
+                  "Men's Open Tournament Semifinals",
                   "Women's Open Tournament Finals",
                   "Men's Open Tournament Finals"]
 

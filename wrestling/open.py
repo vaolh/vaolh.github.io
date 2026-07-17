@@ -1,30 +1,76 @@
 #!/usr/bin/env python3
 """
-open.py — Open Tournament automation for ppv/list.html
+open.py — Open Tournament + event automation for ppv/list.html
 
-Two jobs, both aimed at killing the fiddly hand-editing of the 8-seed bracket:
+=============================================================================
+CHEAT SHEET  (run from the wrestling/ folder)
+=============================================================================
 
-  1. Generate a fresh template (two <details>: Day 1 "Qualifiers" + Day 2
-     "Finals") appended just before <div id="bottom"> at the bottom of the file:
+  BLANK OPEN TOURNAMENT  (two <details>: Day 1 "Qualifiers" + Day 2 "Finals",
+  appended just before <div id="bottom"> at the bottom of the file)
 
-         python3 open.py 2021                 # placeholder dates
-         python3 open.py 2021 2021-11-30      # Day 1 = that date, Day 2 = +1 day
+      python3 open.py 2021                 # placeholder dates
+      python3 open.py 2021 2021-11-30      # Day 1 = that date, Day 2 = +1 day
+      python3 open.py open 2021 ...        # same thing, spelled out
 
-     You then fill in the 8 women's seeds + 8 men's seeds in the two brackets and
-     the match-card results (Quarterfinals on Day 1; Semifinals + Finals on Day 2).
+  BLANK WORLD TITLE SERIES EVENT  (a normal 8-match card, auto-numbered to the
+  next "World Title Series N" found in the file — e.g. after WTS 27 you get 28)
 
-  2. Populate the brackets from the match-card results you typed:
+      python3 open.py wts                  # -> "World Title Series 28: TBD"
+      python3 open.py wts 2020-01-15       # with a date
 
-         python3 open.py populate             # every Open in the file
-         python3 open.py populate 2021        # just that year
+  POPULATE  (fill the brackets + next-stage matchups from the results you typed)
 
-     For each bracket it fills the QF / SF / Final advancement slots, the win
-     method into each `score` cell, and the country flags — reading them straight
-     from the match cards. Women vs men are told apart purely by which 8 names are
-     seeded in each bracket, so no gender tags are required. It only writes cells
-     it can resolve, so it is safe to re-run as you enter more results.
+      python3 open.py populate             # every Open in the file
+      python3 open.py populate 2021        # just that year
+      # also runs automatically at the start of `python3 update.py`
 
-Nothing in .old/ is ever touched; update.py is not modified.
+  (Any command takes an optional trailing path to a list.html; default is
+   ppv/list.html next to this script.)
+
+=============================================================================
+WHAT `open` EXPECTS  —  the men / women convention
+=============================================================================
+
+An Open edition = TWO <details> blocks in this order:
+
+  Day 1  "<year> Open Tournament - Qualifiers"  -> the WOMEN'S bracket
+  Day 2  "<year> Open Tournament - Finals"      -> the MEN'S   bracket
+
+Each block has an 8-seed bracket + a match card. Fill them like this:
+
+  * Seeds: type the 8 WOMEN into the Day-1 bracket and the 8 MEN into the
+    Day-2 bracket, in seed order (the seed numbers 1,8,4,5,2,7,3,6 are fixed).
+  * ORDER within the cards — MEN first, then women, EXCEPT the two finals which
+    go women's-first:
+
+        Day-1 QUARTERFINALS (8 rows, per pairing men then women):
+          1 Men 1v8   2 Women 1v8   3 Men 4v5   4 Women 4v5
+          5 Men 2v7   6 Women 2v7   7 Men 3v6   8 Women 3v6
+        Day-2 SEMIFINALS (4 rows) then FINALS (2 rows):
+          1 Men SF-top     2 Women SF-top
+          3 Men SF-bottom  4 Women SF-bottom
+          5 Women's Final  6 Men's Final
+
+  * Notes carry the gender + round, e.g. "Men's Open Tournament Semifinals".
+    Generated templates already write these; keep the "Women's/Men's ...
+    Quarterfinals/Semifinals/Finals" wording so update.py counts both winners
+    and populate routes each matchup to the correctly-labelled row (the row
+    ORDER above is just how the blank template is laid out — the gender word in
+    the note is what actually decides where a matchup lands).
+  * In each match row the WINNER goes on the left of "def." (use "vs." for a
+    matchup not wrestled yet — populate fills those in for you).
+
+How populate uses that:
+  - It fills a bracket by matching the 8 seeded names against the cards, so the
+    women/men split is really driven by *who is seeded in that bracket* — the
+    gender in the notes only decides which SF/Final card ROW a matchup lands in
+    (if a card row's note has no gender it just fills in row order, so gender
+    the notes to get the men-first / women-final layout above).
+  - It only writes cells/rows it can resolve and never overwrites a filled one,
+    so it is safe to re-run as more results are entered.
+
+Nothing in .old/ is ever touched.
 """
 
 import re
@@ -138,6 +184,24 @@ def parse_match_card(table):
     return out
 
 
+def detect_bracket_gender(bracket_html, matches):
+    """Return 'women'/'men' if a QF match involving this bracket's seeds carries a
+    gendered note, else None (caller falls back to bracket order)."""
+    teams = team_cells(bracket_html)
+    if len(teams) != 14:
+        return None
+    seeds = {norm(re.sub(r"<[^>]+>", "", teams[i].group(2)))
+             for i in TEAMIDX_TO_SEED}
+    for m in matches:
+        if norm(m["f1"]) in seeds and norm(m["f2"]) in seeds:
+            low = m["notes"].lower()
+            if "women" in low:
+                return "women"
+            if "men" in low:
+                return "men"
+    return None
+
+
 def match_between(matches, a, b):
     """Find the resolved match whose two fighters are {a, b}. Returns
     (winner_name, winner_flag, method) or None."""
@@ -197,12 +261,18 @@ def replace_by_index(html, regex, updates):
 
 
 def populate_bracket(bracket_html, matches):
-    """Fill SF/Final slots, score methods and flags in one bracket. Returns
-    (new_html, filled_count)."""
+    """Fill SF/Final slots, score methods and flags in one bracket.
+
+    Returns (new_html, filled_count, matchups) where matchups describes the
+    next-stage pairings that are now known, so the caller can also drop them into
+    the match card:
+        matchups = {'sf': [(a,fa,b,fb), ...], 'final': (a,fa,b,fb) | None}
+    """
+    empty = {'sf': [], 'final': None}
     teams = team_cells(bracket_html)
     scores = score_cells(bracket_html)
     if len(teams) != 14 or len(scores) != 14:
-        return bracket_html, -1  # not a standard 8-seed bracket; leave alone
+        return bracket_html, -1, empty  # not a standard 8-seed bracket; leave alone
 
     # Seed names by seed number.
     seed_name = {}
@@ -253,9 +323,19 @@ def populate_bracket(bracket_html, matches):
             win_slot = FINAL_SLOTS[0] if norm(wname) == norm(fa[0]) else FINAL_SLOTS[1]
             score_updates[win_slot] = method
 
+    # --- Next-stage matchups for the match card ---
+    matchups = {'sf': [], 'final': None}
+    for slot_a, slot_b, _fin in SF_PAIRINGS:   # top, then bottom
+        na = slot_occupant.get(slot_a)
+        nb = slot_occupant.get(slot_b)
+        if na and nb:
+            matchups['sf'].append((na[0], na[1], nb[0], nb[1]))
+    if fa and fb:
+        matchups['final'] = (fa[0], fa[1], fb[0], fb[1])
+
     new_html = replace_by_index(bracket_html, TEAM_RE, team_updates)
     new_html = replace_by_index(new_html, SCORE_RE, score_updates)
-    return new_html, len(team_updates) + len(score_updates)
+    return new_html, len(team_updates) + len(score_updates), matchups
 
 
 # ---------------------------------------------------------------------------
@@ -302,6 +382,103 @@ def collect_matches_by_year(raw):
     return by_year
 
 
+# --- Match-card region helpers -------------------------------------------
+
+CARD_OPEN = '<table class="match-card">'
+ROW_RE = re.compile(r'<tr>\s*<th>\d+</th>.*?</tr>', re.DOTALL)
+TD_RE = re.compile(r'(<td\b[^>]*>)(.*?)(</td>)', re.DOTALL)
+
+
+def find_open_cards(raw):
+    """Yield (year, card_start, card_end) for every Open Tournament match card."""
+    for sm in SUMMARY_RE.finditer(raw):
+        year = int(sm.group(1))
+        # the details ends at the next summary (or EOF)
+        nxt = SUMMARY_RE.search(raw, sm.end())
+        limit = nxt.start() if nxt else len(raw)
+        pos = sm.end()
+        while True:
+            c_start = raw.find(CARD_OPEN, pos)
+            if c_start == -1 or c_start > limit:
+                break
+            c_end = raw.find("</table>", c_start) + len("</table>")
+            yield year, c_start, c_end
+            pos = c_end
+
+
+def row_fighters_and_notes(row_html):
+    """Return (name1, name2, notes_lower) for a match row."""
+    tds = TD_RE.findall(row_html)
+    if len(tds) < 8:
+        return None, None, ""
+    n1 = norm(re.sub(r"<[^>]+>", "", tds[2][1]))
+    n2 = norm(re.sub(r"<[^>]+>", "", tds[4][1]))
+    notes = norm(re.sub(r"<[^>]+>", "", tds[7][1])).lower()
+    return n1, n2, notes
+
+
+def existing_pairs_in_card(card_html):
+    pairs = set()
+    for row in ROW_RE.findall(card_html):
+        n1, n2, _ = row_fighters_and_notes(row)
+        if n1 and n2:
+            pairs.add(frozenset((n1, n2)))
+    return pairs
+
+
+def _row_gender(notes):
+    if "women" in notes:
+        return "women"
+    if "men" in notes:  # note: checked after "women" since it is a substring
+        return "men"
+    return None
+
+
+def _take(queue, row_gender):
+    """Pop a matchup from queue suited to the row's gender. Tuples are
+    (gender, a, fa, b, fb); gender may be None (unknown)."""
+    for i, item in enumerate(queue):
+        g = item[0]
+        if row_gender is None or g is None or g == row_gender:
+            return queue.pop(i)
+    return None
+
+
+def fill_card(card_html, sf_queue, final_queue):
+    """Drop next-stage matchups into blank Semifinal / Final rows (names + 'vs.',
+    no result). Consumes from the queues. Returns (new_html, filled_rows).
+    Queue items are (gender, a, fa, b, fb)."""
+    filled = 0
+
+    def repl(m):
+        nonlocal filled
+        row = m.group(0)
+        n1, n2, notes = row_fighters_and_notes(row)
+        blank = (not n1) and (not n2)
+        if not blank:
+            return row
+        is_sf = "semifinal" in notes
+        is_final = ("final" in notes) and not is_sf
+        rg = _row_gender(notes)
+        item = _take(sf_queue, rg) if is_sf else (_take(final_queue, rg) if is_final else None)
+        if not item:
+            return row
+        _g, a, fa, b, fb = item
+        filled += 1
+        # rewrite fighter1 (td idx 2) and fighter2 (td idx 4) inner cells
+        idx = [0]
+        def td_repl(t):
+            i = idx[0]; idx[0] += 1
+            if i == 2:
+                return t.group(1) + team_inner(fa, a) + t.group(3)
+            if i == 4:
+                return t.group(1) + team_inner(fb, b) + t.group(3)
+            return t.group(0)
+        return TD_RE.sub(td_repl, row)
+
+    return ROW_RE.sub(repl, card_html), filled
+
+
 def populate(path, only_year=None):
     with open(path, "r", encoding="utf-8") as f:
         raw = f.read()
@@ -311,33 +488,70 @@ def populate(path, only_year=None):
         print("No Open Tournament match cards found.")
         return
 
-    # Rebuild from the end so earlier offsets stay valid as we splice.
     brackets = list(find_open_details(raw))
+    cards = list(find_open_cards(raw))
     if only_year is not None:
         brackets = [b for b in brackets if b[0] == only_year]
+        cards = [c for c in cards if c[0] == only_year]
         if not brackets:
             print(f"No Open bracket found for {only_year}.")
             return
 
-    total = 0
-    for year, _s, b_start, b_end in sorted(brackets, key=lambda x: x[2], reverse=True):
-        bracket_html = raw[b_start:b_end]
+    # --- Pass 1: compute bracket edits + collect next-stage matchups per year ---
+    # Brackets are yielded in document order, so the first bracket of a year is
+    # Day 1 (women) and the second is Day 2 (men). Each matchup is tagged with a
+    # gender (detected from the QF note, else by that bracket order) so it fills
+    # the correctly-labelled card row.
+    edits = []                    # (start, end, new_html)
+    year_matchups = {}            # year -> {'sf': [...], 'final': [...]}
+    year_bracket_count = {}
+    for year, _s, b_start, b_end in brackets:
         matches = matches_by_year.get(year, [])
-        new_html, filled = populate_bracket(bracket_html, matches)
+        bracket_html = raw[b_start:b_end]
+        new_html, filled, mu = populate_bracket(bracket_html, matches)
         if filled == -1:
             print(f"  {year}: bracket not a standard 8-seed layout — skipped.")
             continue
         if new_html != bracket_html:
-            raw = raw[:b_start] + new_html + raw[b_end:]
-            total += filled
+            edits.append((b_start, b_end, new_html))
+        order = year_bracket_count.get(year, 0)
+        year_bracket_count[year] = order + 1
+        gender = detect_bracket_gender(bracket_html, matches) or ("women" if order == 0 else "men")
+        ym = year_matchups.setdefault(year, {'sf': [], 'final': []})
+        ym['sf'].extend((gender,) + m for m in mu['sf'])
+        if mu['final']:
+            ym['final'].append((gender,) + mu['final'])
         print(f"  {year}: filled {max(filled,0)} bracket cell(s).")
 
-    if total:
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(raw)
-        print(f"Wrote {path} ({total} cells updated).")
-    else:
+    # --- Pass 2: fill blank Semifinal / Final rows in the match cards ---
+    # Drop matchups the user hasn't already entered, keeping bracket order.
+    for year in {y for y, *_ in cards}:
+        year_cards = [(s, e) for y, s, e in cards if y == year]
+        already = set()
+        for s, e in year_cards:
+            already |= existing_pairs_in_card(raw[s:e])
+        mu = year_matchups.get(year, {'sf': [], 'final': []})
+        # tuples are (gender, a, fa, b, fb); dedup on the {a, b} name pair
+        sf_q = [m for m in mu['sf'] if frozenset((m[1], m[3])) not in already]
+        fin_q = [m for m in mu['final'] if frozenset((m[1], m[3])) not in already]
+        for s, e in year_cards:
+            card_html = raw[s:e]
+            new_card, n = fill_card(card_html, sf_q, fin_q)
+            if n:
+                edits.append((s, e, new_card))
+                print(f"  {year}: filled {n} match-card matchup row(s).")
+
+    if not edits:
         print("Nothing to update (no new resolvable results).")
+        return
+
+    # Apply edits from the end so earlier offsets stay valid.
+    for start, end, new_html in sorted(edits, key=lambda x: x[0], reverse=True):
+        raw = raw[:start] + new_html + raw[end:]
+
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(raw)
+    print(f"Wrote {path}.")
 
 
 # ---------------------------------------------------------------------------
@@ -592,10 +806,20 @@ def generate_template(path, year, date_str=None):
     else:
         day1 = day2 = "MONTH DAY, YEAR"
 
-    # Day 1: women's bracket + 8 quarterfinal rows (4 men + 4 women).
-    day1_notes = ["Open Tournament Quarterfinals"] * 8
-    # Day 2: men's bracket + 4 semifinal rows + 2 final rows.
-    day2_notes = ["Open Tournament Semifinals"] * 4 + ["Open Tournament Finals"] * 2
+    # Day 1: women's bracket + 8 quarterfinal rows. Order per bracket pairing:
+    # men's match then the women's match, going 1v8, 4v5, 2v7, 3v6 down the bracket.
+    day1_notes = []
+    for _ in range(4):
+        day1_notes += ["Men's Open Tournament Quarterfinals",
+                       "Women's Open Tournament Quarterfinals"]
+    # Day 2: men's bracket + 4 semifinals (men top, women top, men bottom, women
+    # bottom) + 2 finals (women's final first, then men's).
+    day2_notes = ["Men's Open Tournament Semifinals",
+                  "Women's Open Tournament Semifinals",
+                  "Men's Open Tournament Semifinals",
+                  "Women's Open Tournament Semifinals",
+                  "Women's Open Tournament Finals",
+                  "Men's Open Tournament Finals"]
 
     block = "\n" + build_details(year, "Qualifiers", BLANK_BRACKET, day1_notes, day1) \
             + "\n" + build_details(year, "Finals", BLANK_BRACKET, day2_notes, day2) + "\n"
@@ -615,10 +839,67 @@ def generate_template(path, year, date_str=None):
 
 
 # ---------------------------------------------------------------------------
+# Blank World Title Series (regular event) template, auto-numbered
+# ---------------------------------------------------------------------------
+
+def wts_row(no):
+    return f'''            <tr>
+                <th>{no}</th>
+                <td>Singles</td>
+                <td>Weight</td>
+                <td><span class="fi fi-xx"></span> </td>
+                <td>def.</td>
+                <td><span class="fi fi-xx"></span> </td>
+                <td></td>
+                <td>[1-0]</td>
+                <td></td>
+            </tr>
+'''
+
+
+def next_wts_number(raw):
+    nums = [int(n) for n in re.findall(r"World Title Series\s+(\d+)", raw)]
+    return (max(nums) + 1) if nums else 1
+
+
+def generate_wts(path, date_str=None, rows=8):
+    with open(path, "r", encoding="utf-8") as f:
+        raw = f.read()
+
+    number = next_wts_number(raw)
+    if date_str:
+        try:
+            date_disp = datetime.strptime(date_str, "%Y-%m-%d").strftime("%B %-d, %Y")
+        except ValueError:
+            sys.exit(f"Date must be YYYY-MM-DD (got {date_str!r}).")
+    else:
+        date_disp = "MONTH DAY, YEAR"
+
+    body = "".join(wts_row(i + 1) for i in range(rows))
+    block = (
+        f"\n<!-- WTS {number} -->\n"
+        "    <details>\n"
+        f"        <summary>World Title Series {number}: TBD</summary>\n"
+        f"{CARD_HEADER}{body}{card_info_row(date_disp)}"
+        "    </details>\n\n"
+    )
+
+    anchor = '<div id="bottom"></div>'
+    if anchor in raw:
+        raw = raw.replace(anchor, block + anchor, 1)
+    else:
+        raw = raw.rstrip() + "\n" + block
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(raw)
+    print(f"Appended blank World Title Series {number} to {path}.")
+
+
+# ---------------------------------------------------------------------------
 
 USAGE = """Usage:
-  python3 open.py <year> [YYYY-MM-DD]   generate a blank Open template
-  python3 open.py populate [year]      fill brackets from match-card results
+  python3 open.py <year> [YYYY-MM-DD]   generate a blank Open Tournament template
+  python3 open.py wts [YYYY-MM-DD]      generate a blank WTS event (auto-numbered)
+  python3 open.py populate [year]       fill brackets + next-stage matchups
 
 Optional trailing argument: path to list.html (default ppv/list.html)."""
 
@@ -636,9 +917,20 @@ def main(argv):
         print(USAGE)
         return
 
-    if args[0].lower() == "populate":
+    cmd = args[0].lower()
+
+    if cmd == "populate":
         year = int(args[1]) if len(args) > 1 else None
         populate(path, year)
+        return
+
+    if cmd == "wts":
+        date_str = args[1] if len(args) > 1 else None
+        generate_wts(path, date_str)
+        return
+
+    if cmd == "open" and len(args) > 1 and re.fullmatch(r"\d{4}", args[1]):
+        generate_template(path, int(args[1]), args[2] if len(args) > 2 else None)
         return
 
     if re.fullmatch(r"\d{4}", args[0]):

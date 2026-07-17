@@ -3734,9 +3734,24 @@ class WrestlingDatabase:
 
 def main():
     db = WrestlingDatabase()
-    
+
+    # Auto-fill Open Tournament brackets + next-stage matchups from the match
+    # cards before parsing (see wrestling/open.py). Loaded by path so it can't
+    # shadow the builtin open().
+    ppv_path = 'wrestling/ppv/list.html'
+    try:
+        import importlib.util
+        _op = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'open.py')
+        _spec = importlib.util.spec_from_file_location('open_tournament_tool', _op)
+        _mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)
+        print("Populating Open Tournament brackets...")
+        _mod.populate(ppv_path)
+    except Exception as _e:
+        print(f"  (Open bracket populate skipped: {_e})")
+
     print("Parsing wrestling/ppv/list.html...")
-    db.parse_events('wrestling/ppv/list.html', is_weekly=False)
+    db.parse_events(ppv_path, is_weekly=False)
     
     # Parse weekly shows if file exists
     weekly_path = 'wrestling/weekly/list.html'

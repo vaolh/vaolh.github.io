@@ -346,6 +346,7 @@ table.bracket .score {
     background-color: #f8f9fa;
     overflow: inherit;
     border: 1px solid #ddd;
+    white-space: nowrap;
 }
 
 table.bracket .conn {

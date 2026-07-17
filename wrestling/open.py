@@ -41,16 +41,14 @@ Each block has an 8-seed bracket + a match card. Fill them like this:
 
   * Seeds: type the 8 WOMEN into the Day-1 bracket and the 8 MEN into the
     Day-2 bracket, in seed order (the seed numbers 1,8,4,5,2,7,3,6 are fixed).
-  * ORDER within the cards — MEN first, then women, EXCEPT the two finals which
-    go women's-first:
+  * ORDER within the cards (fixed gender sequence, matching the 2019 edition):
 
-        Day-1 QUARTERFINALS (8 rows, per pairing men then women):
-          1 Men 1v8   2 Women 1v8   3 Men 4v5   4 Women 4v5
-          5 Men 2v7   6 Women 2v7   7 Men 3v6   8 Women 3v6
+        Day-1 QUARTERFINALS (8 rows):
+          1 Men    2 Women  3 Women  4 Men
+          5 Women  6 Men    7 Women  8 Men
         Day-2 SEMIFINALS (4 rows) then FINALS (2 rows):
-          1 Men SF-top     2 Women SF-top
-          3 Men SF-bottom  4 Women SF-bottom
-          5 Women's Final  6 Men's Final
+          1 Men    2 Women  3 Men    4 Women
+          5 Women's Final   6 Men's Final
 
   * Notes carry the gender + round, e.g. "Men's Open Tournament Semifinals".
     Generated templates already write these; keep the "Women's/Men's ...
@@ -806,12 +804,11 @@ def generate_template(path, year, date_str=None):
     else:
         day1 = day2 = "MONTH DAY, YEAR"
 
-    # Day 1: women's bracket + 8 quarterfinal rows. Order per bracket pairing:
-    # men's match then the women's match, going 1v8, 4v5, 2v7, 3v6 down the bracket.
-    day1_notes = []
-    for _ in range(4):
-        day1_notes += ["Men's Open Tournament Quarterfinals",
-                       "Women's Open Tournament Quarterfinals"]
+    # Day 1: women's bracket + 8 quarterfinal rows. Fixed gender sequence
+    # (matches the 2019 edition): Men, Women, Women, Men, Women, Men, Women, Men.
+    _MQF = "Men's Open Tournament Quarterfinals"
+    _WQF = "Women's Open Tournament Quarterfinals"
+    day1_notes = [_MQF, _WQF, _WQF, _MQF, _WQF, _MQF, _WQF, _MQF]
     # Day 2: men's bracket + 4 semifinals (men top, women top, men bottom, women
     # bottom) + 2 finals (women's final first, then men's).
     day2_notes = ["Men's Open Tournament Semifinals",

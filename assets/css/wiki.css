@@ -444,9 +444,15 @@ details table caption {
 }
 
 .matches .sub,
-.match-card .sub {
+.match-card .sub,
+.records .sub {
     font-size: 0.82em;
     opacity: 0.75;
+}
+
+/* Stacked records cells align left (flag + name + stat line) */
+.records td {
+    text-align: left;
 }
 
 .matchesum {

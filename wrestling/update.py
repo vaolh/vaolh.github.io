@@ -1909,6 +1909,14 @@ class WrestlingDatabase:
         lo, hi = min(ys), max(ys)
         return f' in {lo}' if lo == hi else f' from {lo}-{hi}'
 
+    def _years_suffix_for(self, name, pred=None):
+        """Year suffix for a wrestler (looked up by name) over matches matching
+        pred (default: all matches = career span)."""
+        w = self.wrestlers.get(name)
+        if not w:
+            return ''
+        return self._year_suffix(self._match_years(w, pred or (lambda m: True)))
+
     _LEADING = ('El ', 'La ', 'Los ', 'Las ', 'The ')
 
     def _abbrev_name(self, name):
@@ -2855,28 +2863,28 @@ class WrestlingDatabase:
             # Consecutive Wins
             if i < len(top_cons_wins):
                 name, stats = top_cons_wins[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{stats["max_wins"]}</span></td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{stats["max_wins"]} win streak{self._years_suffix_for(name)}</span></td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # Consecutive Title Defenses
             if i < len(top_cons_defenses):
                 name, stats = top_cons_defenses[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{stats["max_defenses"]}</span></td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{stats["max_defenses"]} defense streak{self._years_suffix_for(name)}</span></td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # Consecutive Days
             if i < len(top_cons_days):
                 name, stats = top_cons_days[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{self.format_number(stats["max_days"])}</span></td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{self.format_number(stats["max_days"])} days as champion{self._years_suffix_for(name)}</span></td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # Unique Opponents
             if i < len(top_unique_opponents):
                 name, stats = top_unique_opponents[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{len(stats["unique_opponents"])}</span></td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{len(stats["unique_opponents"])} unique opponents{self._years_suffix_for(name)}</span></td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
@@ -2995,12 +3003,13 @@ class WrestlingDatabase:
             html += '        <tr>\n'
             html += f'            <th>{i+1}</th>\n'
             
-            for top_list, stat_key in [(top_win_pct, 'win_pct'), (top_pin_win_pct, 'pin_win_pct'), 
+            for top_list, stat_key in [(top_win_pct, 'win_pct'), (top_pin_win_pct, 'pin_win_pct'),
                                         (top_sub_win_pct, 'sub_win_pct'), (top_dec_win_pct, 'dec_win_pct')]:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = f"{w[stat_key]:.1f}%"
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}</span></td>\n'
+                    suffix = self._years_suffix_for(w["name"])
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}{suffix}</span></td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0.0%</span></td>\n'
             
@@ -3167,28 +3176,28 @@ class WrestlingDatabase:
             # World Titles Won
             if i < len(top_reigns):
                 champ, stats = top_reigns[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{stats["total_reigns"]}</span></td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{stats["total_reigns"]} title reigns{self._years_suffix_for(champ)}</span></td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # World Title Defenses
             if i < len(top_defenses):
                 champ, stats = top_defenses[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{stats["total_defenses"]}</span></td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{stats["total_defenses"]} title defenses{self._years_suffix_for(champ)}</span></td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # Total Days
             if i < len(top_days):
                 champ, stats = top_days[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{self.format_number(stats["total_days"])}</span></td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{self.format_number(stats["total_days"])} days as champion{self._years_suffix_for(champ)}</span></td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # Title Bouts
             if i < len(top_title_bouts):
                 champ, stats = top_title_bouts[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{stats["title_bouts"]}</span></td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{stats["title_bouts"]} title bouts{self._years_suffix_for(champ)}</span></td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
@@ -3244,12 +3253,15 @@ class WrestlingDatabase:
             html += '        <tr>\n'
             html += f'            <th>{i+1}</th>\n'
             
-            for top_list, stat_key in [(top_ppv_bouts, 'ppv_bouts'), (top_ppv, 'main_events'), (top_wm, 'wrestlemania_main_events'), 
-                                        (top_lm, 'libremania_main_events')]:
+            for (top_list, stat_key), word in zip(
+                    [(top_ppv_bouts, 'ppv_bouts'), (top_ppv, 'main_events'),
+                     (top_wm, 'wrestlemania_main_events'), (top_lm, 'libremania_main_events')],
+                    ['PPV bouts', 'PPV main events', 'WM main events', 'LM main events']):
                 if i < len(top_list):
                     w = top_list[i]
                     stat = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}</span></td>\n'
+                    suffix = self._years_suffix_for(w["name"])
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat} {word}{suffix}</span></td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
@@ -3306,12 +3318,15 @@ class WrestlingDatabase:
             html += '        <tr>\n'
             html += f'            <th>{i+1}</th>\n'
             
-            for top_list, stat_key in [(top_lucha, 'lucha_wins'), (top_open, 'open_tournament_wins'), 
-                                        (top_trios, 'trios_tournament_wins'), (top_ppv_wins, 'ppv_wins')]:
+            for (top_list, stat_key), word in zip(
+                    [(top_lucha, 'lucha_wins'), (top_open, 'open_tournament_wins'),
+                     (top_trios, 'trios_tournament_wins'), (top_ppv_wins, 'ppv_wins')],
+                    ['apuestas wins', 'Open wins', 'Trios wins', 'PPV wins']):
                 if i < len(top_list):
                     w = top_list[i]
                     stat = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}</span></td>\n'
+                    suffix = self._years_suffix_for(w["name"])
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat} {word}{suffix}</span></td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             

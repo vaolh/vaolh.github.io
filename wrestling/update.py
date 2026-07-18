@@ -1750,8 +1750,11 @@ class WrestlingDatabase:
             html += f'        <td>{match["record"]}</td>\n'
             html += f'        <td><span class="fi fi-{opponent_country}"></span> {opponent}</td>\n'
             html += f'        <td>{match["method"]}</td>\n'
-            html += f'        <td>{match["date"]}</td>\n'
-            html += f'        <td>{match["event"]}</td>\n'
+            _d = self.parse_date(match["date"])
+            _date_disp = _d.strftime('%d-%m-%Y') if _d else match["date"]
+            _event_disp = match["event"].replace('WrestleMania', 'WM').replace('LibreMania', 'LM')
+            html += f'        <td>{_date_disp}</td>\n'
+            html += f'        <td>{_event_disp}</td>\n'
             html += f'        <td><span class="fi fi-{match["location_country"]}"></span> {match["location"]}</td>\n'
             html += f'        <td>{match.get("bio_notes", match["notes"])}</td>\n'
             html += '    </tr>\n'

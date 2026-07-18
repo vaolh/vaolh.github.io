@@ -14,15 +14,11 @@ body.ppv-list {
     margin-right: max(20px, calc((100vw - 1450px) / 2));
 }
 
-/* Wide data tables stay full-size but WRAP their content to fit the 960px
-   column, so nothing overflows the margin. */
-body:not(.ppv-list) :is(.match-card, .matchesum, .matches, .champ-history,
-    .hof-history, .apuestas-card, .p4p-grid, .totals) {
-    width: 100%;
-}
-body:not(.ppv-list) :is(.match-card, .matchesum, .matches, .champ-history,
+/* Wide data tables WRAP their content to fit the 960px column so nothing
+   overflows the margin. (matchesum keeps its own 25% width, untouched.) */
+body:not(.ppv-list) :is(.match-card, .matches, .champ-history,
     .hof-history, .apuestas-card, .p4p-grid, .totals) th,
-body:not(.ppv-list) :is(.match-card, .matchesum, .matches, .champ-history,
+body:not(.ppv-list) :is(.match-card, .matches, .champ-history,
     .hof-history, .apuestas-card, .p4p-grid, .totals) td {
     overflow-wrap: break-word;
     word-break: break-word;

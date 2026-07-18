@@ -2223,11 +2223,11 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Win%</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Pinfall per Win%</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Submission per Win%</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Decision per Win%</th>\n'
+        html += '            <th style="width: 5%;">No.</th>\n'
+        html += '            <th style="width: 23.75%;">Win%</th>\n'
+        html += '            <th style="width: 23.75%;">Pinfall per Win%</th>\n'
+        html += '            <th style="width: 23.75%;">Submission per Win%</th>\n'
+        html += '            <th style="width: 23.75%;">Decision per Win%</th>\n'
         html += '        </tr>\n'
         html += '        <tr>\n'
         html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">%</th>\n' * 4
@@ -2243,9 +2243,9 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     pct = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{pct:.1f}%</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{pct:.1f}%</span></td>\n'
                 else:
-                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0.0%</td>\n'
+                    html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0.0%</span></td>\n'
             
             html += '        </tr>\n'
         
@@ -2300,14 +2300,11 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Titles Won</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Title Defenses</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Days as Champion</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Title Bouts</th>\n'
-        html += '        </tr>\n'
-        html += '        <tr>\n'
-        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '            <th style="width: 5%;">No.</th>\n'
+        html += '            <th style="width: 23.75%;">Titles Won</th>\n'
+        html += '            <th style="width: 23.75%;">Title Defenses</th>\n'
+        html += '            <th style="width: 23.75%;">Days as Champion</th>\n'
+        html += '            <th style="width: 23.75%;">Title Bouts</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -2321,11 +2318,11 @@ class WrestlingDatabase:
                     w = top_list[i]
                     stat = w[stat_key]
                     if stat_key == 'days':
-                        html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{self.format_number(stat)}</td>\n'
+                        html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{self.format_number(stat)}</span></td>\n'
                     else:
-                        html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
+                        html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}</span></td>\n'
                 else:
-                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                    html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             html += '        </tr>\n'
         
@@ -2401,14 +2398,11 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Wins</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Title Defenses</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Days as Champion</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Unique Opponents</th>\n'
-        html += '        </tr>\n'
-        html += '        <tr>\n'
-        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '            <th style="width: 5%;">No.</th>\n'
+        html += '            <th style="width: 23.75%;">Consecutive Wins</th>\n'
+        html += '            <th style="width: 23.75%;">Consecutive Title Defenses</th>\n'
+        html += '            <th style="width: 23.75%;">Consecutive Days as Champion</th>\n'
+        html += '            <th style="width: 23.75%;">Unique Opponents</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -2422,11 +2416,11 @@ class WrestlingDatabase:
                     name, data = top_list[i]
                     stat = data[stat_key]
                     if stat_key == 'max_days':
-                        html += f'            <td><span class="fi fi-{data["country"]}"></span> {self._wlink(name)} </td><td>{self.format_number(stat)}</td>\n'
+                        html += f'            <td><span class="fi fi-{data["country"]}"></span> {self._wlink(name)}<br><span class="sub">{self.format_number(stat)}</span></td>\n'
                     else:
-                        html += f'            <td><span class="fi fi-{data["country"]}"></span> {self._wlink(name)} </td><td>{stat}</td>\n'
+                        html += f'            <td><span class="fi fi-{data["country"]}"></span> {self._wlink(name)}<br><span class="sub">{stat}</span></td>\n'
                 else:
-                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                    html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             html += '        </tr>\n'
         
@@ -2482,14 +2476,11 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">PPV Bouts</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">PPV Main Events</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">WrestleMania Main Events</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">LibreMania Main Events</th>\n'
-        html += '        </tr>\n'
-        html += '        <tr>\n'
-        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '            <th style="width: 5%;">No.</th>\n'
+        html += '            <th style="width: 23.75%;">PPV Bouts</th>\n'
+        html += '            <th style="width: 23.75%;">PPV Main Events</th>\n'
+        html += '            <th style="width: 23.75%;">WrestleMania Main Events</th>\n'
+        html += '            <th style="width: 23.75%;">LibreMania Main Events</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -2502,9 +2493,9 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}</span></td>\n'
                 else:
-                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                    html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             html += '        </tr>\n'
         
@@ -2550,14 +2541,11 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;"><i>Lucha de Apuestas</i></th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Open Tournament Wins</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Trios Tournament Wins</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">PPV Wins</th>\n'
-        html += '        </tr>\n'
-        html += '        <tr>\n'
-        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '            <th style="width: 5%;">No.</th>\n'
+        html += '            <th style="width: 23.75%;"><i>Lucha de Apuestas</i></th>\n'
+        html += '            <th style="width: 23.75%;">Open Tournament Wins</th>\n'
+        html += '            <th style="width: 23.75%;">Trios Tournament Wins</th>\n'
+        html += '            <th style="width: 23.75%;">PPV Wins</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -2570,9 +2558,9 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}</span></td>\n'
                 else:
-                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                    html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             html += '        </tr>\n'
         
@@ -2806,14 +2794,11 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Wins</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Title Defenses</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Consecutive Days as Champion</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Unique Opponents</th>\n'
-        html += '        </tr>\n'
-        html += '        <tr>\n'
-        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '            <th style="width: 5%;">No.</th>\n'
+        html += '            <th style="width: 23.75%;">Consecutive Wins</th>\n'
+        html += '            <th style="width: 23.75%;">Consecutive Title Defenses</th>\n'
+        html += '            <th style="width: 23.75%;">Consecutive Days as Champion</th>\n'
+        html += '            <th style="width: 23.75%;">Unique Opponents</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -2853,30 +2838,30 @@ class WrestlingDatabase:
             # Consecutive Wins
             if i < len(top_cons_wins):
                 name, stats = top_cons_wins[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{stats["max_wins"]}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{stats["max_wins"]}</span></td>\n'
             else:
-                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # Consecutive Title Defenses
             if i < len(top_cons_defenses):
                 name, stats = top_cons_defenses[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{stats["max_defenses"]}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{stats["max_defenses"]}</span></td>\n'
             else:
-                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # Consecutive Days
             if i < len(top_cons_days):
                 name, stats = top_cons_days[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{self.format_number(stats["max_days"])}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{self.format_number(stats["max_days"])}</span></td>\n'
             else:
-                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # Unique Opponents
             if i < len(top_unique_opponents):
                 name, stats = top_unique_opponents[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{len(stats["unique_opponents"])}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)}<br><span class="sub">{len(stats["unique_opponents"])}</span></td>\n'
             else:
-                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             html += '        </tr>\n'
         
@@ -2902,14 +2887,11 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Bouts</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Wins</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Pinfall Wins</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Submission Wins</th>\n'
-        html += '        </tr>\n'
-        html += '        <tr>\n'
-        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '            <th style="width: 5%;">No.</th>\n'
+        html += '            <th style="width: 23.75%;">Bouts</th>\n'
+        html += '            <th style="width: 23.75%;">Wins</th>\n'
+        html += '            <th style="width: 23.75%;">Pinfall Wins</th>\n'
+        html += '            <th style="width: 23.75%;">Submission Wins</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -2926,9 +2908,9 @@ class WrestlingDatabase:
                         stat = w[stat_key]
                     else:
                         stat = w['wins'] + w['losses'] + w['draws']
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}</span></td>\n'
                 else:
-                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                    html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             html += '        </tr>\n'
 
@@ -2975,11 +2957,11 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Win%</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Pinfall per Win%</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Submission per Win%</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Decision per Win%</th>\n'
+        html += '            <th style="width: 5%;">No.</th>\n'
+        html += '            <th style="width: 23.75%;">Win%</th>\n'
+        html += '            <th style="width: 23.75%;">Pinfall per Win%</th>\n'
+        html += '            <th style="width: 23.75%;">Submission per Win%</th>\n'
+        html += '            <th style="width: 23.75%;">Decision per Win%</th>\n'
         html += '        </tr>\n'
         html += '        <tr>\n'
         html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">%</th>\n' * 4
@@ -2996,9 +2978,9 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = f"{w[stat_key]:.1f}%"
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}</span></td>\n'
                 else:
-                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0.0%</td>\n'
+                    html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0.0%</span></td>\n'
             
             html += '        </tr>\n'
         
@@ -3147,14 +3129,11 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Titles Won</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Title Defenses</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Days as Champion</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Title Bouts</th>\n'
-        html += '        </tr>\n'
-        html += '        <tr>\n'
-        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '            <th style="width: 5%;">No.</th>\n'
+        html += '            <th style="width: 23.75%;">Titles Won</th>\n'
+        html += '            <th style="width: 23.75%;">Title Defenses</th>\n'
+        html += '            <th style="width: 23.75%;">Days as Champion</th>\n'
+        html += '            <th style="width: 23.75%;">Title Bouts</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -3166,30 +3145,30 @@ class WrestlingDatabase:
             # World Titles Won
             if i < len(top_reigns):
                 champ, stats = top_reigns[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)} </td><td>{stats["total_reigns"]}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{stats["total_reigns"]}</span></td>\n'
             else:
-                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # World Title Defenses
             if i < len(top_defenses):
                 champ, stats = top_defenses[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)} </td><td>{stats["total_defenses"]}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{stats["total_defenses"]}</span></td>\n'
             else:
-                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # Total Days
             if i < len(top_days):
                 champ, stats = top_days[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)} </td><td>{self.format_number(stats["total_days"])}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{self.format_number(stats["total_days"])}</span></td>\n'
             else:
-                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             # Title Bouts
             if i < len(top_title_bouts):
                 champ, stats = top_title_bouts[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)} </td><td>{stats["title_bouts"]}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}<br><span class="sub">{stats["title_bouts"]}</span></td>\n'
             else:
-                html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             html += '        </tr>\n'
         
@@ -3230,14 +3209,11 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">PPV Bouts</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">PPV Main Events</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">WrestleMania Main Events</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">LibreMania Main Events</th>\n'
-        html += '        </tr>\n'
-        html += '        <tr>\n'
-        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '            <th style="width: 5%;">No.</th>\n'
+        html += '            <th style="width: 23.75%;">PPV Bouts</th>\n'
+        html += '            <th style="width: 23.75%;">PPV Main Events</th>\n'
+        html += '            <th style="width: 23.75%;">WrestleMania Main Events</th>\n'
+        html += '            <th style="width: 23.75%;">LibreMania Main Events</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -3251,9 +3227,9 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}</span></td>\n'
                 else:
-                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                    html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             html += '        </tr>\n'
         
@@ -3295,14 +3271,11 @@ class WrestlingDatabase:
         html += '    <table class="records">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;"><i>Lucha de Apuestas</i></th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Open Tournament Wins</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Trios Tournament Wins</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">PPV Wins</th>\n'
-        html += '        </tr>\n'
-        html += '        <tr>\n'
-        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
+        html += '            <th style="width: 5%;">No.</th>\n'
+        html += '            <th style="width: 23.75%;"><i>Lucha de Apuestas</i></th>\n'
+        html += '            <th style="width: 23.75%;">Open Tournament Wins</th>\n'
+        html += '            <th style="width: 23.75%;">Trios Tournament Wins</th>\n'
+        html += '            <th style="width: 23.75%;">PPV Wins</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
@@ -3316,9 +3289,9 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}</span></td>\n'
                 else:
-                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
+                    html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
             
             html += '        </tr>\n'
         
@@ -3377,10 +3350,7 @@ class WrestlingDatabase:
             html += '            <th>No.</th>\n'
             html += '            <th>Event</th>\n'
             html += '            <th>Main Event</th>\n'
-            html += '            <th>Network</th>\n'
             html += '            <th>Sales</th>\n'
-            html += '            <th>Venue</th>\n'
-            html += '            <th>Location</th>\n'
             html += '            <th>Date</th>\n'
             html += '        </tr>\n'
             html += '    </thead>\n'
@@ -3390,13 +3360,10 @@ class WrestlingDatabase:
                 audience_num = self.parse_audience(broadcast.get('audience_metric', '0'))
                 html += '        <tr>\n'
                 html += f'            <th>{idx + 1}</th>\n'
-                html += f'            <td>{broadcast["event"]}</td>\n'
+                html += f'            <td>{broadcast["event"]}<br><span class="sub"><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</span></td>\n'
                 html += f'            <td>{broadcast.get("main_event", "")}</td>\n'
-                html += f'            <td>{broadcast.get("network", "")}</td>\n'
-                html += f'            <td>{self.format_number(audience_num)}</td>\n'
-                html += f'            <td>{broadcast.get("venue", "")}</td>\n'
-                html += f'            <td><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</td>\n'
-                html += f'            <td>{broadcast.get("date", "")}</td>\n'
+                html += f'            <td>{self.format_number(audience_num)}<br><span class="sub">{broadcast.get("network", "")}</span></td>\n'
+                html += f'            <td>{broadcast.get("date", "")}<br><span class="sub">{broadcast.get("venue", "")}</span></td>\n'
                 html += '        </tr>\n'
             
             html += '    </tbody>\n'
@@ -3414,10 +3381,7 @@ class WrestlingDatabase:
             html += '            <th>No.</th>\n'
             html += '            <th>Event</th>\n'
             html += '            <th>Main Event</th>\n'
-            html += '            <th>Network</th>\n'
             html += '            <th>Viewers</th>\n'
-            html += '            <th>Venue</th>\n'
-            html += '            <th>Location</th>\n'
             html += '            <th>Date</th>\n'
             html += '        </tr>\n'
             html += '    </thead>\n'
@@ -3427,13 +3391,10 @@ class WrestlingDatabase:
                 audience_num = self.parse_audience(broadcast.get('audience_metric', '0'))
                 html += '        <tr>\n'
                 html += f'            <th>{idx + 1}</th>\n'
-                html += f'            <td>{broadcast["event"]}</td>\n'
+                html += f'            <td>{broadcast["event"]}<br><span class="sub"><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</span></td>\n'
                 html += f'            <td>{broadcast.get("main_event", "")}</td>\n'
-                html += f'            <td>{broadcast.get("network", "")}</td>\n'
-                html += f'            <td>{self.format_number(audience_num)}</td>\n'
-                html += f'            <td>{broadcast.get("venue", "")}</td>\n'
-                html += f'            <td><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</td>\n'
-                html += f'            <td>{broadcast.get("date", "")}</td>\n'
+                html += f'            <td>{self.format_number(audience_num)}<br><span class="sub">{broadcast.get("network", "")}</span></td>\n'
+                html += f'            <td>{broadcast.get("date", "")}<br><span class="sub">{broadcast.get("venue", "")}</span></td>\n'
                 html += '        </tr>\n'
             
             html += '    </tbody>\n'
@@ -3451,10 +3412,7 @@ class WrestlingDatabase:
             html += '            <th>No.</th>\n'
             html += '            <th>Event</th>\n'
             html += '            <th>Main Event</th>\n'
-            html += '            <th>Network</th>\n'
             html += '            <th>Viewers</th>\n'
-            html += '            <th>Venue</th>\n'
-            html += '            <th>Location</th>\n'
             html += '            <th>Date</th>\n'
             html += '        </tr>\n'
             html += '    </thead>\n'
@@ -3464,13 +3422,10 @@ class WrestlingDatabase:
                 audience_num = self.parse_audience(broadcast.get('audience_metric', '0'))
                 html += '        <tr>\n'
                 html += f'            <th>{idx + 1}</th>\n'
-                html += f'            <td>{broadcast["event"]}</td>\n'
+                html += f'            <td>{broadcast["event"]}<br><span class="sub"><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</span></td>\n'
                 html += f'            <td>{broadcast.get("main_event", "")}</td>\n'
-                html += f'            <td>{broadcast.get("network", "")}</td>\n'
-                html += f'            <td>{self.format_number(audience_num)}</td>\n'
-                html += f'            <td>{broadcast.get("venue", "")}</td>\n'
-                html += f'            <td><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</td>\n'
-                html += f'            <td>{broadcast.get("date", "")}</td>\n'
+                html += f'            <td>{self.format_number(audience_num)}<br><span class="sub">{broadcast.get("network", "")}</span></td>\n'
+                html += f'            <td>{broadcast.get("date", "")}<br><span class="sub">{broadcast.get("venue", "")}</span></td>\n'
                 html += '        </tr>\n'
             
             html += '    </tbody>\n'
@@ -3524,8 +3479,6 @@ class WrestlingDatabase:
         html += '            <th>Event</th>\n'
         html += '            <th>Main Event</th>\n'
         html += '            <th>Attendance</th>\n'
-        html += '            <th>Venue</th>\n'
-        html += '            <th>Location</th>\n'
         html += '            <th>Date</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
@@ -3535,12 +3488,10 @@ class WrestlingDatabase:
             attendance_num = self.parse_attendance(broadcast.get('attendance', '0'))
             html += '        <tr>\n'
             html += f'            <th>{idx + 1}</th>\n'
-            html += f'            <td>{broadcast["event"]}</td>\n'
+            html += f'            <td>{broadcast["event"]}<br><span class="sub"><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</span></td>\n'
             html += f'            <td>{broadcast.get("main_event", "")}</td>\n'
             html += f'            <td>{self.format_number(attendance_num)}</td>\n'
-            html += f'            <td>{broadcast.get("venue", "")}</td>\n'
-            html += f'            <td><span class="fi fi-{broadcast.get("country", "un")}"></span> {broadcast.get("location", "")}</td>\n'
-            html += f'            <td>{broadcast.get("date", "")}</td>\n'
+            html += f'            <td>{broadcast.get("date", "")}<br><span class="sub">{broadcast.get("venue", "")}</span></td>\n'
             html += '        </tr>\n'
         
         html += '    </tbody>\n'

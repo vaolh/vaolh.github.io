@@ -443,10 +443,6 @@ details table caption {
     font-size: 0.9em;
 }
 
-.matches td:nth-child(7) {
-    font-size: 0.75em;
-}
-
 .matches .sub {
     font-size: 0.82em;
     opacity: 0.75;

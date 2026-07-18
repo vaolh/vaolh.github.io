@@ -1830,7 +1830,17 @@ class WrestlingDatabase:
             html += f'        <td>{opponent_cell}</td>\n'
             html += f'        <td><a href="/wrestling/ppv/list.html">{match["date"]}</a></td>\n'
             html += f'        <td>{event_cell}</td>\n'
-            html += f'        <td>{match.get("bio_notes", match["notes"])}</td>\n'
+            # Notes cell: weight class on top (normal), note underneath (gray).
+            # Strip the weight word from the note so it isn't repeated.
+            _note = match.get("bio_notes", match["notes"]) or ""
+            _wc = match.get("weight_class", "")
+            if _wc and _note:
+                _note = re.sub(r'\s*\b' + re.escape(_wc) + r'\b', '', _note)
+                _note = re.sub(r'\s{2,}', ' ', _note).strip()
+            notes_cell = _wc
+            if _note:
+                notes_cell += f'<br><span class="sub">{_note}</span>'
+            html += f'        <td>{notes_cell}</td>\n'
             html += '    </tr>\n'
 
         html += '</tbody></table>\n'

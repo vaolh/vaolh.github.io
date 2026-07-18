@@ -1591,14 +1591,14 @@ class WrestlingDatabase:
                     rs = f' rowspan="{group_size}"' if group_size > 1 else ''
                     html += f'                <th{rs}>{edition_num}</th>\n'
                     html += f'                <td{rs}>{year}</td>\n'
-                    html += f'                <td>{gender_prefix}<span class="fi fi-{w_country}"></span> {t["winner"]}</td>\n'
-                    html += f'                <td><span class="fi fi-{r_country}"></span> {t["runner_up"]}</td>\n'
+                    html += f'                <td>{gender_prefix}<span class="fi fi-{w_country}"></span> {self._wlink(t["winner"])}</td>\n'
+                    html += f'                <td><span class="fi fi-{r_country}"></span> {self._wlink(t["runner_up"])}</td>\n'
                     html += f'                <td{rs}>{venue}</td>\n'
                     html += f'                <td{rs}><span class="fi fi-{l_country}"></span> {location}</td>\n'
                 else:
                     # Subsequent rows in group — only Winner and Runner-Up columns
-                    html += f'                <td>{gender_prefix}<span class="fi fi-{w_country}"></span> {t["winner"]}</td>\n'
-                    html += f'                <td><span class="fi fi-{r_country}"></span> {t["runner_up"]}</td>\n'
+                    html += f'                <td>{gender_prefix}<span class="fi fi-{w_country}"></span> {self._wlink(t["winner"])}</td>\n'
+                    html += f'                <td><span class="fi fi-{r_country}"></span> {self._wlink(t["runner_up"])}</td>\n'
                 
                 html += '            </tr>\n'
             
@@ -1638,11 +1638,11 @@ class WrestlingDatabase:
             venue = t.get('venue', '')
             
             winners_html = ' <br> '.join(
-                f'<span class="fi fi-{f.get("country", "un")}"></span> {f["name"]}'
+                f'<span class="fi fi-{f.get("country", "un")}"></span> {self._wlink(f["name"])}'
                 for f in t['winners']
             )
             losers_html = ' <br> '.join(
-                f'<span class="fi fi-{f.get("country", "un")}"></span> {f["name"]}'
+                f'<span class="fi fi-{f.get("country", "un")}"></span> {self._wlink(f["name"])}'
                 for f in t['losers']
             )
             
@@ -2088,7 +2088,7 @@ class WrestlingDatabase:
                         record = f"{wrestler['wins']}-{wrestler['losses']}-{wrestler['draws']}"
                     else:
                         record = f"{current['defenses']} Defenses"
-                    html += f'            <td style="width: 25%;"> <span class="fi fi-{current["country"]}"></span> {current["champion"]} <br> {record} <br> {current["date"]}</td>\n'
+                    html += f'            <td style="width: 25%;"> <span class="fi fi-{current["country"]}"></span> {self._wlink(current["champion"])} <br> {record} <br> {current["date"]}</td>\n'
                 else:
                     html += '            <td style="width: 25%;"> <span class="fi fi-xx"></span> Vacant <br> Record <br> Date</td>\n'
 
@@ -2175,9 +2175,9 @@ class WrestlingDatabase:
                     name, stats = top_list[i]
                     stat = stats[stat_key]
                     if stat_key == 'total_days':
-                        html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{self.format_number(stat)}</td>\n'
+                        html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{self.format_number(stat)}</td>\n'
                     else:
-                        html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{stat}</td>\n'
+                        html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{stat}</td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -2243,7 +2243,7 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     pct = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{pct:.1f}%</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{pct:.1f}%</td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0.0%</td>\n'
             
@@ -2321,9 +2321,9 @@ class WrestlingDatabase:
                     w = top_list[i]
                     stat = w[stat_key]
                     if stat_key == 'days':
-                        html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{self.format_number(stat)}</td>\n'
+                        html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{self.format_number(stat)}</td>\n'
                     else:
-                        html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                        html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -2422,9 +2422,9 @@ class WrestlingDatabase:
                     name, data = top_list[i]
                     stat = data[stat_key]
                     if stat_key == 'max_days':
-                        html += f'            <td><span class="fi fi-{data["country"]}"></span> {name} </td><td>{self.format_number(stat)}</td>\n'
+                        html += f'            <td><span class="fi fi-{data["country"]}"></span> {self._wlink(name)} </td><td>{self.format_number(stat)}</td>\n'
                     else:
-                        html += f'            <td><span class="fi fi-{data["country"]}"></span> {name} </td><td>{stat}</td>\n'
+                        html += f'            <td><span class="fi fi-{data["country"]}"></span> {self._wlink(name)} </td><td>{stat}</td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -2502,7 +2502,7 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -2570,7 +2570,7 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -2660,7 +2660,7 @@ class WrestlingDatabase:
                 
                 html += '        <tr>\n'
                 html += f'            <th>{idx + 1}</th>\n'
-                html += f'            <td><span class="fi fi-{country}"></span> {reign["champion"]}</td>\n'
+                html += f'            <td><span class="fi fi-{country}"></span> {self._wlink(reign["champion"])}</td>\n'
                 html += f'            <td>{start_str}</td>\n'
                 html += f'            <td>{end_str}</td>\n'
                 html += f'            <td>{event_name}</td>\n'
@@ -2853,28 +2853,28 @@ class WrestlingDatabase:
             # Consecutive Wins
             if i < len(top_cons_wins):
                 name, stats = top_cons_wins[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{stats["max_wins"]}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{stats["max_wins"]}</td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             # Consecutive Title Defenses
             if i < len(top_cons_defenses):
                 name, stats = top_cons_defenses[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{stats["max_defenses"]}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{stats["max_defenses"]}</td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             # Consecutive Days
             if i < len(top_cons_days):
                 name, stats = top_cons_days[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{self.format_number(stats["max_days"])}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{self.format_number(stats["max_days"])}</td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             # Unique Opponents
             if i < len(top_unique_opponents):
                 name, stats = top_unique_opponents[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {name} </td><td>{len(stats["unique_opponents"])}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{len(stats["unique_opponents"])}</td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -2926,7 +2926,7 @@ class WrestlingDatabase:
                         stat = w[stat_key]
                     else:
                         stat = w['wins'] + w['losses'] + w['draws']
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -2996,7 +2996,7 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = f"{w[stat_key]:.1f}%"
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0.0%</td>\n'
             
@@ -3166,28 +3166,28 @@ class WrestlingDatabase:
             # World Titles Won
             if i < len(top_reigns):
                 champ, stats = top_reigns[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{stats["total_reigns"]}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)} </td><td>{stats["total_reigns"]}</td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             # World Title Defenses
             if i < len(top_defenses):
                 champ, stats = top_defenses[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{stats["total_defenses"]}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)} </td><td>{stats["total_defenses"]}</td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             # Total Days
             if i < len(top_days):
                 champ, stats = top_days[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{self.format_number(stats["total_days"])}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)} </td><td>{self.format_number(stats["total_days"])}</td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
             # Title Bouts
             if i < len(top_title_bouts):
                 champ, stats = top_title_bouts[i]
-                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ} </td><td>{stats["title_bouts"]}</td>\n'
+                html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)} </td><td>{stats["title_bouts"]}</td>\n'
             else:
                 html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -3251,7 +3251,7 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -3316,7 +3316,7 @@ class WrestlingDatabase:
                 if i < len(top_list):
                     w = top_list[i]
                     stat = w[stat_key]
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {w["name"]} </td><td>{stat}</td>\n'
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])} </td><td>{stat}</td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
             
@@ -3685,7 +3685,7 @@ class WrestlingDatabase:
         for idx, wrestler in enumerate(top_10):
             html += '        <tr>\n'
             html += f'            <th>{idx + 1}</th>\n'
-            html += f'            <td><span class="fi fi-{wrestler["country"]}"></span> {wrestler["name"]}</td>\n'
+            html += f'            <td><span class="fi fi-{wrestler["country"]}"></span> {self._wlink(wrestler["name"])}</td>\n'
             html += f'            <td>{wrestler["main_events"]}</td>\n'
             html += f'            <td>{self.format_number(int(wrestler["avg_attendance"]))}</td>\n'
             html += f'            <td>{self.format_number(int(wrestler["total_ppv"]))}</td>\n'

@@ -1804,7 +1804,6 @@ class WrestlingDatabase:
         html += '        <th>Res.</th>\n'
         html += '        <th>Record</th>\n'
         html += '        <th>Opponent</th>\n'
-        html += '        <th>Method</th>\n'
         html += '        <th>Date</th>\n'
         html += '        <th>Event</th>\n'
         html += '        <th>Notes</th>\n'
@@ -1824,8 +1823,11 @@ class WrestlingDatabase:
             if match["location"]:
                 event_cell += (f'<br><span class="sub"><span class="fi fi-{match["location_country"]}"></span> '
                                f'{match["location"]}</span>')
-            html += f'        <td><span class="fi fi-{opponent_country}"></span> {self._wlink(opponent)}</td>\n'
-            html += f'        <td>{match["method"]}</td>\n'
+            # Opponent cell: name on top, "def. by <method>" smaller underneath
+            opponent_cell = f'<span class="fi fi-{opponent_country}"></span> {self._wlink(opponent)}'
+            if match["method"]:
+                opponent_cell += f'<br><span class="sub">def. by {match["method"]}</span>'
+            html += f'        <td>{opponent_cell}</td>\n'
             html += f'        <td><a href="/wrestling/ppv/list.html">{match["date"]}</a></td>\n'
             html += f'        <td>{event_cell}</td>\n'
             html += f'        <td>{match.get("bio_notes", match["notes"])}</td>\n'

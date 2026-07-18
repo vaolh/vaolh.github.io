@@ -414,6 +414,11 @@ class WrestlingDatabase:
             falls = cols[7].get_text().strip() if len(cols) > 7 else ''
             notes = cols[8].get_text().strip() if len(cols) > 8 else ''
 
+            # Skip matches that haven't happened yet: an empty Method means the
+            # bout is booked but unresolved, so it must not touch any records.
+            if not method:
+                continue
+
             # Handle non-singles matches
             # Match types: Tag, Trios, Three Way, Four Way, Battle Royal, Royal Rumble, Ladder, Gauntlet
             match_type_lower = match_type.lower()
@@ -484,8 +489,14 @@ class WrestlingDatabase:
             is_main_event = (idx == len(match_rows) - 1)
             self.record_match(match, is_main_event, is_weekly=is_weekly)
 
+        # A card that is booked but not yet wrestled (every Method blank) has no
+        # recorded matches — keep it out of the data entirely (its placeholder
+        # date isn't real, and it must not affect any records/stats).
+        if not event['matches'] and not event.get('multi_man_matches'):
+            return
+
         self.events.append(event)
-        
+
         # Record broadcast if it has audience metrics (skip for weekly shows)
         if not is_weekly and audience_metric and broadcast_type:
             # Get main event info (last match — may be singles or multi-man)
@@ -3933,6 +3944,9 @@ def main():
         _spec.loader.exec_module(_mod)
         print("Populating Open Tournament brackets...")
         _mod.populate(ppv_path)
+        # Once the newest World Title Series is fully filled in, append the next
+        # blank one with its notes taken from the booking schedule (WTS N-15).
+        _mod.maybe_generate_next_wts(ppv_path)
     except Exception as _e:
         print(f"  (Open bracket populate skipped: {_e})")
 
@@ -3951,7 +3965,7 @@ def main():
     
     # Sort all events chronologically
     print("Sorting events chronologically...")
-    db.events.sort(key=lambda e: db.parse_date(e['date']) if e.get('date') else datetime.min)
+    db.events.sort(key=lambda e: db.parse_date(e['date']) or datetime.min)
     
     # Now reprocess all championship changes in chronological order
     print("Reprocessing championship reigns in chronological order...")

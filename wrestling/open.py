@@ -839,17 +839,24 @@ def generate_template(path, year, date_str=None):
 # Blank World Title Series (regular event) template, auto-numbered
 # ---------------------------------------------------------------------------
 
-def wts_row(no):
+# The booking schedule repeats every SCHEDULE_PERIOD events: a new WTS card
+# reuses the match types / weight classes / title-and-contender notes of the
+# event this many editions earlier (WTS 28 mirrors WTS 13, 27 mirrors 12, ...).
+# Roughly 95% of cards follow it exactly; the rest add the odd cash-in.
+SCHEDULE_PERIOD = 15
+
+
+def wts_row(no, mtype="Singles", weight="Weight", note=""):
     return f'''            <tr>
                 <th>{no}</th>
-                <td>Singles</td>
-                <td>Weight</td>
+                <td>{mtype}</td>
+                <td>{weight}</td>
                 <td><span class="fi fi-xx"></span> </td>
                 <td>def.</td>
                 <td><span class="fi fi-xx"></span> </td>
                 <td></td>
-                <td>[1-0]</td>
-                <td></td>
+                <td>[-]</td>
+                <td>{note}</td>
             </tr>
 '''
 
@@ -857,6 +864,57 @@ def wts_row(no):
 def next_wts_number(raw):
     nums = [int(n) for n in re.findall(r"World Title Series\s+(\d+)", raw)]
     return (max(nums) + 1) if nums else 1
+
+
+def _find_wts_details(soup, number):
+    """Return the <details> for 'World Title Series {number}:' (or None)."""
+    prefix = f"World Title Series {number}:"
+    for det in soup.find_all("details"):
+        summ = det.find("summary")
+        if summ and summ.get_text(strip=True).startswith(prefix):
+            return det
+    return None
+
+
+def wts_schedule_rows(soup, template_num):
+    """(match_type, weight_class, note_html) for each bout of WTS template_num,
+    so a new card can inherit the schedule. None if that event isn't present."""
+    det = _find_wts_details(soup, template_num)
+    if not det:
+        return None
+    tbl = det.find("table", class_="match-card")
+    if not tbl:
+        return None
+    out = []
+    for r in tbl.find_all("tr")[1:-1]:      # skip header row and broadcast row
+        cols = r.find_all(["td", "th"])
+        if len(cols) < 9:
+            continue
+        mtype = cols[1].get_text(strip=True)
+        weight = cols[2].get_text(strip=True)
+        note = cols[8].decode_contents().strip()   # keep <i>The Ring</i> etc.
+        out.append((mtype, weight, note))
+    return out
+
+
+def wts_is_complete(soup, number):
+    """True when every bout of WTS {number} has a Method filled in (i.e. the
+    card has actually happened, not just been booked)."""
+    det = _find_wts_details(soup, number)
+    if not det:
+        return False
+    tbl = det.find("table", class_="match-card")
+    if not tbl:
+        return False
+    saw = False
+    for r in tbl.find_all("tr")[1:-1]:
+        cols = r.find_all(["td", "th"])
+        if len(cols) < 9:
+            continue
+        saw = True
+        if not cols[6].get_text(strip=True):   # empty Method -> unfinished
+            return False
+    return saw
 
 
 def generate_wts(path, date_str=None, rows=8):
@@ -872,7 +930,18 @@ def generate_wts(path, date_str=None, rows=8):
     else:
         date_disp = "MONTH DAY, YEAR"
 
-    body = "".join(wts_row(i + 1) for i in range(rows))
+    # Pull the booking (types / weights / notes) from the same slot one cycle
+    # ago; fall back to generic blank rows if that event isn't in the file yet.
+    soup = BeautifulSoup(raw, "html.parser")
+    template = wts_schedule_rows(soup, number - SCHEDULE_PERIOD)
+    if template:
+        body = "".join(wts_row(i + 1, mt, wt, nt)
+                       for i, (mt, wt, nt) in enumerate(template))
+        origin = f" (schedule inherited from WTS {number - SCHEDULE_PERIOD})"
+    else:
+        body = "".join(wts_row(i + 1) for i in range(rows))
+        origin = ""
+
     block = (
         f"\n<!-- WTS {number} -->\n"
         "    <details>\n"
@@ -888,7 +957,21 @@ def generate_wts(path, date_str=None, rows=8):
         raw = raw.rstrip() + "\n" + block
     with open(path, "w", encoding="utf-8") as f:
         f.write(raw)
-    print(f"Appended blank World Title Series {number} to {path}.")
+    print(f"Appended blank World Title Series {number}{origin} to {path}.")
+
+
+def maybe_generate_next_wts(path):
+    """Called from update.py: if the newest WTS in the file is fully filled in,
+    append the next blank one (notes taken from the schedule). The fresh card is
+    empty, so this won't fire again until that card is completed too."""
+    with open(path, "r", encoding="utf-8") as f:
+        raw = f.read()
+    nums = [int(n) for n in re.findall(r"World Title Series\s+(\d+)", raw)]
+    if not nums:
+        return
+    soup = BeautifulSoup(raw, "html.parser")
+    if wts_is_complete(soup, max(nums)):
+        generate_wts(path)
 
 
 # ---------------------------------------------------------------------------

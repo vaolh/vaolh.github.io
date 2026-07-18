@@ -1892,6 +1892,23 @@ class WrestlingDatabase:
             return f'<a href="/wrestling/wrestlers/{slug}.html">{name}</a>'
         return name
 
+    def _match_years(self, w, pred):
+        """Set of years from a wrestler's matches that satisfy pred(match)."""
+        ys = set()
+        for m in w.get('matches', []):
+            if pred(m):
+                d = self.parse_date(m.get('date', ''))
+                if d:
+                    ys.add(d.year)
+        return ys
+
+    def _year_suffix(self, ys):
+        """' in 2019' or ' from 2015-2019' (empty if no years)."""
+        if not ys:
+            return ''
+        lo, hi = min(ys), max(ys)
+        return f' in {lo}' if lo == hi else f' from {lo}-{hi}'
+
     _LEADING = ('El ', 'La ', 'Los ', 'Las ', 'The ')
 
     def _abbrev_name(self, name):
@@ -2896,22 +2913,27 @@ class WrestlingDatabase:
         html += '    </thead>\n'
         html += '    <tbody>\n'
 
+        cats = [
+            (top_bouts, None, 'bouts', lambda m: True),
+            (top_wins, 'wins', 'wins', lambda m: m.get('result') == 'Win'),
+            (top_pinfall, 'pinfall_wins', 'pinfall wins',
+             lambda m: m.get('result') == 'Win' and m.get('method') == 'Pinfall'),
+            (top_submission, 'submission_wins', 'submission wins',
+             lambda m: m.get('result') == 'Win' and m.get('method') == 'Submission'),
+        ]
         for i in range(10):
             html += '        <tr>\n'
             html += f'            <th>{i+1}</th>\n'
-            
-            for top_list, stat_key in [(top_bouts, None), (top_wins, 'wins'), (top_pinfall, 'pinfall_wins'), 
-                                        (top_submission, 'submission_wins')]:
+
+            for top_list, stat_key, word, pred in cats:
                 if i < len(top_list):
                     w = top_list[i]
-                    if stat_key:
-                        stat = w[stat_key]
-                    else:
-                        stat = w['wins'] + w['losses'] + w['draws']
-                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat}</span></td>\n'
+                    stat = w[stat_key] if stat_key else w['wins'] + w['losses'] + w['draws']
+                    suffix = self._year_suffix(self._match_years(w, pred))
+                    html += f'            <td><span class="fi fi-{w["country"]}"></span> {self._wlink(w["name"])}<br><span class="sub">{stat} {word}{suffix}</span></td>\n'
                 else:
                     html += '            <td><span class="fi fi-xx"></span> Vacant<br><span class="sub">0</span></td>\n'
-            
+
             html += '        </tr>\n'
 
         html += '    </tbody>\n'

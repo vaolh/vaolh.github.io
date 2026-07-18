@@ -846,14 +846,20 @@ def generate_template(path, year, date_str=None):
 SCHEDULE_PERIOD = 15
 
 
-def wts_row(no, mtype="Singles", weight="Weight", note=""):
+def wts_row(no, mtype="Singles", weight="Weight", note="",
+            f1=("xx", ""), result="vs.", f2=("xx", "")):
+    # A freshly-booked bout shows "vs." (undecided); it becomes "def." once the
+    # user fills in the winner. Champion/contender names are pre-filled where
+    # known, everything else blank.
+    c1, n1 = f1
+    c2, n2 = f2
     return f'''            <tr>
                 <th>{no}</th>
                 <td>{mtype}</td>
                 <td>{weight}</td>
-                <td><span class="fi fi-xx"></span> </td>
-                <td>def.</td>
-                <td><span class="fi fi-xx"></span> </td>
+                <td><span class="fi fi-{c1}"></span> {n1} </td>
+                <td>{result}</td>
+                <td><span class="fi fi-{c2}"></span> {n2} </td>
                 <td></td>
                 <td>[-]</td>
                 <td>{note}</td>

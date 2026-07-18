@@ -422,8 +422,7 @@ details table caption {
 .matches td:nth-child(5),
 .matches td:nth-child(6),
 .matches td:nth-child(7),
-.matches td:nth-child(8),
-.matches td:nth-child(9) {
+.matches td:nth-child(8) {
     text-align: left;
 }
 
@@ -431,7 +430,7 @@ details table caption {
     font-size: 0.9em;
 }
 
-.matches td:nth-child(9) {
+.matches td:nth-child(8) {
     font-size: 0.75em;
 }
 

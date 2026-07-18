@@ -2696,40 +2696,47 @@ class WrestlingDatabase:
         )
         
         html = '    <!-- Apuestas Records -->\n'
-        html += '    <table class="match-card">\n'
+        html += '    <table class="match-card apuestas-card">\n'
         html += '    <thead>\n'
         html += '        <tr>\n'
         html += '            <th>No.</th>\n'
-        html += '            <th>Event</th>\n'
         html += '            <th>Winner</th>\n'
-        html += '            <th>Loser</th>\n'
-        html += '            <th>Wager</th>\n'
-        html += '            <th>Venue</th>\n'
-        html += '            <th>Location</th>\n'
+        html += '            <th>Event</th>\n'
         html += '            <th>Date</th>\n'
+        html += '            <th>Wager</th>\n'
         html += '        </tr>\n'
         html += '    </thead>\n'
         html += '    <tbody>\n'
-        
+
         for idx, apuesta in enumerate(sorted_apuestas):
-            # Get wrestler countries
             winner_country = self.wrestlers.get(apuesta['winner'], {}).get('country', 'un')
             loser_country = self.wrestlers.get(apuesta['loser'], {}).get('country', 'un')
-            
+
+            # Winner on top, "def. <loser>" smaller/gray underneath
+            winner_cell = (f'<span class="fi fi-{winner_country}"></span> {self._wlink(apuesta["winner"])}'
+                           f'<br><span class="sub">def. <span class="fi fi-{loser_country}"></span> '
+                           f'{self._wlink(apuesta["loser"])}</span>')
+            # Event on top, location underneath
+            event_cell = apuesta["event"]
+            if apuesta.get("location"):
+                event_cell += (f'<br><span class="sub"><span class="fi fi-{apuesta["location_country"]}"></span> '
+                               f'{apuesta["location"]}</span>')
+            # Date on top, venue underneath
+            date_cell = apuesta["date"]
+            if apuesta.get("venue"):
+                date_cell += f'<br><span class="sub">{apuesta["venue"]}</span>'
+
             html += '        <tr>\n'
             html += f'            <th>{idx + 1}</th>\n'
-            html += f'            <td>{apuesta["event"]}</td>\n'
-            html += f'            <td><span class="fi fi-{winner_country}"></span> {apuesta["winner"]}</td>\n'
-            html += f'            <td><span class="fi fi-{loser_country}"></span> {apuesta["loser"]}</td>\n'
+            html += f'            <td>{winner_cell}</td>\n'
+            html += f'            <td>{event_cell}</td>\n'
+            html += f'            <td>{date_cell}</td>\n'
             html += f'            <td>{apuesta["wager"]}</td>\n'
-            html += f'            <td>{apuesta.get("venue", "")}</td>\n'
-            html += f'            <td><span class="fi fi-{apuesta["location_country"]}"></span> {apuesta["location"]}</td>\n'
-            html += f'            <td style="font-size: 1em; text-align: left;">{apuesta["date"]}</td>\n'
             html += '        </tr>\n'
-        
+
         html += '    </tbody>\n'
         html += '    </table>\n\n'
-        
+
         return html
 
     def generate_streaks_records_html(self):

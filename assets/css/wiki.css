@@ -443,7 +443,8 @@ details table caption {
     font-size: 0.9em;
 }
 
-.matches .sub {
+.matches .sub,
+.match-card .sub {
     font-size: 0.82em;
     opacity: 0.75;
 }

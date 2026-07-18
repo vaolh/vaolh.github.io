@@ -78,6 +78,10 @@ def abbreviate_dates_in_generated_files():
             continue
         content = open(f, encoding='utf-8').read()
         new = abbr_dates_html(content)
+        # Drop the gender label from Open Tournament notes (display only; the
+        # source list keeps "Men's/Women's" so the parser can tell them apart).
+        new = (new.replace("Men's Open Tournament", "Open Tournament")
+                  .replace("Women's Open Tournament", "Open Tournament"))
         if new != content:
             open(f, 'w', encoding='utf-8').write(new)
             changed += 1
@@ -1577,10 +1581,8 @@ class WrestlingDatabase:
                 venue = t.get('venue', '')
                 gender = t.get('gender', 'men')
                 
-                # Prefix winner/runner-up label with gender if both exist this year
+                # No gender label on the Open summary.
                 gender_prefix = ''
-                if group_size > 1:
-                    gender_prefix = "Men's " if gender == 'men' else "Women's "
                 
                 html += '            <tr>\n'
                 
@@ -1804,7 +1806,7 @@ class WrestlingDatabase:
         html += '        <th>Opponent</th>\n'
         html += '        <th>Method</th>\n'
         html += '        <th>Date</th>\n'
-        html += '        <th>Location</th>\n'
+        html += '        <th>Event</th>\n'
         html += '        <th>Notes</th>\n'
         html += '    </tr>\n'
 
@@ -1817,11 +1819,15 @@ class WrestlingDatabase:
             html += f'        <th>{total_bouts - idx}</th>\n'
             html += f'        <td class="{result_class}">{match["result"]}</td>\n'
             html += f'        <td>{match["record"]}</td>\n'
-            opp_disp = self._wlink_named(opponent, self._abbrev_name(opponent))
-            html += f'        <td><span class="fi fi-{opponent_country}"></span> {opp_disp}</td>\n'
-            html += f'        <td>{self._abbrev_method(match["method"])}</td>\n'
+            # Event cell: event (abbreviated) on top, flag + location smaller underneath
+            event_cell = match["event"].replace('WrestleMania', 'WM').replace('LibreMania', 'LM')
+            if match["location"]:
+                event_cell += (f'<br><span class="sub"><span class="fi fi-{match["location_country"]}"></span> '
+                               f'{match["location"]}</span>')
+            html += f'        <td><span class="fi fi-{opponent_country}"></span> {self._wlink(opponent)}</td>\n'
+            html += f'        <td>{match["method"]}</td>\n'
             html += f'        <td><a href="/wrestling/ppv/list.html">{match["date"]}</a></td>\n'
-            html += f'        <td><span class="fi fi-{match["location_country"]}"></span> {match["location"]}</td>\n'
+            html += f'        <td>{event_cell}</td>\n'
             html += f'        <td>{match.get("bio_notes", match["notes"])}</td>\n'
             html += '    </tr>\n'
 
@@ -1949,7 +1955,8 @@ class WrestlingDatabase:
                 for di, d in enumerate(defense_list, 1):
                     dev = d['event'].replace('WrestleMania', 'WM').replace('LibreMania', 'LM')
                     _dparts.append(
-                        f'{di}. def. {self._wlink(d["opponent"])} '
+                        f'{di}. def. <span class="fi fi-{d["opponent_country"]}"></span> '
+                        f'{self._wlink(d["opponent"])} '
                         f'at <a href="/wrestling/ppv/list.html">{dev}</a> on {d["date"]}')
                 defenses_cell = '<span class="sub">' + '<br>'.join(_dparts) + '</span>'
             else:

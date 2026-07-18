@@ -844,11 +844,12 @@ def _build_yearly_gender_details(db, cache, gender_label, glist, yearly_data, st
                 lines.append(f'            <td{span_attr}></td>')
             else:
                 name, country = cell
-                short = _abbrev_name(name)
-                # Only show abbreviated form if it differs from full name;
-                # always store full name in title for hover tooltip.
-                title_attr = f' title="{name}"' if short != name else ''
-                lines.append(f'            <td{span_attr}{title_attr}>{flag(country)} {short}</td>')
+                # Full name, linked to the wrestler's page when they have one
+                # (PPV-roster wrestlers only, not jobber-generated pages).
+                slug = name.lower().replace(' ', '-').replace('.', '')
+                disp = (f'<a href="/wrestling/wrestlers/{slug}.html">{name}</a>'
+                        if name in db.ppv_wrestlers and name in db.wrestlers else name)
+                lines.append(f'            <td{span_attr}>{flag(country)} {disp}</td>')
         lines.append('        </tr>')
 
     lines += ['    </table>', '    </details>', '', '']

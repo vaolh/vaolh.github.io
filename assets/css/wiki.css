@@ -255,15 +255,17 @@ caption {
     text-align: center;
 }
 
-.champ-history td:nth-child(9) {
-    font-size: 0.8em;
-    overflow-wrap: break-word;
-    word-break: break-word;
+/* Stacked layout: Days (5) and Defenses (6) centred; the "def. runner-up" and
+   location sub-lines are smaller and muted. */
+.champ-history td:nth-child(4),
+.champ-history td:nth-child(5),
+.champ-history td:nth-child(6) {
+    text-align: center;
 }
 
-.champ-history td:nth-child(7),
-.champ-history td:nth-child(8) {
-    text-align: center;
+.champ-history .sub {
+    font-size: 0.82em;
+    opacity: 0.75;
 }
 
 .totals td:nth-child(2) {
@@ -286,13 +288,21 @@ caption {
 .p4p-grid th,
 .p4p-grid td {
     text-align: left;
-    width: calc(100% / 11);
     padding: 4px 6px;
     vertical-align: top;
     font-size: 0.85em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: break-word;
+}
+
+/* Year column narrow; the 10 rank columns share the rest equally. Names wrap
+   onto multiple lines within 960px, like Wikipedia's PWI 500 table. */
+.p4p-grid th:first-child,
+.p4p-grid td:first-child {
+    width: 42px;
+}
+.p4p-grid th:not(:first-child),
+.p4p-grid td:not(:first-child) {
+    width: calc((100% - 42px) / 10);
 }
 
 h1 {

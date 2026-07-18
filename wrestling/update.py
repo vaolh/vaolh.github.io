@@ -890,6 +890,10 @@ class WrestlingDatabase:
         """Add new championship reign"""
         winner_country = match['fighter1_country'] if match['winner'] == match['fighter1'] else match['fighter2_country']
             
+        if match['winner'] == match['fighter1']:
+            defeated, defeated_country = match['fighter2'], match['fighter2_country']
+        else:
+            defeated, defeated_country = match['fighter1'], match['fighter1_country']
         champ = {
             'champion': match['winner'],
             'country': winner_country,
@@ -897,7 +901,9 @@ class WrestlingDatabase:
             'event': match['event'],
             'defenses': 0,  # Start at 0 - the win itself is not a defense
             'days': None,
-            'notes': match['notes']
+            'notes': match['notes'],
+            'defeated': defeated,
+            'defeated_country': defeated_country,
         }
         
         self.championships[org][weight].append(champ)
@@ -1147,6 +1153,10 @@ class WrestlingDatabase:
                             last_reign['days'] = self.days_between(last_reign['date'], match['date'])
                         # Start new reign
                         winner_country = match['fighter1_country'] if match['winner'] == match['fighter1'] else match['fighter2_country']
+                        if match['winner'] == match['fighter1']:
+                            _loser, _loser_c = match['fighter2'], match['fighter2_country']
+                        else:
+                            _loser, _loser_c = match['fighter1'], match['fighter1_country']
                         champ = {
                             'champion': match['winner'],
                             'country': winner_country,
@@ -1154,7 +1164,9 @@ class WrestlingDatabase:
                             'event': match['event'],
                             'defenses': 0,
                             'days': None,
-                            'notes': f"Def. {match['fighter2'] if match['winner']==match['fighter1'] else match['fighter1']}"
+                            'notes': f"Def. {_loser}",
+                            'defeated': _loser,
+                            'defeated_country': _loser_c,
                         }
                         self.championships[org][weight].append(champ)
                     elif last_reign:
@@ -1747,17 +1759,28 @@ class WrestlingDatabase:
             html += f'        <th>{total_bouts - idx}</th>\n'
             html += f'        <td class="{result_class}">{match["result"]}</td>\n'
             html += f'        <td>{match["record"]}</td>\n'
-            html += f'        <td><span class="fi fi-{opponent_country}"></span> {opponent}</td>\n'
+            opp_slug = opponent.lower().replace(' ', '-').replace('.', '')
+            opp_disp = (f'<a href="/wrestling/wrestlers/{opp_slug}.html">{opponent}</a>'
+                        if opponent in self.ppv_wrestlers and opponent in self.wrestlers
+                        else opponent)
+            html += f'        <td><span class="fi fi-{opponent_country}"></span> {opp_disp}</td>\n'
             html += f'        <td>{match["method"]}</td>\n'
-            _d = self.parse_date(match["date"])
-            _date_disp = _d.strftime('%d-%m-%Y') if _d else match["date"]
-            html += f'        <td>{_date_disp}</td>\n'
+            html += f'        <td>{match["date"]}</td>\n'
             html += f'        <td><span class="fi fi-{match["location_country"]}"></span> {match["location"]}</td>\n'
             html += f'        <td>{match.get("bio_notes", match["notes"])}</td>\n'
             html += '    </tr>\n'
 
         html += '</tbody></table>\n'
         return html
+
+    def _wlink(self, name):
+        """Link a wrestler name to their page — only when a page is actually
+        generated for them (same gate as page generation: PPV roster AND known
+        wrestler). Everyone else (jobbers, historical-only names) stays plain."""
+        if name in self.ppv_wrestlers and name in self.wrestlers:
+            slug = name.lower().replace(' ', '-').replace('.', '')
+            return f'<a href="/wrestling/wrestlers/{slug}.html">{name}</a>'
+        return name
 
     def generate_championship_history_html(self, org, weight):
         """Generate championship history table for an org/weight"""
@@ -1796,13 +1819,10 @@ class WrestlingDatabase:
         html += '        <tr>\n'
         html += '            <th>No.</th>\n'
         html += '            <th>Champion</th>\n'
-        html += '            <th>Date Start</th>\n'
-        html += '            <th>Date End</th>\n'
         html += '            <th>Event</th>\n'
-        html += '            <th>Location</th>\n'
+        html += '            <th>Date</th>\n'
         html += '            <th>Days</th>\n'
         html += '            <th>Defenses</th>\n'
-        html += '            <th>Notes</th>\n'
         html += '        </tr>\n'
         
         max_defenses = max((reign['defenses'] for reign in reigns), default=0)
@@ -1823,24 +1843,32 @@ class WrestlingDatabase:
             location = evt.get('location', '')
             location_country = evt.get('country', 'un')
             
+            # Champion cell: flag + name (linked), with "def. runner-up" under it
+            _champ = f'<span class="fi fi-{reign["country"]}"></span> {self._wlink(reign["champion"])}'
+            if reign.get('defeated'):
+                _champ += (f'<br><span class="sub">def. '
+                           f'<span class="fi fi-{reign.get("defeated_country", "un")}"></span> '
+                           f'{self._wlink(reign["defeated"])}</span>')
+            # Event cell: event (abbreviated), with location under it
+            _event = reign["event"].replace('WrestleMania', 'WM').replace('LibreMania', 'LM')
+            if location:
+                _event += (f'<br><span class="sub"><span class="fi fi-{location_country}"></span> '
+                           f'{location}</span>')
+            days_display = self.format_number(reign["days"]) if reign["days"] else "0"
+            def_tag = 'th' if reign['defenses'] == max_defenses and max_defenses > 0 else 'td'
             html += '        <tr>\n'
             html += f'            <th>{idx + 1}</th>\n'
-            html += f'            <td><span class="fi fi-{reign["country"]}"></span> {reign["champion"]}</td>\n'
+            html += f'            <td>{_champ}</td>\n'
+            html += f'            <td>{_event}</td>\n'
             html += f'            <td>{reign["date"]}</td>\n'
-            html += f'            <td>{end_date_str}</td>\n'
-            html += f'            <td>{reign["event"]}</td>\n'
-            html += f'            <td><span class="fi fi-{location_country}"></span> {location}</td>\n'
-            days_display = self.format_number(reign["days"]) if reign["days"] else "0"
             html += f'            <td>{days_display}</td>\n'
-            def_tag = 'th' if reign['defenses'] == max_defenses and max_defenses > 0 else 'td'
             html += f'            <{def_tag}>{reign["defenses"]}</{def_tag}>\n'
-            html += f'            <td>{reign["notes"]}</td>\n'
             html += '        </tr>\n'
             
             # Add vacancy message if exists
             if 'vacancy_message' in reign:
                 html += '        <tr>\n'
-                html += f'            <th colspan="9" style="font-size:0.8em; line-height:1.3; text-align:center;">\n'
+                html += f'            <th colspan="6" style="font-size:0.8em; line-height:1.3; text-align:center;">\n'
                 html += f'                {reign["vacancy_message"]}\n'
                 html += '            </th>\n'
                 html += '        </tr>\n'

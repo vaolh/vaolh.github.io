@@ -34,6 +34,55 @@ from datetime import datetime
 from collections import defaultdict
 import os
 import re
+import glob
+
+# --- Date abbreviation ------------------------------------------------------
+# Shorten full month names to three letters wherever they appear in a date
+# (a month name immediately followed by a day or year number). Blocks wrapped in
+# <!--NOABBR-->...<!--/NOABBR--> are left untouched (the current-champions
+# summary keeps full month names).
+_MONTHS_FULL = {
+    'January': 'Jan', 'February': 'Feb', 'March': 'Mar', 'April': 'Apr',
+    'May': 'May', 'June': 'Jun', 'July': 'Jul', 'August': 'Aug',
+    'September': 'Sep', 'October': 'Oct', 'November': 'Nov', 'December': 'Dec',
+}
+_DATE_MONTH_RE = re.compile(r'\b(' + '|'.join(_MONTHS_FULL) + r')\b(?=\s+\d)')
+_NOABBR_RE = re.compile(r'<!--NOABBR-->.*?<!--/NOABBR-->', re.DOTALL)
+
+
+def abbr_dates_html(text):
+    """Abbreviate month names in date patterns, skipping NOABBR-protected blocks.
+    The invisible NOABBR markers are kept in place so the protection survives
+    repeated passes (update.py then p4p.py both run this)."""
+    def _sub(seg):
+        return _DATE_MONTH_RE.sub(lambda m: _MONTHS_FULL[m.group(1)], seg)
+    out, last = [], 0
+    for m in _NOABBR_RE.finditer(text):
+        out.append(_sub(text[last:m.start()]))
+        out.append(m.group(0))            # protected block (with markers), unchanged
+        last = m.end()
+    out.append(_sub(text[last:]))
+    return ''.join(out)
+
+
+def abbreviate_dates_in_generated_files():
+    """Post-process every generated page so dates read 'Jun 8, 2019'. The
+    current-champions summary is protected via NOABBR markers. Source lists
+    (ppv/list.html, weekly) are left alone so parsing stays intact."""
+    targets = (glob.glob('wrestling/wrestlers/*.html')
+               + glob.glob('wrestling/org/*.html')
+               + ['wrestling/wiki.html', 'wrestling/ppv/wiki.html'])
+    changed = 0
+    for f in targets:
+        if not os.path.exists(f):
+            continue
+        content = open(f, encoding='utf-8').read()
+        new = abbr_dates_html(content)
+        if new != content:
+            open(f, 'w', encoding='utf-8').write(new)
+            changed += 1
+    print(f"  Abbreviated dates in {changed} generated file(s).")
+
 
 class WrestlingDatabase:
     def __init__(self):
@@ -56,18 +105,13 @@ class WrestlingDatabase:
         self.apuestas = []  # Track Lucha de Apuestas matches
 
     def parse_date(self, date_str):
-        """Parse date from various formats"""
-        try:
-            # Try "Month DD, YYYY" format (e.g., "July 6, 2000")
-            date_obj = datetime.strptime(date_str.strip(), "%B %d, %Y")
-            return date_obj
-        except:
+        """Parse date from various formats (full or abbreviated month)."""
+        for fmt in ("%B %d, %Y", "%B %Y", "%b %d, %Y", "%b %Y"):
             try:
-                # Try "Month YYYY" format (defaults to 1st of month)
-                date_obj = datetime.strptime(date_str.strip(), "%B %Y")
-                return date_obj
-            except:
-                return None
+                return datetime.strptime(date_str.strip(), fmt)
+            except (ValueError, AttributeError):
+                continue
+        return None
 
     def days_between(self, date1_str, date2_str):
         """Calculate days between two dates"""
@@ -1178,6 +1222,20 @@ class WrestlingDatabase:
                         
                         if not champion_lost:
                             last_reign['defenses'] += 1
+                            # Record the defence (challenger = the non-champion fighter)
+                            champ_name = last_reign['champion']
+                            if match['fighter1'] == champ_name:
+                                _opp, _opp_c = match['fighter2'], match['fighter2_country']
+                            elif match['fighter2'] == champ_name:
+                                _opp, _opp_c = match['fighter1'], match['fighter1_country']
+                            else:
+                                _opp, _opp_c = match['fighter2'], match['fighter2_country']
+                            last_reign.setdefault('defense_list', []).append({
+                                'opponent': _opp,
+                                'opponent_country': _opp_c,
+                                'event': match['event'],
+                                'date': match['date'],
+                            })
                             # Calculate days to THIS MATCH (not to most recent event yet)
                             # This will be the "last defense" for non-current champs
                             if last_reign['date'] and match['date']:
@@ -1759,13 +1817,10 @@ class WrestlingDatabase:
             html += f'        <th>{total_bouts - idx}</th>\n'
             html += f'        <td class="{result_class}">{match["result"]}</td>\n'
             html += f'        <td>{match["record"]}</td>\n'
-            opp_slug = opponent.lower().replace(' ', '-').replace('.', '')
-            opp_disp = (f'<a href="/wrestling/wrestlers/{opp_slug}.html">{opponent}</a>'
-                        if opponent in self.ppv_wrestlers and opponent in self.wrestlers
-                        else opponent)
+            opp_disp = self._wlink_named(opponent, self._abbrev_name(opponent))
             html += f'        <td><span class="fi fi-{opponent_country}"></span> {opp_disp}</td>\n'
-            html += f'        <td>{match["method"]}</td>\n'
-            html += f'        <td>{match["date"]}</td>\n'
+            html += f'        <td>{self._abbrev_method(match["method"])}</td>\n'
+            html += f'        <td><a href="/wrestling/ppv/list.html">{match["date"]}</a></td>\n'
             html += f'        <td><span class="fi fi-{match["location_country"]}"></span> {match["location"]}</td>\n'
             html += f'        <td>{match.get("bio_notes", match["notes"])}</td>\n'
             html += '    </tr>\n'
@@ -1781,6 +1836,38 @@ class WrestlingDatabase:
             slug = name.lower().replace(' ', '-').replace('.', '')
             return f'<a href="/wrestling/wrestlers/{slug}.html">{name}</a>'
         return name
+
+    _LEADING = ('El ', 'La ', 'Los ', 'Las ', 'The ')
+
+    def _abbrev_name(self, name):
+        """Compact name for the record table (same rule as the old P4P grid):
+        strip a leading article; mononyms stay full; otherwise first initial
+        + rest. e.g. Kenny Omega -> K. Omega, El Nieto del Santo -> N. del Santo."""
+        stripped = name
+        for p in self._LEADING:
+            if name.startswith(p):
+                stripped = name[len(p):]
+                break
+        words = stripped.split()
+        if len(words) <= 1:
+            return name
+        return f"{words[0][0]}. {' '.join(words[1:])}"
+
+    _METHOD_ABBR = {
+        'Pinfall': 'Pin.', 'Submission': 'Sub.', 'Count Out': 'Cou.',
+        'Disqualification': 'Dis.', 'No Contest': 'NC.', 'Time Limit': 'Dec.',
+    }
+
+    def _abbrev_method(self, method):
+        """Fixed-length method abbreviation so the column lines up."""
+        return self._METHOD_ABBR.get(method, method)
+
+    def _wlink_named(self, name, display):
+        """Like _wlink but with a custom display text (e.g. an abbreviated name)."""
+        if name in self.ppv_wrestlers and name in self.wrestlers:
+            slug = name.lower().replace(' ', '-').replace('.', '')
+            return f'<a href="/wrestling/wrestlers/{slug}.html" title="{name}">{display}</a>'
+        return display
 
     def generate_championship_history_html(self, org, weight):
         """Generate championship history table for an org/weight"""
@@ -1855,14 +1942,25 @@ class WrestlingDatabase:
                 _event += (f'<br><span class="sub"><span class="fi fi-{location_country}"></span> '
                            f'{location}</span>')
             days_display = self.format_number(reign["days"]) if reign["days"] else "0"
-            def_tag = 'th' if reign['defenses'] == max_defenses and max_defenses > 0 else 'td'
+            # Defenses cell: list each defence "N. def. <opponent> at <event> on <date>"
+            defense_list = reign.get('defense_list', [])
+            if defense_list:
+                _dparts = []
+                for di, d in enumerate(defense_list, 1):
+                    dev = d['event'].replace('WrestleMania', 'WM').replace('LibreMania', 'LM')
+                    _dparts.append(
+                        f'{di}. def. {self._wlink(d["opponent"])} '
+                        f'at <a href="/wrestling/ppv/list.html">{dev}</a> on {d["date"]}')
+                defenses_cell = '<span class="sub">' + '<br>'.join(_dparts) + '</span>'
+            else:
+                defenses_cell = '0'
             html += '        <tr>\n'
             html += f'            <th>{idx + 1}</th>\n'
             html += f'            <td>{_champ}</td>\n'
             html += f'            <td>{_event}</td>\n'
             html += f'            <td>{reign["date"]}</td>\n'
             html += f'            <td>{days_display}</td>\n'
-            html += f'            <{def_tag}>{reign["defenses"]}</{def_tag}>\n'
+            html += f'            <td class="defenses">{defenses_cell}</td>\n'
             html += '        </tr>\n'
             
             # Add vacancy message if exists
@@ -1889,7 +1987,7 @@ class WrestlingDatabase:
         for idx, (champ, stats) in enumerate(sorted_totals):
             html += '        <tr>\n'
             html += f'            <th>{idx + 1}</th>\n'
-            html += f'            <td><span class="fi fi-{stats["country"]}"></span> {champ}</td>\n'
+            html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(champ)}</td>\n'
             html += f'            <td>{stats["reigns"]}</td>\n'
             html += f'            <td>{self.format_number(stats["days"])}</td>\n'
             html += f'            <td>{stats["defenses"]}</td>\n'
@@ -1901,7 +1999,8 @@ class WrestlingDatabase:
         return html
 
     def generate_current_champions_html(self):
-        """Generate current champions summary"""
+        """Generate current champions summary. Wrapped in NOABBR so its dates
+        keep full month names when the date-abbreviation post-process runs."""
         weights = {
             'heavyweight': '(224+ lb / 102+ kg)',
             'bridgerweight': '(224 lb / 102 kg)',
@@ -1911,7 +2010,7 @@ class WrestlingDatabase:
             'featherweight': '(140 lb / 64 kg)'
         }
 
-        html = ''
+        html = '<!--NOABBR-->'
         for weight, limit in weights.items():
             html += f'    <!-- {weight.capitalize()} Champions -->\n'
             html += '    <table>\n'
@@ -1940,7 +2039,7 @@ class WrestlingDatabase:
             html += '        </tr>\n'
             html += '    </tbody></table>\n\n'
 
-        return html
+        return html + '<!--/NOABBR-->'
 
     def generate_records_html(self):
         """Generate all records page HTML"""
@@ -3822,7 +3921,12 @@ def main():
     print(f"  Battle royal eliminations tracked: {elim_count}")
     
     db.update_html_files()
-    
+
+    # Abbreviate month names in dates across all generated pages (except the
+    # NOABBR-protected current-champions summary).
+    print("Abbreviating dates in generated pages...")
+    abbreviate_dates_in_generated_files()
+
     print("\n✓ All files updated!")
     print("Review the changes and run 'git add . && git commit -m \"Update wrestling database\" && git push'")
 

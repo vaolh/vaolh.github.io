@@ -255,12 +255,16 @@ caption {
     text-align: center;
 }
 
-/* Stacked layout: Days (5) and Defenses (6) centred; the "def. runner-up" and
-   location sub-lines are smaller and muted. */
+/* Stacked layout: Date (4) and Days (5) centred; Defenses (6) is a left-aligned
+   list. The "def. runner-up" / location / defence sub-text is smaller & muted. */
 .champ-history td:nth-child(4),
-.champ-history td:nth-child(5),
-.champ-history td:nth-child(6) {
+.champ-history td:nth-child(5) {
     text-align: center;
+}
+
+.champ-history td.defenses {
+    text-align: left;
+    line-height: 1.5;
 }
 
 .champ-history .sub {

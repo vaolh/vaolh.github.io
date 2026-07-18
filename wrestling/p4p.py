@@ -849,7 +849,8 @@ def _build_yearly_gender_details(db, cache, gender_label, glist, yearly_data, st
                 slug = name.lower().replace(' ', '-').replace('.', '')
                 disp = (f'<a href="/wrestling/wrestlers/{slug}.html">{name}</a>'
                         if name in db.ppv_wrestlers and name in db.wrestlers else name)
-                lines.append(f'            <td{span_attr}>{flag(country)} {disp}</td>')
+                # No flags in the P4P grid — names only (like the PWI 500 table).
+                lines.append(f'            <td{span_attr}>{disp}</td>')
         lines.append('        </tr>')
 
     lines += ['    </table>', '    </details>', '', '']
@@ -1205,6 +1206,12 @@ def main():
 
     print("Updating wrestler infoboxes...")
     update_infoboxes(db, cache)
+
+    # Keep dates abbreviated on the pages p4p regenerates (ring.html, pwhof.html,
+    # infoboxes) \u2014 mirrors update.py's post-process.
+    print("Abbreviating dates in generated pages...")
+    from update import abbreviate_dates_in_generated_files
+    abbreviate_dates_in_generated_files()
 
     print("\n\u2713 Done! Review changes then git add . && git commit && git push")
 

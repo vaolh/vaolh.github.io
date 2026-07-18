@@ -1854,7 +1854,8 @@ class WrestlingDatabase:
             # Opponent cell: name on top, "def. by <method>" smaller underneath
             opponent_cell = f'<span class="fi fi-{opponent_country}"></span> {self._wlink(opponent)}'
             if match["method"]:
-                opponent_cell += f'<br><span class="sub">def. by {match["method"]}</span>'
+                _verb = 'drew by' if match['result'] == 'Draw' else 'def. by'
+                opponent_cell += f'<br><span class="sub">{_verb} {match["method"]}</span>'
             html += f'        <td>{opponent_cell}</td>\n'
             # Date cell: date on top, broadcast type + audience underneath (gray)
             date_cell = f'<a href="/wrestling/ppv/list.html">{match["date"]}</a>'

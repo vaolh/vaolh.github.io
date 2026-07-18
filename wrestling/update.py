@@ -1809,6 +1809,16 @@ class WrestlingDatabase:
         html += '        <th>Notes</th>\n'
         html += '    </tr>\n'
 
+        # Broadcast (PPV/TV/STM + audience) lookup by (event, date)
+        broadcast_lookup = {(b['event'], b['date']): b for b in self.broadcasts}
+
+        # All match numbers per event (event, date), for classifying each match
+        # as Main Event / Mid Card / Undercard by its spot on the card.
+        card_info = {}
+        for ev in self.events:
+            for m in ev.get('matches', []) + ev.get('multi_man_matches', []):
+                card_info.setdefault((m.get('event'), m.get('date')), []).append(m.get('match_num', 0))
+
         for idx, match in enumerate(sorted_matches):
             opponent = match['fighter2'] if match['fighter1'] == w['name'] else match['fighter1']
             opponent_country = match['fighter2_country'] if match['fighter1'] == w['name'] else match['fighter1_country']
@@ -1817,7 +1827,25 @@ class WrestlingDatabase:
             html += '    <tr>\n'
             html += f'        <th>{total_bouts - idx}</th>\n'
             html += f'        <td class="{result_class}">{match["result"]}</td>\n'
-            html += f'        <td>{match["record"]}</td>\n'
+            # Record cell: record on top, card position (Main Event / Mid Card /
+            # Undercard) underneath (gray).
+            if 'open tournament' in (match.get('notes') or '').lower():
+                card_pos = 'Tournament'
+            else:
+                _nums = card_info.get((match['event'], match['date']), [])
+                card_pos = ''
+                if _nums:
+                    _pos = match.get('match_num', 0)
+                    if _pos == max(_nums):
+                        card_pos = 'Main Event'
+                    elif _pos > len(_nums) / 2:
+                        card_pos = 'Mid Card'
+                    else:
+                        card_pos = 'Undercard'
+            record_cell = match["record"]
+            if card_pos:
+                record_cell += f'<br><span class="sub">{card_pos}</span>'
+            html += f'        <td>{record_cell}</td>\n'
             # Event cell: event (abbreviated) on top, flag + location smaller underneath
             event_cell = match["event"].replace('WrestleMania', 'WM').replace('LibreMania', 'LM')
             if match["location"]:
@@ -1828,7 +1856,15 @@ class WrestlingDatabase:
             if match["method"]:
                 opponent_cell += f'<br><span class="sub">def. by {match["method"]}</span>'
             html += f'        <td>{opponent_cell}</td>\n'
-            html += f'        <td><a href="/wrestling/ppv/list.html">{match["date"]}</a></td>\n'
+            # Date cell: date on top, broadcast type + audience underneath (gray)
+            date_cell = f'<a href="/wrestling/ppv/list.html">{match["date"]}</a>'
+            _bc = broadcast_lookup.get((match["event"], match["date"]))
+            if _bc and _bc.get("audience_metric"):
+                _bt = _bc.get("broadcast_type", "")
+                _unit = {'PPV': 'buys', 'TV': 'viewers', 'STM': 'streams'}.get(_bt, '')
+                _line = ' '.join(x for x in (_bt, _bc["audience_metric"], _unit) if x)
+                date_cell += f'<br><span class="sub">{_line}</span>'
+            html += f'        <td>{date_cell}</td>\n'
             html += f'        <td>{event_cell}</td>\n'
             # Notes cell: weight class on top (normal), note underneath (gray).
             # Strip the weight word from the note so it isn't repeated.

@@ -7,33 +7,25 @@ body {
     background-color: #ffffff;
 }
 
-/* The PPV list keeps the original wide column and full-size tables. */
+/* The PPV list keeps the original wide column. */
 body.ppv-list {
     max-width: 1450px;
     margin-left: max(20px, calc((100vw - 1450px) / 2));
     margin-right: max(20px, calc((100vw - 1450px) / 2));
 }
 
-/* Wide data tables are scaled by ~960/1450 (≈0.66) so they fit the narrower
-   column with the SAME relative overflow as the old 1450px layout. Narrow
-   tables (champions summary, records) and the PPV list are left untouched.
-   The 0.66 below is the single knob if a table needs more/less shrinking. */
+/* Wide data tables stay full-size but WRAP their content to fit the 960px
+   column, so nothing overflows the margin. */
 body:not(.ppv-list) :is(.match-card, .matchesum, .matches, .champ-history,
     .hof-history, .apuestas-card, .p4p-grid, .totals) {
-    font-size: 66%;
+    width: 100%;
 }
 body:not(.ppv-list) :is(.match-card, .matchesum, .matches, .champ-history,
-    .hof-history, .apuestas-card, .p4p-grid, .totals) th {
-    padding: 6px;
-}
+    .hof-history, .apuestas-card, .p4p-grid, .totals) th,
 body:not(.ppv-list) :is(.match-card, .matchesum, .matches, .champ-history,
     .hof-history, .apuestas-card, .p4p-grid, .totals) td {
-    padding: 5px;
-}
-body:not(.ppv-list) :is(.match-card, .matchesum, .matches, .champ-history,
-    .hof-history, .apuestas-card, .p4p-grid, .totals) .fi {
-    width: 15px !important;
-    height: 10px !important;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .fi.fi-su {

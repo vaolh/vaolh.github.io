@@ -1006,11 +1006,16 @@ class WrestlingDatabase:
     # challenges in WTS N+2 — verified across the card history).
     CONTENDER_LEAD = 2
 
+    # Weight classes lightest -> heaviest (so the heaviest title headlines).
+    _WEIGHT_ORDER = ['featherweight', 'lightweight', 'welterweight',
+                     'middleweight', 'bridgerweight', 'heavyweight']
+
     def _feeder_contenders(self, soup, feeder_number):
-        """weight_key -> (country, name): the contendership won at each weight in
-        exactly WTS feeder_number. Only this single event counts — a challenger
-        who isn't crowned here has no claim (no stale, already-cashed names)."""
-        idx = {}
+        """Every contendership won in exactly WTS feeder_number, as a list of
+        (org, weight_key, weight_display, country, name). Each earns its winner
+        one title shot; only this single event counts (no stale, already-cashed
+        names)."""
+        out = []
         det = None
         for d in soup.find_all('details'):
             s = d.find('summary')
@@ -1018,19 +1023,23 @@ class WrestlingDatabase:
                 det = d
                 break
         if not det:
-            return idx
+            return out
         tbl = det.find('table', class_='match-card')
         if not tbl:
-            return idx
+            return out
         for r in tbl.find_all('tr')[1:-1]:
             c = r.find_all(['td', 'th'])
             if len(c) < 9:
                 continue
-            if 'contender' not in c[8].get_text(strip=True).lower():
+            note = c[8].get_text(strip=True).lower()
+            if 'contender' not in note:
+                continue
+            org = next((o for o in ('wwf', 'wwo', 'iwb') if o in note), None)
+            if not org:
                 continue
             if not c[4].get_text(strip=True).lower().startswith('def'):
                 continue  # contendership not decided
-            weight = c[2].get_text(strip=True).lower()
+            weight_disp = c[2].get_text(strip=True)
             name = c[3].get_text(strip=True)
             country = 'xx'
             span = c[3].find('span', class_='fi')
@@ -1038,14 +1047,18 @@ class WrestlingDatabase:
                 for cls in span.get('class', []):
                     if cls.startswith('fi-') and cls != 'fi':
                         country = cls[3:]
-            idx[weight] = (country, name)
-        return idx
+            out.append((org, weight_disp.lower(), weight_disp, country, name))
+        return out
 
     def generate_next_wts_if_ready(self, path, opmod):
-        """If the newest WTS is fully wrestled, append the next one. Notes/weights
-        come from the schedule (WTS N-15); each title match is champion vs. the
-        contender earned in the feeder event (WTS N-2). A title with no such
-        contender gets no row at all."""
+        """If the newest WTS is fully wrestled, append the next one.
+
+        - This week's own contendership / battle-royal rows come from the
+          schedule (WTS N-15); their entrants are blank (set up FUTURE cards).
+        - Title matches are driven by the contenders crowned in the feeder event
+          (WTS N-2): exactly one defence per contender, champion vs. that
+          contender, defending every belt the champion holds at the weight.
+        """
         with open(path, 'r', encoding='utf-8') as f:
             raw = f.read()
         nums = [int(n) for n in re.findall(r"World Title Series\s+(\d+)", raw)]
@@ -1062,26 +1075,26 @@ class WrestlingDatabase:
             opmod.generate_wts(path)   # no schedule yet -> plain blank card
             return
 
-        feeder = self._feeder_contenders(soup, number - self.CONTENDER_LEAD)
-        kept, dropped = [], []
-        for mtype, weight, note in template:
-            wkey = weight.lower()
-            is_title, _ = self.is_title_match(note)
-            if is_title:
-                primary = next((o for o in ('wwf', 'wwo', 'iwb') if o in note.lower()), None)
-                champ = self._current_champion(primary, wkey) if primary else None
-                challenger = feeder.get(wkey)
-                if not champ or not challenger:
-                    dropped.append(f"{weight} {note} (no {'champion' if not champ else 'contender'})")
-                    continue
-                kept.append((mtype, weight,
-                             self._title_note_for_champion(champ[0], wkey) or note,
-                             (champ[1], champ[0]), challenger))
-            else:
-                # Contendership / battle-royal rows feed *future* cards; entrants
-                # aren't known yet, so leave them blank.
-                kept.append((mtype, weight, note, ('xx', ''), ('xx', '')))
+        # Setup matches (this week's contenderships / battle royals) — blank.
+        setup_rows = [(mtype, weight, note, ('xx', ''), ('xx', ''))
+                      for mtype, weight, note in template
+                      if not self.is_title_match(note)[0]]
 
+        # One title defence per contender crowned two editions ago.
+        title_rows, dropped = [], []
+        feeder = self._feeder_contenders(soup, number - self.CONTENDER_LEAD)
+        feeder.sort(key=lambda fc: self._WEIGHT_ORDER.index(fc[1])
+                    if fc[1] in self._WEIGHT_ORDER else 99)
+        for org, wkey, wdisp, ccountry, cname in feeder:
+            champ = self._current_champion(org, wkey)
+            if not champ:
+                dropped.append(f"{wdisp} {org.upper()} (title vacant)")
+                continue
+            note = self._title_note_for_champion(champ[0], wkey) or f"{org.upper()} championship"
+            title_rows.append(('Singles', wdisp, note,
+                               (champ[1], champ[0]), (ccountry, cname)))
+
+        kept = setup_rows + title_rows
         rows = [opmod.wts_row(i, mt, wt, nt, f1=f1, f2=f2)
                 for i, (mt, wt, nt, f1, f2) in enumerate(kept, 1)]
         block = (
@@ -1099,10 +1112,10 @@ class WrestlingDatabase:
         with open(path, 'w', encoding='utf-8') as f:
             f.write(raw)
         print(f"Appended World Title Series {number} "
-              f"(schedule WTS {number - opmod.SCHEDULE_PERIOD}, contenders from WTS {number - self.CONTENDER_LEAD}).")
+              f"(schedule WTS {number - opmod.SCHEDULE_PERIOD}, "
+              f"contenders from WTS {number - self.CONTENDER_LEAD}).")
         if dropped:
-            print("  Title matches with no earned contender were skipped: "
-                  + "; ".join(dropped))
+            print("  Vacant titles skipped: " + "; ".join(dropped))
 
     def calculate_undisputed_champions(self):
         """Calculate undisputed championship reigns (holding WWF, WWO, and IWB simultaneously)"""

@@ -206,33 +206,6 @@ def classify_genders(db):
     return men, women
 
 
-def titles_at_date(db, name, when):
-    """Championships `name` held on `when`, newest org order fixed."""
-    parts = []
-    for org in ALL_ORGS:
-        for weight in WEIGHT_ORDER:
-            reigns = db.championships[org][weight]
-            for i, reign in enumerate(reigns):
-                if reign['champion'] != name:
-                    continue
-                start = _parse_date(reign.get('date'))
-                if not start or start > when:
-                    continue
-                if i < len(reigns) - 1:
-                    end = _parse_date(reigns[i + 1].get('date'))
-                elif reign.get('vacancy_date'):
-                    end = _parse_date(reign['vacancy_date'])
-                else:
-                    end = None
-                if end and end <= when:
-                    continue
-                label = '<i>The Ring</i>' if org == 'ring' else org.upper()
-                txt = f"{label} {weight.capitalize()}"
-                if txt not in parts:
-                    parts.append(txt)
-    return parts
-
-
 def build_snapshots(db):
     """Replay every match, snapshotting the standings at each month end.
 
@@ -261,19 +234,16 @@ def build_snapshots(db):
         # Most-fought division; ties break heavier (lower index).
         return WEIGHT_INDEX[min(counts, key=lambda w: (-counts[w], WEIGHT_INDEX[w]))]
 
-    def rank_list(names, when):
+    def rank_list(names):
         rows = []
         for name in sorted(names):
             if bouts[name] < MIN_BOUTS or name not in db.ppv_wrestlers:
                 continue
-            idx = division_index(name)
             rows.append({
-                'name':     name,
-                'rating':   ratings[name],
-                'record':   f"{wins[name]}-{losses[name]}-{draws[name]}",
-                'division': WEIGHT_ORDER[idx].capitalize() if idx is not None else '',
-                'titles':   titles_at_date(db, name, when),
-                'country':  db.wrestlers[name].get('country', 'un'),
+                'name':    name,
+                'rating':  ratings[name],
+                'record':  f"{wins[name]}-{losses[name]}-{draws[name]}",
+                'country': db.wrestlers[name].get('country', 'un'),
             })
         # Rating desc, then name for a stable order between equal ratings.
         rows.sort(key=lambda r: (-r['rating'], r['name']))
@@ -324,8 +294,8 @@ def build_snapshots(db):
 
         months.append(key)
         snapshots[key] = {
-            'men':   rank_list(men, last_date),
-            'women': rank_list(women, last_date),
+            'men':   rank_list(men),
+            'women': rank_list(women),
         }
 
     # Early months where nobody has cleared MIN_BOUTS yet produce empty tables.
@@ -373,19 +343,17 @@ def ranking_table(db, snapshots, months, key, gender, label, top_n=TOP_N):
         f'    <table class="p4p-rank">',
         f'    <caption>{label}</caption>',
         '        <tr>',
-        '            <th style="width: 7%;">Rank</th>',
-        '            <th style="width: 28%;">Wrestler</th>',
-        '            <th style="width: 12%;">Record</th>',
-        '            <th style="width: 11%;">Rating</th>',
-        '            <th style="width: 13%;">Movement</th>',
-        '            <th style="width: 29%;">Division</th>',
+        '            <th style="width: 10%;">Rank</th>',
+        '            <th style="width: 40%;">Wrestler</th>',
+        '            <th style="width: 16%;">Record</th>',
+        '            <th style="width: 16%;">Rating</th>',
+        '            <th style="width: 18%;">Movement</th>',
         '        </tr>',
     ]
     if not rows:
-        out.append('        <tr><td colspan="6">No ranked wrestlers.</td></tr>')
+        out.append('        <tr><td colspan="5">No ranked wrestlers.</td></tr>')
     for r in rows:
         kind, places = movement(snapshots, months, key, gender, r['name'])
-        titles = ' <br> '.join(r['titles'])
         out += [
             '        <tr>',
             f'            <th>{r["rank"]}</th>',
@@ -393,9 +361,6 @@ def ranking_table(db, snapshots, months, key, gender, label, top_n=TOP_N):
             f'            <td>{r["record"]}</td>',
             f'            <td>{r["rating"]:.0f}</td>',
             f'            <td>{movement_html(kind, places)}</td>',
-            f'            <td>{r["division"]}'
-            + (f' <br> <span class="sub">{titles}</span>' if titles else '')
-            + '</td>',
             '        </tr>',
         ]
     out.append('    </table>')
@@ -526,19 +491,20 @@ def generate_ring_html(db, snapshots, months):
 # =============================================================================
 
 def peak_rankings(snapshots, months):
-    """name -> 'No. X (Month YYYY, ...)' across every archived month."""
+    """name -> 'No. X (Month YYYY)' — the best rank ever held, dated to the
+    month it was first attained. `months` is in order, so the first month to
+    set a given best is the earliest; later months matching it don't override.
+    """
     best = {}
     for key in months:
         for gender in ('men', 'women'):
             for r in snapshots[key][gender][:TOP_N]:
                 cur = best.get(r['name'])
                 if cur is None or r['rank'] < cur[0]:
-                    best[r['name']] = (r['rank'], [key])
-                elif r['rank'] == cur[0]:
-                    cur[1].append(key)
+                    best[r['name']] = (r['rank'], key)
     return {
-        name: f"No. {rank} ({', '.join(_month_label(k) for k in keys)})"
-        for name, (rank, keys) in best.items()
+        name: f"No. {rank} ({_month_label(key)})"
+        for name, (rank, key) in best.items()
     }
 
 

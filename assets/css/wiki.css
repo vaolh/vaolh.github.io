@@ -974,7 +974,22 @@ table#sched .belt-label-head {
     text-align: left;
 }
 
-/* Rank, Record, Rating and Movement centre; Wrestler and Division stay left. */
+/* Only five columns, so the full 960px column leaves it far too airy. The
+   min-width stops the wrestler names wrapping on mid-size screens; below that
+   the table goes full width rather than getting crushed. */
+.p4p-rank {
+    width: 50%;
+    min-width: 26rem;
+}
+
+@media (max-width: 700px) {
+    .p4p-rank {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+/* Everything except the wrestler's name centres. */
 .p4p-rank td:nth-child(1),
 .p4p-rank th:nth-child(1),
 .p4p-rank td:nth-child(3),

@@ -978,7 +978,7 @@ table#sched .belt-label-head {
    min-width stops the wrestler names wrapping on mid-size screens; below that
    the table goes full width rather than getting crushed. */
 .p4p-rank {
-    width: 50%;
+    width: 65%;
     min-width: 26rem;
 }
 
@@ -1008,6 +1008,16 @@ table#sched .belt-label-head {
 .mv {
     font-weight: bold;
     white-space: nowrap;
+    /* Pinned so the glyphs can't stretch the row taller than the other cells. */
+    line-height: 1;
+}
+
+/* The triangle glyphs render large for their point size; knock them back so
+   they sit inside the line rather than setting its height. */
+.mv-arrow {
+    font-size: 0.72em;
+    line-height: 1;
+    vertical-align: 0.08em;
 }
 
 .mv-up   { color: #0a7a2f; }

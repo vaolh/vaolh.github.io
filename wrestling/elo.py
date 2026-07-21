@@ -328,10 +328,14 @@ def movement(snapshots, months, key, gender, name):
 # =============================================================================
 
 def movement_html(kind, places):
+    # The triangles are wrapped so they can be scaled down independently of the
+    # figure beside them — at full size they set the row height.
     if kind == 'up':
-        return f'<span class="mv mv-up">&#9650; {places}</span>'
+        return (f'<span class="mv mv-up">'
+                f'<span class="mv-arrow">&#9650;</span> {places}</span>')
     if kind == 'down':
-        return f'<span class="mv mv-down">&#9660; {places}</span>'
+        return (f'<span class="mv mv-down">'
+                f'<span class="mv-arrow">&#9660;</span> {places}</span>')
     if kind == 'new':
         return '<span class="mv mv-new">NEW</span>'
     return '<span class="mv mv-same">&#8211;</span>'

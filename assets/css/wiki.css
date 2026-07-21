@@ -267,9 +267,17 @@ caption {
     line-height: 1.5;
 }
 
+/* Muted via colour rather than opacity: `opacity` would fade the whole
+   stacking context, taking the flag icons down with the text. The values
+   below are what 75% opacity actually composited to over the cell. */
 .champ-history .sub {
     font-size: 0.82em;
-    opacity: 0.75;
+    color: #3e3e3e;
+}
+
+.champ-history .sub a,
+.champ-history .sub a:visited {
+    color: #3e3ef1;
 }
 
 .totals td:nth-child(2) {
@@ -447,7 +455,16 @@ details table caption {
 .match-card .sub,
 .records .sub {
     font-size: 0.82em;
-    opacity: 0.75;
+    color: #3e3e3e;
+}
+
+.matches .sub a,
+.matches .sub a:visited,
+.match-card .sub a,
+.match-card .sub a:visited,
+.records .sub a,
+.records .sub a:visited {
+    color: #3e3ef1;
 }
 
 /* Stacked records cells align left (flag + name + stat line) */
@@ -685,6 +702,25 @@ table#sched .belt-label-head {
     color: #6ba3ff;
 }
 
+/* Muted stacked sub-text — see the light-mode note above. */
+[data-theme="dark"] .champ-history .sub,
+[data-theme="dark"] .matches .sub,
+[data-theme="dark"] .match-card .sub,
+[data-theme="dark"] .records .sub {
+    color: #a7a7a7;
+}
+
+[data-theme="dark"] .champ-history .sub a,
+[data-theme="dark"] .champ-history .sub a:visited,
+[data-theme="dark"] .matches .sub a,
+[data-theme="dark"] .matches .sub a:visited,
+[data-theme="dark"] .match-card .sub a,
+[data-theme="dark"] .match-card .sub a:visited,
+[data-theme="dark"] .records .sub a,
+[data-theme="dark"] .records .sub a:visited {
+    color: #5882c7;
+}
+
 [data-theme="dark"] .float-infobox-right,
 [data-theme="dark"] .float-infobox-left {
     border-color: #444;
@@ -866,6 +902,7 @@ table#sched .belt-label-head {
 
 .wiki-nav li {
     margin: 0;
+    white-space: nowrap;
 }
 
 .wiki-nav li:last-child {

@@ -909,8 +909,12 @@ table#sched .belt-label-head {
     white-space: nowrap;
 }
 
+/* Date + toggle share the last slot, pinned to the right edge. The button is
+   display:flex, so the row needs to be a flex line or the two would stack. */
 .wiki-nav li:last-child {
     margin-left: auto;
+    display: flex;
+    align-items: center;
 }
 
 .wiki-nav a,
@@ -923,8 +927,17 @@ table#sched .belt-label-head {
     text-decoration: underline;
 }
 
+/* Current page: plain body-coloured text, same weight as the links, so the
+   row never reflows depending on which page you're on. */
 .wiki-nav .active-item {
-    font-weight: bold;
+    color: #000000;
+}
+
+.wiki-nav .nav-date {
+    color: #555555;
+    font-variant-numeric: tabular-nums;
+    margin-right: 0.6rem;
+    white-space: nowrap;
 }
 
 #theme-toggle {
@@ -946,6 +959,14 @@ table#sched .belt-label-head {
 
 [data-theme="dark"] .wiki-nav {
     border-bottom-color: #444;
+}
+
+[data-theme="dark"] .wiki-nav .active-item {
+    color: #d4d4d4;
+}
+
+[data-theme="dark"] .wiki-nav .nav-date {
+    color: #999999;
 }
 
 [data-theme="dark"] .wiki-nav a,

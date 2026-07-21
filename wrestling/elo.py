@@ -49,7 +49,7 @@ from datetime import datetime
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
-from update import WrestlingDatabase
+from update import WrestlingDatabase, resolve_site_date, format_site_date
 
 # =============================================================================
 # CONSTANTS
@@ -385,14 +385,6 @@ PAGE_HEAD = """<!DOCTYPE html>
 </head>
 <body>
 <ul class="wiki-nav">
-    <li><a href="/wrestling/wiki.html">Wrestling Wiki</a></li>
-    <li><a href="/wrestling/wrestlers/index.html">List of Wrestlers</a></li>
-    <li><a href="/wrestling/org/wwf.html" title="World Wrestling Federation">WWF</a></li>
-    <li><a href="/wrestling/org/wwo.html" title="World Wrestling Organization">WWO</a></li>
-    <li><a href="/wrestling/org/iwb.html" title="International Wrestling Board">IWB</a></li>
-    <li><a href="/wrestling/org/pwhof.html" title="Professional Wrestling Hall of Fame">PWHOF</a></li>
-    <li><a href="/wrestling/org/ring.html"><i>The Ring</i></a></li>
-    <li><button id="theme-toggle" aria-label="Toggle theme"><svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button></li>
 </ul>
 """
 
@@ -828,9 +820,14 @@ def run(db):
 def main():
     os.chdir(os.path.dirname(SCRIPT_DIR))
     print(f"Working directory: {os.getcwd()}")
+    ppv, weekly = 'wrestling/ppv/list.html', 'wrestling/weekly/list.html'
     db = WrestlingDatabase()
-    db.parse_events('wrestling/ppv/list.html', is_weekly=False)
-    weekly = 'wrestling/weekly/list.html'
+    # Same site date update.py uses, so running this alone can't produce
+    # rankings from a different timeline than the rest of the site.
+    site_date, why = resolve_site_date(ppv, weekly)
+    db.cutoff = site_date
+    print(f"Site date: {format_site_date(site_date) or '(none)'} — {why}")
+    db.parse_events(ppv, is_weekly=False)
     if os.path.exists(weekly):
         db.parse_events(weekly, is_weekly=True)
     db.events.sort(key=lambda e: _parse_date(e.get('date')) or datetime.min)

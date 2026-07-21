@@ -36,6 +36,142 @@ import os
 import re
 import glob
 
+# ============================================================================
+# WHERE THE SAVE IS UP TO
+# ============================================================================
+# ppv/list.html stays in chronological order. To play a retro save you put the
+# older cards in their proper place near the top, which means "newest card in
+# the file" is no use for telling where you are. So you mark it instead.
+#
+# Put this line in ppv/list.html at the point you have played up to:
+#
+#     <!-- NOW -->
+#
+# Everything below it is ignored completely — not parsed at all — so the wiki
+# reads exactly as it stood on the last card above the marker: champions,
+# records, rankings, Hall of Fame, the lot.
+#
+# Playing a 2006 retro save with your 2019 events already in the file:
+#
+#     <details> 2006 cards ... </details>      <- played, counts
+#     <!-- NOW -->                             <- move this down as you book
+#     <details> 2019 cards ... </details>      <- ignored for now
+#
+# Add each new 2006 card ABOVE the marker and run update. To go back to the
+# 2019 save, delete the marker (or move it to the bottom) — nothing is lost
+# either way, the events all stay in the file.
+#
+# No marker anywhere = the whole file counts, which is the normal case.
+SAVE_MARKER = '<!-- NOW -->'
+
+
+def read_source(path):
+    """File contents cut off at SAVE_MARKER, plus whether it was found.
+
+    Everything below the marker is discarded before the parser ever sees it,
+    so a retro save can't be contaminated by events further down the file.
+    """
+    with open(path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    if SAVE_MARKER in content:
+        return content.split(SAVE_MARKER)[0], True
+    return content, False
+
+
+def resolve_site_date(ppv_path, weekly_path=None):
+    """The date the site should present itself as, and why.
+
+    Returns (datetime, reason) — the latest event at or above the marker. Uses
+    max() rather than file position, so it stays right even if a card is ever
+    pasted slightly out of order.
+    """
+    probe = WrestlingDatabase()
+    probe.parse_events(ppv_path, is_weekly=False)
+    if weekly_path and os.path.exists(weekly_path):
+        probe.parse_events(weekly_path, is_weekly=True)
+    if not probe.events:
+        return None, "no events found"
+
+    dated = [(probe.parse_date(e['date']), e) for e in probe.events
+             if probe.parse_date(e.get('date'))]
+    if not dated:
+        return None, "no event has a readable date"
+    d, event = max(dated, key=lambda t: t[0])
+    where = "last card above the <!-- NOW --> marker" if probe.truncated \
+        else "newest card in the file"
+    return d, f"{where} ({event.get('name')})"
+
+
+# ============================================================================
+# SITE NAV
+# ============================================================================
+# The nav is generated content: refresh_navs() rewrites the block on every
+# wrestling page each run, so this list is the single place to edit it.
+# (href, label, title) — title is the full name shown on hover.
+NAV_LINKS = [
+    ('/wrestling/wiki.html', 'Wrestling Wiki', ''),
+    ('/wrestling/wrestlers/index.html', 'List of Wrestlers', ''),
+    ('/wrestling/org/wwf.html', 'WWF', 'World Wrestling Federation'),
+    ('/wrestling/org/wwo.html', 'WWO', 'World Wrestling Organization'),
+    ('/wrestling/org/iwb.html', 'IWB', 'International Wrestling Board'),
+    ('/wrestling/org/pwhof.html', 'PWHOF', 'Professional Wrestling Hall of Fame'),
+    ('/wrestling/org/ring.html', '<i>The Ring</i>', ''),
+]
+
+_THEME_TOGGLE = (
+    '<button id="theme-toggle" aria-label="Toggle theme">'
+    '<svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" '
+    'stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+    '<svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" '
+    'stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/>'
+    '<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2'
+    'M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>'
+)
+
+_NAV_RE = re.compile(r'<ul class="wiki-nav">.*?</ul>', re.DOTALL)
+
+
+def format_site_date(d):
+    """'Dec 14, 2019' — written abbreviated so it reads the same on the source
+    lists, which the date-abbreviation pass deliberately skips."""
+    return f"{d:%b} {d.day}, {d.year}" if d else ''
+
+
+def build_nav(site_path, date_label=''):
+    """Nav markup for one page. The link to the page itself renders as plain
+    text rather than a link, which is what marks it as current."""
+    items = []
+    for href, label, full in NAV_LINKS:
+        attr = f' title="{full}"' if full else ''
+        if href == site_path:
+            items.append(f'    <li class="active-item"{attr}>{label}</li>')
+        else:
+            items.append(f'    <li><a href="{href}"{attr}>{label}</a></li>')
+    date_html = f'<span class="nav-date">{date_label}</span> ' if date_label else ''
+    items.append(f'    <li>{date_html}{_THEME_TOGGLE}</li>')
+    return '<ul class="wiki-nav">\n' + '\n'.join(items) + '\n</ul>'
+
+
+def refresh_navs(date_label=''):
+    """Rewrite the nav block on every wrestling page, so the current-page
+    marker and the site date stay correct as pages are added or renamed."""
+    changed = 0
+    for dirpath, _dirs, filenames in os.walk('wrestling'):
+        for name in sorted(filenames):
+            if not name.endswith('.html'):
+                continue
+            path = os.path.join(dirpath, name)
+            content = open(path, encoding='utf-8').read()
+            if not _NAV_RE.search(content):
+                continue
+            site_path = '/' + path.replace(os.sep, '/')
+            new = _NAV_RE.sub(lambda _m: build_nav(site_path, date_label),
+                              content, count=1)
+            if new != content:
+                open(path, 'w', encoding='utf-8').write(new)
+                changed += 1
+    print(f"  Refreshed nav on {changed} page(s).")
+
 # --- Date abbreviation ------------------------------------------------------
 # Shorten full month names to three letters wherever they appear in a date
 # (a month name immediately followed by a day or year number). Blocks wrapped in
@@ -91,6 +227,15 @@ def abbreviate_dates_in_generated_files():
 
 class WrestlingDatabase:
     def __init__(self):
+        # Events dated after this are skipped at parse time. main() sets it
+        # from resolve_site_date(); None means parse everything.
+        self.cutoff = None
+        # How many events the cutoff excluded. Non-zero means we are looking at
+        # a truncated timeline (a retro save), which nothing may write back to.
+        self.skipped_by_cutoff = 0
+        # Set when the source was cut at the <!-- NOW --> marker — the other
+        # way a timeline ends up truncated.
+        self.truncated = False
         self.wrestlers = {}
         self.ppv_wrestlers = set()  # Track wrestlers who appeared in PPV events
         self.championships = {
@@ -256,10 +401,11 @@ class WrestlingDatabase:
                 self.vacancies.append(vacancy)
 
     def parse_events(self, html_file, is_weekly=False):
-        """Parse all events from HTML file"""
-        with open(html_file, 'r', encoding='utf-8') as f:
-            html_content = f.read()
-        
+        """Parse all events from HTML file, up to the <!-- NOW --> marker."""
+        html_content, truncated = read_source(html_file)
+        if truncated:
+            self.truncated = True
+
         # Parse vacancy comments first (only for PPV)
         if not is_weekly:
             self.parse_vacancy_comments(html_content)
@@ -383,6 +529,14 @@ class WrestlingDatabase:
                 elif idx == 6:
                     # Seventh th is date
                     event_date = text
+
+        # Events after the site date never enter the database at all, so no
+        # match, reign or statistic derived from them can leak into the pages.
+        if self.cutoff:
+            parsed = self.parse_date(event_date) if event_date else None
+            if parsed and parsed > self.cutoff:
+                self.skipped_by_cutoff += 1
+                return
 
         event = {
             'name': event_name,
@@ -1059,7 +1213,22 @@ class WrestlingDatabase:
         - Title matches are driven by the contenders crowned in the feeder event
           (WTS N-2): exactly one defence per contender, champion vs. that
           contender, defending every belt the champion holds at the weight.
+
+        Never runs on a truncated timeline. Booking normally is fine — the
+        cutoff then sits on the last card in the file and nothing is hidden.
+        But in a retro save, later events exist that this database can't see,
+        so the next series would be numbered off the wrong one and written into
+        the source list right where those real later events already live.
         """
+        if self.truncated:
+            print("  (Next WTS generation skipped: playing behind the "
+                  "<!-- NOW --> marker)")
+            return
+        if self.skipped_by_cutoff:
+            print(f"  (Next WTS generation skipped: {self.skipped_by_cutoff} "
+                  f"later event(s) sit outside this timeline)")
+            return
+
         with open(path, 'r', encoding='utf-8') as f:
             raw = f.read()
         nums = [int(n) for n in re.findall(r"World Title Series\s+(\d+)", raw)]
@@ -3955,14 +4124,6 @@ class WrestlingDatabase:
         </head>
         <body>
 <ul class="wiki-nav">
-    <li><a href="/wrestling/wiki.html">Wrestling Wiki</a></li>
-    <li><a href="/wrestling/wrestlers/index.html">List of Wrestlers</a></li>
-    <li><a href="/wrestling/org/wwf.html" title="World Wrestling Federation">WWF</a></li>
-    <li><a href="/wrestling/org/wwo.html" title="World Wrestling Organization">WWO</a></li>
-    <li><a href="/wrestling/org/iwb.html" title="International Wrestling Board">IWB</a></li>
-    <li><a href="/wrestling/org/pwhof.html" title="Professional Wrestling Hall of Fame">PWHOF</a></li>
-    <li><a href="/wrestling/org/ring.html"><i>The Ring</i></a></li>
-    <li><button id="theme-toggle" aria-label="Toggle theme"><svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button></li>
 </ul>
         """
 
@@ -4099,6 +4260,7 @@ def main():
     # cards before parsing (see wrestling/open.py). Loaded by path so it can't
     # shadow the builtin open().
     ppv_path = 'wrestling/ppv/list.html'
+    weekly_path = 'wrestling/weekly/list.html'
     try:
         import importlib.util
         _op = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'open.py')
@@ -4111,15 +4273,27 @@ def main():
         _mod = None
         print(f"  (Open bracket populate skipped: {_e})")
 
+    # Work out what date the site is at before parsing for real, so events
+    # after it can be dropped as they're read.
+    site_date, why = resolve_site_date(ppv_path, weekly_path)
+    db.cutoff = site_date
+    print(f"Site date: {format_site_date(site_date) or '(none)'} — {why}")
+
     print("Parsing wrestling/ppv/list.html...")
     db.parse_events(ppv_path, is_weekly=False)
-    
+
     # Parse weekly shows if file exists
-    weekly_path = 'wrestling/weekly/list.html'
     if os.path.exists(weekly_path):
         print("Parsing wrestling/weekly/list.html...")
         db.parse_events(weekly_path, is_weekly=True)
-    
+
+    if db.truncated:
+        print(f"  Retro save: everything below the <!-- NOW --> marker is "
+              f"ignored (site reads as {format_site_date(site_date)})")
+    if db.skipped_by_cutoff:
+        print(f"  Also ignoring {db.skipped_by_cutoff} event(s) dated after "
+              f"{format_site_date(site_date)}")
+
     print(f"Found {len(db.events)} events")
     print(f"Found {len(db.wrestlers)} wrestlers")
     print(f"Found {len(db.vacancies)} vacancy comments")
@@ -4177,6 +4351,11 @@ def main():
     # NOABBR-protected current-champions summary).
     print("Abbreviating dates in generated pages...")
     abbreviate_dates_in_generated_files()
+
+    # Nav last: it stamps the site date onto every page, so it has to run after
+    # the pages themselves have been written.
+    print(f"Refreshing nav ({format_site_date(site_date)})...")
+    refresh_navs(format_site_date(site_date))
 
     print("\n✓ All files updated!")
     print("Review the changes and run 'git add . && git commit -m \"Update wrestling database\" && git push'")

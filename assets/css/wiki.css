@@ -453,7 +453,8 @@ details table caption {
 
 .matches .sub,
 .match-card .sub,
-.records .sub {
+.records .sub,
+.p4p-rank .sub {
     font-size: 0.82em;
     color: #3e3e3e;
 }
@@ -463,7 +464,9 @@ details table caption {
 .match-card .sub a,
 .match-card .sub a:visited,
 .records .sub a,
-.records .sub a:visited {
+.records .sub a:visited,
+.p4p-rank .sub a,
+.p4p-rank .sub a:visited {
     color: #3e3ef1;
 }
 
@@ -706,7 +709,8 @@ table#sched .belt-label-head {
 [data-theme="dark"] .champ-history .sub,
 [data-theme="dark"] .matches .sub,
 [data-theme="dark"] .match-card .sub,
-[data-theme="dark"] .records .sub {
+[data-theme="dark"] .records .sub,
+[data-theme="dark"] .p4p-rank .sub {
     color: #a7a7a7;
 }
 
@@ -970,15 +974,19 @@ table#sched .belt-label-head {
     text-align: left;
 }
 
+/* Rank, Record, Rating and Movement centre; Wrestler and Division stay left. */
 .p4p-rank td:nth-child(1),
 .p4p-rank th:nth-child(1),
 .p4p-rank td:nth-child(3),
-.p4p-rank td:nth-child(4) {
+.p4p-rank td:nth-child(4),
+.p4p-rank td:nth-child(5) {
     text-align: center;
 }
 
-.p4p-rank td:nth-child(3) {
+.p4p-rank td:nth-child(3),
+.p4p-rank td:nth-child(4) {
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 /* Movement: green up, red down, blue dash for no change (Wikipedia style). */

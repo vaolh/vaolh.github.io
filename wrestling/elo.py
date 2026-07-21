@@ -373,23 +373,24 @@ def ranking_table(db, snapshots, months, key, gender, label, top_n=TOP_N):
         f'    <table class="p4p-rank">',
         f'    <caption>{label}</caption>',
         '        <tr>',
-        '            <th style="width: 8%;">Rank</th>',
-        '            <th style="width: 34%;">Wrestler</th>',
-        '            <th style="width: 14%;">Rating</th>',
-        '            <th style="width: 14%;">Movement</th>',
-        '            <th style="width: 30%;">Division</th>',
+        '            <th style="width: 7%;">Rank</th>',
+        '            <th style="width: 28%;">Wrestler</th>',
+        '            <th style="width: 12%;">Record</th>',
+        '            <th style="width: 11%;">Rating</th>',
+        '            <th style="width: 13%;">Movement</th>',
+        '            <th style="width: 29%;">Division</th>',
         '        </tr>',
     ]
     if not rows:
-        out.append('        <tr><td colspan="5">No ranked wrestlers.</td></tr>')
+        out.append('        <tr><td colspan="6">No ranked wrestlers.</td></tr>')
     for r in rows:
         kind, places = movement(snapshots, months, key, gender, r['name'])
         titles = ' <br> '.join(r['titles'])
         out += [
             '        <tr>',
             f'            <th>{r["rank"]}</th>',
-            f'            <td>{flag(r["country"])} {_wlink(r["name"])}'
-            f' <br> <span class="sub">{r["record"]}</span></td>',
+            f'            <td>{flag(r["country"])} {_wlink(r["name"])}</td>',
+            f'            <td>{r["record"]}</td>',
             f'            <td>{r["rating"]:.0f}</td>',
             f'            <td>{movement_html(kind, places)}</td>',
             f'            <td>{r["division"]}'
@@ -717,7 +718,18 @@ def _is_generated_ranking(content):
     return bool(_GENERATED_RANKING_RE.search(content))
 
 
-def update_infoboxes(db, peak_rank):
+def current_rankings(snapshots, months):
+    """name -> 'No. X' in the most recently published ranking."""
+    if not months:
+        return {}
+    out = {}
+    for gender in ('men', 'women'):
+        for r in snapshots[months[-1]][gender][:TOP_N]:
+            out[r['name']] = f"No. {r['rank']}"
+    return out
+
+
+def update_infoboxes(db, peak_rank, current_rank):
     wrestlers_dir = 'wrestling/wrestlers'
     if not os.path.exists(wrestlers_dir):
         print("  ⚠ wrestling/wrestlers/ not found, skipping infobox update")
@@ -732,11 +744,17 @@ def update_infoboxes(db, peak_rank):
         if not os.path.exists(filepath):
             continue
         content = open(filepath, encoding='utf-8').read()
-        if '<th>Record</th>' not in content and '<th>Career Record</th>' not in content:
+        original = content
+        # Only pages that carry an actual infobox are touched. Note that a bare
+        # '<th>Record</th>' is not enough — every page's match table has a
+        # "Record" column header — so require it to be an infobox row (a <th>
+        # immediately followed by its <td>).
+        if not re.search(r'<th>(?:Career )?Record</th>\s*<td>', content):
             continue
 
         record  = f"{w['wins']}-{w['losses']}-{w['draws']}"
         highest = peak_rank.get(name, '')
+        current = current_rank.get(name, '')
 
         content = re.sub(r'<th>Record</th>(\s*<td>)[^<]*(</td>)',
                          r'<th>Career Record</th>\g<1>' + record + r'\g<2>', content)
@@ -766,9 +784,35 @@ def update_infoboxes(db, peak_rank):
             content = re.sub(r'(<th>Career Record</th>\s*<td>[^<]*</td>\s*</tr>)',
                              r'\g<1>' + ranking_row, content)
 
-        open(filepath, 'w', encoding='utf-8').write(content)
-        updated += 1
-    print(f"✓ Infoboxes updated: {updated} files")
+        # Current ranking sits directly above Highest Ranking. '<th>Ranking</th>'
+        # can't collide with '<th>Highest Ranking</th>' — the latter never
+        # contains the former as a substring.
+        current_row = (
+            '\n                <tr>\n'
+            '                    <th>Ranking</th>\n'
+            f'                    <td>{current}</td>\n'
+            '                </tr>'
+        )
+        if '<th>Ranking</th>' in content:
+            if current:
+                content = re.sub(r'(<th>Ranking</th>\s*<td>)[^<]*(</td>)',
+                                 r'\g<1>' + current + r'\g<2>', content)
+            else:
+                content = re.sub(r'\s*<tr>\s*<th>Ranking</th>.*?</tr>',
+                                 '', content, flags=re.DOTALL)
+        elif current:
+            if '<th>Highest Ranking</th>' in content:
+                content = re.sub(r'(\s*<tr>\s*<th>Highest Ranking</th>)',
+                                 current_row + r'\g<1>', content, count=1)
+            else:
+                content = re.sub(
+                    r'(<th>Career Record</th>\s*<td>[^<]*</td>\s*</tr>)',
+                    r'\g<1>' + current_row, content)
+
+        if content != original:
+            open(filepath, 'w', encoding='utf-8').write(content)
+            updated += 1
+    print(f"✓ Infoboxes updated: {updated} file(s) changed")
 
 
 # =============================================================================
@@ -808,7 +852,7 @@ def run(db):
                      '<!-- HOFMEMBERS_START -->', '<!-- HOFMEMBERS_END -->',
                      generate_hof_html(db, peaks, peak_rank), 'Hall of Fame')
 
-    update_infoboxes(db, peak_rank)
+    update_infoboxes(db, peak_rank, current_rankings(snapshots, months))
 
 
 def main():

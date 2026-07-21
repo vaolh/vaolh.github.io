@@ -4161,6 +4161,14 @@ def main():
     
     db.update_html_files()
 
+    # Elo ratings + monthly P4P archive (see wrestling/elo.py). Runs after the
+    # pages exist so it can rewrite the ring/HoF sections and the infoboxes.
+    try:
+        import elo
+        elo.run(db)
+    except Exception as _e:
+        print(f"  (Elo/P4P generation skipped: {_e})")
+
     # Abbreviate month names in dates across all generated pages (except the
     # NOABBR-protected current-champions summary).
     print("Abbreviating dates in generated pages...")

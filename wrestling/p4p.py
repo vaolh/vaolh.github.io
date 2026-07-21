@@ -1178,6 +1178,17 @@ def update_hof(db, cache):
 # =============================================================================
 
 def main():
+    # SUPERSEDED BY elo.py. The yearly P4P grid, the HoF classes and the
+    # infobox "Highest Ranking" row are now produced by the Elo system, which
+    # update.py runs automatically. Running this script would overwrite all
+    # three with the old score-based output, so it refuses unless forced.
+    if '--force' not in sys.argv:
+        print("p4p.py is superseded by elo.py (run automatically by update.py).")
+        print("Running it would overwrite the Elo rankings, Hall of Fame and")
+        print("infobox rankings with the old score-based output.")
+        print("Re-run with --force if that is really what you want.")
+        return
+
     site_root = os.path.dirname(SCRIPT_DIR)
     os.chdir(site_root)
     print(f"Working directory: {os.getcwd()}")

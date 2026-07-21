@@ -959,3 +959,46 @@ table#sched .belt-label-head {
         font-size: 0.9rem;
     }
 }
+
+
+/* ============================================================
+   P4P RANKINGS
+   ============================================================ */
+
+.p4p-rank td,
+.p4p-months td {
+    text-align: left;
+}
+
+.p4p-rank td:nth-child(1),
+.p4p-rank th:nth-child(1),
+.p4p-rank td:nth-child(3),
+.p4p-rank td:nth-child(4) {
+    text-align: center;
+}
+
+.p4p-rank td:nth-child(3) {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Movement: green up, red down, blue dash for no change (Wikipedia style). */
+.mv {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.mv-up   { color: #0a7a2f; }
+.mv-down { color: #c62828; }
+.mv-same { color: #1a4fa0; }
+.mv-new  { color: #6a3fa0; font-size: 0.85em; }
+
+.p4p-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+}
+
+[data-theme="dark"] .mv-up   { color: #5bd67f; }
+[data-theme="dark"] .mv-down { color: #ff7b7b; }
+[data-theme="dark"] .mv-same { color: #7fb0ff; }
+[data-theme="dark"] .mv-new  { color: #c39cf0; }

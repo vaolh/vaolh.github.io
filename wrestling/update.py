@@ -71,6 +71,7 @@ def abbreviate_dates_in_generated_files():
     (ppv/list.html, weekly) are left alone so parsing stays intact."""
     targets = (glob.glob('wrestling/wrestlers/*.html')
                + glob.glob('wrestling/org/*.html')
+               + glob.glob('wrestling/p4p/*.html')
                + ['wrestling/wiki.html', 'wrestling/ppv/wiki.html'])
     changed = 0
     for f in targets:
@@ -2909,7 +2910,10 @@ class WrestlingDatabase:
                 date_cell += f'<br><span class="sub">{apuesta["venue"]}</span>'
 
             html += '        <tr>\n'
-            html += f'            <th>{idx + 1}</th>\n'
+            # Rows run newest-first, but the numbering is chronological: the
+            # first apuesta ever is No. 1 and the most recent takes the last
+            # number, so a given bout keeps its number as new ones are added.
+            html += f'            <th>{len(sorted_apuestas) - idx}</th>\n'
             html += f'            <td>{winner_cell}</td>\n'
             html += f'            <td>{event_cell}</td>\n'
             html += f'            <td>{date_cell}</td>\n'

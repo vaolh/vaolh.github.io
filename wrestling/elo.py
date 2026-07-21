@@ -413,17 +413,17 @@ def write_month_page(db, snapshots, months, key):
     body = [
         f'<h1>{label} Pound-for-Pound Rankings</h1>',
         '',
-        f'<p><i>The Ring</i> pound-for-pound rankings as they stood at the close of '
-        f'{label}, from the continuously updated Elo ratings. Movement is measured '
-        f'against the previous published ranking. '
-        f'<a href="/wrestling/p4p/index.html">All rankings</a> &middot; '
-        f'<a href="/wrestling/org/ring.html">The Ring</a></p>',
+        # Written out in full; update.py's date pass abbreviates the month.
+        f'<p>The top 10 wrestlers were ranked on 1 {label} as follows:</p>',
         '',
         ranking_table(db, snapshots, months, key, 'men', "Men's Pound-for-Pound"),
         '',
         ranking_table(db, snapshots, months, key, 'women', "Women's Pound-for-Pound"),
         '',
         f'<p class="p4p-nav">{prev_link} {next_link}</p>',
+        '',
+        '<p><a href="/wrestling/p4p/index.html">All rankings</a> &middot; '
+        '<a href="/wrestling/org/ring.html">The Ring</a></p>',
     ]
 
     html = (PAGE_HEAD.replace('__TITLE__', f'{label} P4P Rankings')

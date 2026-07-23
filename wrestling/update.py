@@ -110,14 +110,14 @@ def resolve_site_date(ppv_path, weekly_path=None):
 # (href, label, title) — title is the full name shown on hover.
 NAV_LINKS = [
     ('/wrestling/wiki.html', 'Wrestling Wiki', ''),
-    ('/wrestling/wrestlers/index.html', 'List of Wrestlers', ''),
+    ('/wrestling/wrestlers/index.html', 'Wrestlers', ''),
+    ('/wrestling/records.html', 'Records', 'All-Time Records'),
+    ('/wrestling/tournaments.html', 'Tournaments', 'The Open & Trios Tournament'),
     ('/wrestling/org/wwf.html', 'WWF', 'World Wrestling Federation'),
     ('/wrestling/org/wwo.html', 'WWO', 'World Wrestling Organization'),
     ('/wrestling/org/iwb.html', 'IWB', 'International Wrestling Board'),
     ('/wrestling/org/pwhof.html', 'PWHOF', 'Professional Wrestling Hall of Fame'),
-    ('/wrestling/org/ring.html', '<i>The Ring</i>', ''),
-    ('/wrestling/records.html', 'Records', 'All-Time Records'),
-    ('/wrestling/tournaments.html', 'Tournaments', 'The Open & Trios Tournament'),
+    ('/wrestling/org/ring.html', 'The Ring', ''),
 ]
 
 _THEME_TOGGLE = (
@@ -1961,13 +1961,27 @@ class WrestlingDatabase:
             if not tbl:
                 continue
             ym = re.search(r'(\d{4})', title)
-            blocks.append((int(ym.group(1)) if ym else 0, title, tbl.group(0)))
+            year = int(ym.group(1)) if ym else 0
+            # The Open runs two brackets a year: the "Qualifiers" day is the
+            # women's bracket, the "Finals" day the men's. Label them as such;
+            # men first. Trios is a single bracket per year.
+            low = title.lower()
+            if kind.lower() == 'open':
+                if 'qualifier' in low:
+                    label, order = f"{year} Open Tournament &mdash; Women's", 1
+                elif 'final' in low:
+                    label, order = f"{year} Open Tournament &mdash; Men's", 0
+                else:
+                    label, order = title, 2
+            else:
+                label, order = title, 0
+            blocks.append((year, order, label, tbl.group(0)))
         if not blocks:
             return ''
-        blocks.sort(key=lambda b: (-b[0], b[1]))
+        blocks.sort(key=lambda b: (-b[0], b[1], b[2]))
         out = []
-        for _year, title, tbl in blocks:
-            out.append(f'    <h3>{title}</h3>\n'
+        for _year, _order, label, tbl in blocks:
+            out.append(f'    <h3>{label}</h3>\n'
                        f'    <div style="overflow-x: auto;">\n{tbl}\n    </div>\n')
         return '\n'.join(out)
 
@@ -2506,23 +2520,27 @@ class WrestlingDatabase:
         return (html.replace('    <details>\n', '').replace('    </details>\n', '')
                     .replace('<details>', '').replace('</details>', ''))
 
-    def _rec_table(self, caption, value_label, rows):
-        """A P4P-style record table: rank | wrestler | value (value right-aligned)."""
+    def _rec_table(self, caption, value_label, rows, size=10):
+        """A P4P-style record table: rank | wrestler | value. Always renders
+        `size` rows — ranks past the data show as empty cells until they fill."""
         out = ['    <table class="p4p-rank record-table">',
                f'    <caption>{caption}</caption>',
                '        <tr>',
-               '            <th style="width: 10%;">No.</th>',
-               '            <th style="width: 66%;">Wrestler</th>',
-               f'            <th style="width: 24%; text-align: right;">{value_label}</th>',
+               '            <th style="width: 12%;">No.</th>',
+               '            <th style="width: 63%;">Wrestler</th>',
+               f'            <th style="width: 25%;">{value_label}</th>',
                '        </tr>']
-        if not rows:
-            out.append('        <tr><td colspan="3">&mdash;</td></tr>')
-        for i, (country, name, value) in enumerate(rows, 1):
-            out += ['        <tr>',
-                    f'            <th>{i}</th>',
-                    f'            <td><span class="fi fi-{country}"></span> {self._wlink(name)}</td>',
-                    f'            <td style="text-align: right;">{value}</td>',
-                    '        </tr>']
+        for i in range(size):
+            out.append('        <tr>')
+            out.append(f'            <th>{i + 1}</th>')
+            if i < len(rows):
+                country, name, value = rows[i]
+                out.append(f'            <td><span class="fi fi-{country}"></span> {self._wlink(name)}</td>')
+                out.append(f'            <td>{value}</td>')
+            else:
+                out.append('            <td></td>')
+                out.append('            <td></td>')
+            out.append('        </tr>')
         out.append('    </table>')
         return '\n'.join(out) + '\n'
 
@@ -2630,88 +2648,133 @@ class WrestlingDatabase:
             return [(s['country'], s['name'], key(s))
                     for s in sorted(wt, key=key, reverse=True)[:10] if key(s)]
 
-        p = ['<h2>List of Records</h2>\n']
+        # Single-reign title streaks (max defenses / days in one reign).
+        max_def, max_days, reign_country = defaultdict(int), defaultdict(int), {}
+        for org in ('wwf', 'wwo', 'iwb'):
+            for wtk in ['heavyweight', 'bridgerweight', 'middleweight',
+                        'welterweight', 'lightweight', 'featherweight']:
+                for reign in self.championships[org][wtk]:
+                    champ = reign['champion']
+                    max_def[champ] = max(max_def[champ], reign['defenses'] or 0)
+                    max_days[champ] = max(max_days[champ], reign['days'] or 0)
+                    reign_country[champ] = reign['country']
+        def kv_rows(d, fmt=lambda v: v):
+            items = sorted(((k, v) for k, v in d.items() if v > 0), key=lambda kv: -kv[1])[:10]
+            return [(reign_country.get(k, 'un'), k, fmt(v)) for k, v in items]
 
-        # ── World titles (most prestigious) ──────────────────────────────────
-        p.append(self._rec_table('Most World Titles Won', 'Reigns',
-                 wt_rows(lambda s: s['total_reigns'])))
-        p.append(self._rec_table('Most World Title Defenses', 'Defenses',
-                 wt_rows(lambda s: s['total_defenses'])))
-        p.append(self._rec_table('Most Days as World Champion', 'Days',
-                 [(c, n, fnum(v)) for c, n, v in wt_rows(lambda s: s['total_days'])]))
-        p.append(self._rec_table('Most World Title Bouts', 'Bouts',
-                 wt_rows(lambda s: s['title_bouts'])))
+        # Consecutive win / loss streaks from each wrestler's match history.
+        for w in W:
+            ms = sorted(w['matches'], key=lambda x: self.parse_date(x.get('date')) or datetime.min)
+            cw = cl = mw = ml = 0
+            for m in ms:
+                r = m.get('result')
+                if r == 'Win':
+                    cw += 1; cl = 0; mw = max(mw, cw)
+                elif r == 'Loss':
+                    cl += 1; cw = 0; ml = max(ml, cl)
+                else:
+                    cw = cl = 0
+            w['_win_streak'] = mw
+            w['_loss_streak'] = ml
 
-        # ── Giant Killer — filled by elo.py (ratings) ────────────────────────
-        p.append('<!-- GIANTKILLER_START -->\n'
-                 + self._rec_table('Giant Killer &mdash; Biggest Upsets', 'Rating gap', [])
-                 + '<!-- GIANTKILLER_END -->\n')
-
-        # ── Contender tier ───────────────────────────────────────────────────
-        p.append(self._rec_table('Gatekeeper &mdash; Most Champions Faced', 'Champions',
-                 rows(top(lambda w: w['_champs_faced'], lambda w: w['_champs_faced'] > 0),
-                      lambda w: w['_champs_faced'])))
-        p.append(self._rec_table('Most Contender Matches Won', 'Wins',
-                 rows(top(lambda w: w['_contender_wins'], lambda w: w['_contender_wins'] > 0),
-                      lambda w: w['_contender_wins'])))
-
-        # ── Win records ──────────────────────────────────────────────────────
-        p.append(self._rec_table('Most Wins', 'Wins',
-                 rows(top(lambda w: w['wins'], lambda w: w['wins'] > 0), lambda w: w['wins'])))
-        p.append(self._rec_table('Highest Win Percentage', 'Win %',
-                 rows(top(lambda w: w['wins'] / bouts(w), lambda w: bouts(w) >= 5),
-                      lambda w: f"{w['wins'] / bouts(w) * 100:.1f}%")))
-        p.append(self._rec_table('Most Bouts', 'Bouts',
-                 rows(top(bouts, lambda w: bouts(w) > 0), bouts)))
-        p.append(self._rec_table('Most Competitive Losses', 'Losses',
-                 rows(top(lambda w: w['_competitive_losses'], lambda w: w['_competitive_losses'] > 0),
-                      lambda w: w['_competitive_losses'])))
-        p.append(self._rec_table('Most Pinfall Wins', 'Pinfalls',
-                 rows(top(lambda w: w['pinfall_wins'], lambda w: w['pinfall_wins'] > 0),
-                      lambda w: w['pinfall_wins'])))
-        p.append(self._rec_table('Most Submission Wins', 'Submissions',
-                 rows(top(lambda w: w['submission_wins'], lambda w: w['submission_wins'] > 0),
-                      lambda w: w['submission_wins'])))
-
-        # ── Finish-rate percentages (min. 5 wins) ────────────────────────────
+        # Finish-rate percentages (min. 5 wins).
         def pct(field):
             return rows(top(lambda w: w[field] / w['wins'] if w['wins'] else 0,
                             lambda w: w['wins'] >= 5),
                         lambda w: f"{w[field] / w['wins'] * 100:.1f}%")
-        p.append(self._rec_table('Highest Pinfall Rate', 'Pin / win', pct('pinfall_wins')))
-        p.append(self._rec_table('Highest Submission Rate', 'Sub / win', pct('submission_wins')))
-        p.append(self._rec_table('Highest Decision Rate', 'Dec / win', pct('decision_wins')))
 
-        # ── Marquee events ───────────────────────────────────────────────────
-        p.append(self._rec_table('Most PPV Main Events', 'Main events',
-                 rows(top(lambda w: w['main_events'], lambda w: w['main_events'] > 0),
-                      lambda w: w['main_events'])))
-        p.append(self._rec_table('Most WrestleMania Main Events', 'Main events',
-                 rows(top(lambda w: w['wrestlemania_main_events'], lambda w: w['wrestlemania_main_events'] > 0),
-                      lambda w: w['wrestlemania_main_events'])))
-        p.append(self._rec_table('Most LibreMania Main Events', 'Main events',
-                 rows(top(lambda w: w['libremania_main_events'], lambda w: w['libremania_main_events'] > 0),
-                      lambda w: w['libremania_main_events'])))
-        p.append(self._rec_table('Most PPV Bouts', 'Bouts',
-                 rows(top(lambda w: w['_ppv_bouts'], lambda w: w['_ppv_bouts'] > 0),
-                      lambda w: w['_ppv_bouts'])))
-        p.append(self._rec_table('Most PPV Wins', 'Wins',
-                 rows(top(lambda w: w['_ppv_wins'], lambda w: w['_ppv_wins'] > 0),
-                      lambda w: w['_ppv_wins'])))
+        rt = self._rec_table
+        narrow = [
+            # ── World titles (most prestigious) ──────────────────────────────
+            rt('Most World Titles Won', 'Reigns', wt_rows(lambda s: s['total_reigns'])),
+            rt('Most World Title Defenses', 'Defenses', wt_rows(lambda s: s['total_defenses'])),
+            rt('Most Days as World Champion', 'Days',
+               [(c, n, fnum(v)) for c, n, v in wt_rows(lambda s: s['total_days'])]),
+            rt('Longest Single Title Reign', 'Days', kv_rows(max_days, fnum)),
+            rt('Most Consecutive Title Defenses', 'Defenses', kv_rows(max_def)),
+            rt('Most World Title Bouts', 'Bouts', wt_rows(lambda s: s['title_bouts'])),
 
-        # ── Speciality ───────────────────────────────────────────────────────
-        p.append(self._rec_table('Most <i>Luchas de Apuestas</i> Won', 'Wins',
-                 rows(top(lambda w: w.get('lucha_wins', 0), lambda w: w.get('lucha_wins', 0) > 0),
-                      lambda w: w.get('lucha_wins', 0))))
-        p.append(self._rec_table('Most Open Tournament Wins', 'Wins',
-                 rows(top(lambda w: w.get('open_tournament_wins', 0), lambda w: w.get('open_tournament_wins', 0) > 0),
-                      lambda w: w.get('open_tournament_wins', 0))))
-        p.append(self._rec_table('Most Trios Tournament Wins', 'Wins',
-                 rows(top(lambda w: w.get('trios_tournament_wins', 0), lambda w: w.get('trios_tournament_wins', 0) > 0),
-                      lambda w: w.get('trios_tournament_wins', 0))))
+            # ── Giant Killer — filled by elo.py (ratings) ────────────────────
+            '<!-- GIANTKILLER_START -->\n'
+            + rt('Giant Killer &mdash; Biggest Upsets', 'Rating gap', [])
+            + '<!-- GIANTKILLER_END -->\n',
 
-        # ── Streaks & business (multi-column, flattened) ─────────────────────
-        p.append(self._flatten_details(self.generate_streaks_records_html()))
+            # ── Contender tier ───────────────────────────────────────────────
+            rt('Gatekeeper &mdash; Most Champions Faced', 'Champions',
+               rows(top(lambda w: w['_champs_faced'], lambda w: w['_champs_faced'] > 0),
+                    lambda w: w['_champs_faced'])),
+            rt('Most Contender Matches Won', 'Wins',
+               rows(top(lambda w: w['_contender_wins'], lambda w: w['_contender_wins'] > 0),
+                    lambda w: w['_contender_wins'])),
+
+            # ── Win / loss records ───────────────────────────────────────────
+            rt('Most Wins', 'Wins',
+               rows(top(lambda w: w['wins'], lambda w: w['wins'] > 0), lambda w: w['wins'])),
+            rt('Highest Win Percentage', 'Win %',
+               rows(top(lambda w: w['wins'] / bouts(w), lambda w: bouts(w) >= 5),
+                    lambda w: f"{w['wins'] / bouts(w) * 100:.1f}%")),
+            rt('Most Bouts', 'Bouts', rows(top(bouts, lambda w: bouts(w) > 0), bouts)),
+            rt('Longest Win Streak', 'Wins',
+               rows(top(lambda w: w['_win_streak'], lambda w: w['_win_streak'] > 0),
+                    lambda w: w['_win_streak'])),
+            rt('Longest Losing Streak', 'Losses',
+               rows(top(lambda w: w['_loss_streak'], lambda w: w['_loss_streak'] > 0),
+                    lambda w: w['_loss_streak'])),
+            rt('Most Competitive Losses', 'Losses',
+               rows(top(lambda w: w['_competitive_losses'], lambda w: w['_competitive_losses'] > 0),
+                    lambda w: w['_competitive_losses'])),
+            rt('Most Pinfall Wins', 'Pinfalls',
+               rows(top(lambda w: w['pinfall_wins'], lambda w: w['pinfall_wins'] > 0),
+                    lambda w: w['pinfall_wins'])),
+            rt('Most Submission Wins', 'Submissions',
+               rows(top(lambda w: w['submission_wins'], lambda w: w['submission_wins'] > 0),
+                    lambda w: w['submission_wins'])),
+
+            # ── Finish-rate percentages (min. 5 wins) ────────────────────────
+            rt('Highest Pinfall Rate', 'Pin / win', pct('pinfall_wins')),
+            rt('Highest Submission Rate', 'Sub / win', pct('submission_wins')),
+            rt('Highest Decision Rate', 'Dec / win', pct('decision_wins')),
+
+            # ── Marquee events ───────────────────────────────────────────────
+            rt('Most PPV Main Events', 'Main events',
+               rows(top(lambda w: w['main_events'], lambda w: w['main_events'] > 0),
+                    lambda w: w['main_events'])),
+            rt('Most WrestleMania Main Events', 'Main events',
+               rows(top(lambda w: w['wrestlemania_main_events'], lambda w: w['wrestlemania_main_events'] > 0),
+                    lambda w: w['wrestlemania_main_events'])),
+            rt('Most LibreMania Main Events', 'Main events',
+               rows(top(lambda w: w['libremania_main_events'], lambda w: w['libremania_main_events'] > 0),
+                    lambda w: w['libremania_main_events'])),
+            rt('Most PPV Bouts', 'Bouts',
+               rows(top(lambda w: w['_ppv_bouts'], lambda w: w['_ppv_bouts'] > 0),
+                    lambda w: w['_ppv_bouts'])),
+            rt('Most PPV Wins', 'Wins',
+               rows(top(lambda w: w['_ppv_wins'], lambda w: w['_ppv_wins'] > 0),
+                    lambda w: w['_ppv_wins'])),
+
+            # ── Speciality ───────────────────────────────────────────────────
+            rt('Most <i>Luchas de Apuestas</i> Won', 'Wins',
+               rows(top(lambda w: w.get('lucha_wins', 0), lambda w: w.get('lucha_wins', 0) > 0),
+                    lambda w: w.get('lucha_wins', 0))),
+            rt('Most Open Tournament Wins', 'Wins',
+               rows(top(lambda w: w.get('open_tournament_wins', 0), lambda w: w.get('open_tournament_wins', 0) > 0),
+                    lambda w: w.get('open_tournament_wins', 0))),
+            rt('Most Trios Tournament Wins', 'Wins',
+               rows(top(lambda w: w.get('trios_tournament_wins', 0), lambda w: w.get('trios_tournament_wins', 0) > 0),
+                    lambda w: w.get('trios_tournament_wins', 0))),
+        ]
+
+        style = ('<style>\n'
+                 '.records-grid{display:flex;flex-wrap:wrap;justify-content:space-between;'
+                 'align-items:flex-start;}\n'
+                 '.records-grid > table{width:48%;}\n'
+                 '@media (max-width:760px){.records-grid > table{width:100%;}}\n'
+                 '</style>\n')
+
+        p = ['<h2>List of Records</h2>\n', style,
+             '<div class="records-grid">\n', ''.join(narrow), '</div>\n']
+
+        # Business records stay full-width below the grid (multi-metric tables).
         p.append(self._flatten_details(self.generate_drawing_power_html()))
         p.append(self._flatten_details(self.generate_broadcast_records_html()))
         p.append(self._flatten_details(self.generate_attendance_records_html()))

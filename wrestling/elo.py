@@ -703,25 +703,29 @@ def giant_killers(db, top_n=10):
              'value': d['value'], 'opponent': d['opponent']} for n, d in ranked]
 
 
-def generate_giant_killer_html(db):
-    """Giant Killer record table in the same P4P style update.py uses."""
+def generate_giant_killer_html(db, size=10):
+    """Giant Killer record table in the same P4P style update.py uses. Always
+    renders `size` rows so short lists still fill out with empty cells."""
     rows = giant_killers(db)
     out = ['    <table class="p4p-rank record-table">',
            '    <caption>Giant Killer &mdash; Biggest Upsets</caption>',
            '        <tr>',
-           '            <th style="width: 10%;">No.</th>',
-           '            <th style="width: 66%;">Wrestler</th>',
-           '            <th style="width: 24%; text-align: right;">Rating gap</th>',
+           '            <th style="width: 12%;">No.</th>',
+           '            <th style="width: 63%;">Wrestler</th>',
+           '            <th style="width: 25%;">Rating gap</th>',
            '        </tr>']
-    if not rows:
-        out.append('        <tr><td colspan="3">&mdash;</td></tr>')
-    for i, r in enumerate(rows, 1):
-        out += ['        <tr>',
-                f'            <th>{i}</th>',
-                f'            <td>{flag(r["country"])} {_wlink(r["name"])} '
-                f'<span class="sub">def. {_wlink(r["opponent"])}</span></td>',
-                f'            <td style="text-align: right;">+{r["value"]:.0f}</td>',
-                '        </tr>']
+    for i in range(size):
+        out.append('        <tr>')
+        out.append(f'            <th>{i + 1}</th>')
+        if i < len(rows):
+            r = rows[i]
+            out.append(f'            <td>{flag(r["country"])} {_wlink(r["name"])} '
+                       f'<span class="sub">def. {_wlink(r["opponent"])}</span></td>')
+            out.append(f'            <td>+{r["value"]:.0f}</td>')
+        else:
+            out.append('            <td></td>')
+            out.append('            <td></td>')
+        out.append('        </tr>')
     out.append('    </table>')
     return '\n'.join(out) + '\n'
 

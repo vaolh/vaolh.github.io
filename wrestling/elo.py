@@ -657,12 +657,13 @@ def generate_hof_html(db, peaks, peak_rank):
 # =============================================================================
 
 def elo_extras(db, top_n=10, min_bouts=3):
-    """One replay of the Elo model (as build_snapshots) yielding two records:
+    """One replay of the Elo model (as build_snapshots) yielding three records:
 
-      * opp_rows  — highest average opponent rating (strength of schedule);
-                    each opponent counted at their rating that night.
-      * best      — the matches with the highest average rating between the two
-                    competitors (the marquee bouts), rated pre-match.
+      * giant  — biggest single upset per wrestler (how big an underdog the
+                 winner was, in rating points, size-handicap included).
+      * opp    — highest average opponent rating (strength of schedule).
+      * best   — matches with the highest average rating between the two
+                 competitors (the marquee bouts), rated pre-match.
     """
     ratings = defaultdict(lambda: BASE_RATING)
     div_counts = defaultdict(lambda: defaultdict(int))
@@ -673,6 +674,7 @@ def elo_extras(db, top_n=10, min_bouts=3):
             return None
         return WEIGHT_INDEX[min(counts, key=lambda w: (-counts[w], WEIGHT_INDEX[w]))]
 
+    upset = {}
     opp_sum, opp_n = defaultdict(float), defaultdict(int)
     rated = []
     for _when, m in singles_matches(db):
@@ -688,6 +690,17 @@ def elo_extras(db, top_n=10, min_bouts=3):
         opp_sum[b] += ra; opp_n[b] += 1
         rated.append(((ra + rb) / 2.0, a, b))
 
+        if not m.get('is_draw') and m.get('winner'):
+            if m['winner'] == a:
+                win, lose, rw, rl, iw, il = a, b, ra, rb, idx_a, idx_b
+            else:
+                win, lose, rw, rl, iw, il = b, a, rb, ra, idx_b, idx_a
+            hcap = SIZE_STEP * (iw - il) if (iw is not None and il is not None) else 0.0
+            deficit = (rl - rw) + hcap
+            cur = upset.get(win)
+            if deficit > 0 and (cur is None or deficit > cur['value']):
+                upset[win] = {'value': deficit, 'opponent': lose}
+
         ea = expected_score(ra, rb, idx_a, idx_b)
         k = k_factor(db, m)
         sa = 0.5 if m.get('is_draw') else (1.0 if m['winner'] == a else 0.0)
@@ -697,7 +710,11 @@ def elo_extras(db, top_n=10, min_bouts=3):
     def country(name):
         return db.wrestlers.get(name, {}).get('country', 'un')
 
-    opp_rows = sorted(
+    giant = [{'name': n, 'country': country(n), 'value': d['value'],
+              'opponent': d['opponent'], 'opponent_country': country(d['opponent'])}
+             for n, d in sorted(upset.items(), key=lambda kv: -kv[1]['value'])[:top_n]]
+
+    opp = sorted(
         ({'name': n, 'country': country(n), 'value': opp_sum[n] / opp_n[n]}
          for n in opp_n if opp_n[n] >= min_bouts and n in db.ppv_wrestlers),
         key=lambda r: -r['value'])[:top_n]
@@ -706,58 +723,53 @@ def elo_extras(db, top_n=10, min_bouts=3):
     best = [{'a': a, 'b': b, 'value': v,
              'a_country': country(a), 'b_country': country(b)}
             for v, a, b in rated[:top_n]]
-    return opp_rows, best
+    return giant, opp, best
 
 
-def generate_opp_rating_html(rows, size=10):
+def _elo_table(caption, value_label, rows, cell_fn, size=10):
     out = ['    <table class="p4p-rank record-table">',
-           '    <caption>Highest Average Opponent Rating</caption>',
+           f'    <caption>{caption}</caption>',
            '        <tr>',
            '            <th style="width: 12%;">No.</th>',
            '            <th style="width: 63%;">Wrestler</th>',
-           '            <th style="width: 25%;">Avg rating</th>',
+           f'            <th style="width: 25%;">{value_label}</th>',
            '        </tr>']
     for i in range(size):
         out.append('        <tr>')
         out.append(f'            <th>{i + 1}</th>')
         if i < len(rows):
-            r = rows[i]
-            out.append(f'            <td>{flag(r["country"])} {_wlink(r["name"])}</td>')
-            out.append(f'            <td>{r["value"]:.0f}</td>')
+            cell, value = cell_fn(rows[i])
+            out.append(f'            <td>{cell}</td>')
+            out.append(f'            <td>{value}</td>')
         else:
             out.append('            <td></td>')
             out.append('            <td></td>')
         out.append('        </tr>')
     out.append('    </table>')
     return '\n'.join(out) + '\n'
+
+
+def generate_giant_killer_html(rows, size=10):
+    # Winner on top, "def. opponent" on its own line — can't overflow sideways.
+    return _elo_table('Biggest Upsets', 'Rating gap', rows, lambda r: (
+        f'{flag(r["country"])} {_wlink(r["name"])}<br>'
+        f'<span class="sub">def. {flag(r["opponent_country"])} {_wlink(r["opponent"])}</span>',
+        f'+{r["value"]:.0f}'), size)
+
+
+def generate_opp_rating_html(rows, size=10):
+    return _elo_table('Highest Average Opponent Rating', 'Avg rating', rows,
+                      lambda r: (f'{flag(r["country"])} {_wlink(r["name"])}',
+                                 f'{r["value"]:.0f}'), size)
 
 
 def generate_best_matches_html(rows, size=10):
-    # Two names per cell, so render the matchup a touch smaller to avoid overflow
-    # in the narrow two-per-line tables.
-    out = ['    <table class="p4p-rank record-table">',
-           '    <caption>Best Matches (by Elo)</caption>',
-           '        <tr>',
-           '            <th style="width: 12%;">No.</th>',
-           '            <th style="width: 63%;">Match</th>',
-           '            <th style="width: 25%;">Avg rating</th>',
-           '        </tr>']
-    for i in range(size):
-        out.append('        <tr>')
-        out.append(f'            <th>{i + 1}</th>')
-        if i < len(rows):
-            r = rows[i]
-            out.append('            <td style="font-size: 0.9em;">'
-                       f'{flag(r["a_country"])} {_wlink(r["a"])} '
-                       f'<span class="sub">vs.</span> '
-                       f'{flag(r["b_country"])} {_wlink(r["b"])}</td>')
-            out.append(f'            <td>{r["value"]:.0f}</td>')
-        else:
-            out.append('            <td></td>')
-            out.append('            <td></td>')
-        out.append('        </tr>')
-    out.append('    </table>')
-    return '\n'.join(out) + '\n'
+    # Two competitors stacked (each on its own line) so long names wrap instead
+    # of overflowing the narrow two-per-line table.
+    return _elo_table('Best Matches (by Elo)', 'Avg rating', rows, lambda r: (
+        f'{flag(r["a_country"])} {_wlink(r["a"])}<br>'
+        f'<span class="sub">vs. {flag(r["b_country"])} {_wlink(r["b"])}</span>',
+        f'{r["value"]:.0f}'), size)
 
 
 def _replace_between(path, start, end, html, what):
@@ -918,7 +930,10 @@ def run(db):
                      '<!-- HOFMEMBERS_START -->', '<!-- HOFMEMBERS_END -->',
                      generate_hof_html(db, peaks, peak_rank), 'Hall of Fame')
 
-    opp_rows, best = elo_extras(db)
+    giant, opp_rows, best = elo_extras(db)
+    _replace_between('wrestling/records.html',
+                     '<!-- GIANTKILLER_START -->', '<!-- GIANTKILLER_END -->',
+                     generate_giant_killer_html(giant), 'Giant Killer record')
     _replace_between('wrestling/records.html',
                      '<!-- OPPRATING_START -->', '<!-- OPPRATING_END -->',
                      generate_opp_rating_html(opp_rows), 'Opponent-rating record')

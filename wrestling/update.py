@@ -113,11 +113,13 @@ NAV_LINKS = [
     ('/wrestling/wrestlers/index.html', 'Wrestlers', ''),
     ('/wrestling/records.html', 'Records', 'All-Time Records'),
     ('/wrestling/tournaments.html', 'Tournaments', 'The Open & Trios Tournament'),
+    ('/wrestling/ppv/wiki.html', 'Schedule', 'Annual Promotion Schedule'),
     ('/wrestling/org/wwf.html', 'WWF', 'World Wrestling Federation'),
     ('/wrestling/org/wwo.html', 'WWO', 'World Wrestling Organization'),
     ('/wrestling/org/iwb.html', 'IWB', 'International Wrestling Board'),
     ('/wrestling/org/pwhof.html', 'PWHOF', 'Professional Wrestling Hall of Fame'),
     ('/wrestling/org/ring.html', 'The Ring', ''),
+    ('/wrestling/org/draft.html', 'The Draft', ''),
 ]
 
 _THEME_TOGGLE = (
@@ -211,7 +213,8 @@ def abbreviate_dates_in_generated_files():
                + glob.glob('wrestling/org/*.html')
                + glob.glob('wrestling/p4p/*.html')
                + ['wrestling/wiki.html', 'wrestling/ppv/wiki.html',
-                  'wrestling/records.html', 'wrestling/tournaments.html'])
+                  'wrestling/records.html', 'wrestling/tournaments.html',
+                  'wrestling/org/draft.html'])
     changed = 0
     for f in targets:
         if not os.path.exists(f):
@@ -2034,8 +2037,9 @@ class WrestlingDatabase:
         blocks.sort(key=lambda b: (-b[0], b[1], b[2]))
         out = []
         for _year, _order, label, tbl in blocks:
-            out.append(f'    <h3>{label}</h3>\n'
-                       f'    <div style="overflow-x: auto;">\n{tbl}\n    </div>\n')
+            out.append(f'    <details>\n        <summary>{label}</summary>\n'
+                       f'        <div style="overflow-x: auto;">\n{tbl}\n        </div>\n'
+                       f'    </details>\n')
         return '\n'.join(out)
 
     def generate_trios_tournament_html(self):
@@ -2753,6 +2757,9 @@ class WrestlingDatabase:
             rt('Most World Title Bouts', 'Bouts', wt_rows(lambda s: s['title_bouts'])),
 
             # ── Elo — filled by elo.py (ratings) ─────────────────────────────
+            '<!-- GIANTKILLER_START -->\n'
+            + rt('Biggest Upsets', 'Rating gap', [])
+            + '<!-- GIANTKILLER_END -->\n',
             '<!-- OPPRATING_START -->\n'
             + rt('Highest Average Opponent Rating', 'Avg rating', [])
             + '<!-- OPPRATING_END -->\n',
@@ -2761,6 +2768,9 @@ class WrestlingDatabase:
             + '<!-- BESTMATCHES_END -->\n',
 
             # ── Contender tier ───────────────────────────────────────────────
+            rt('Most Champions Faced', 'Champions',
+               rows(top(lambda w: w['_champs_faced'], lambda w: w['_champs_faced'] > 0),
+                    lambda w: w['_champs_faced'])),
             rt('Most Contender Matches Won', 'Wins',
                rows(top(lambda w: w['_contender_wins'], lambda w: w['_contender_wins'] > 0),
                     lambda w: w['_contender_wins'])),
@@ -2817,14 +2827,18 @@ class WrestlingDatabase:
                     lambda w: w.get('trios_tournament_wins', 0))),
         ]
 
-        p = [self._grid_style(), '<div class="records-grid">\n', ''.join(narrow), '</div>\n']
+        # Audience/business records (Drawing Power → Attendance) live on the
+        # Schedule page now, not here.
+        return (self._grid_style() + '<div class="records-grid">\n'
+                + ''.join(narrow) + '</div>\n')
 
-        # Business records stay full-width below the grid (multi-metric tables).
-        p.append(self._flatten_details(self.generate_drawing_power_html()))
-        p.append(self._flatten_details(self.generate_broadcast_records_html()))
-        p.append(self._flatten_details(self.generate_attendance_records_html()))
-
-        return '\n'.join(p) + '\n'
+    def generate_audience_records_html(self):
+        """Drawing Power + Broadcast + Attendance tables (flattened), shown on
+        the Schedule page (wrestling/ppv/wiki.html)."""
+        return ('<h2>Audience Records</h2>\n'
+                + self._flatten_details(self.generate_drawing_power_html())
+                + self._flatten_details(self.generate_broadcast_records_html())
+                + self._flatten_details(self.generate_attendance_records_html()))
     
     def generate_single_org_records_html(self, org):
         """Organization records — four P4P-style tables (top 5 each) in a grid."""
@@ -4404,6 +4418,20 @@ class WrestlingDatabase:
             with open(tournaments_path, 'w', encoding='utf-8') as f:
                 f.write(content)
             print(f"✓ Updated {tournaments_path}")
+
+        # 1d. Audience records on the Schedule page (wrestling/ppv/wiki.html).
+        schedule_path = 'wrestling/ppv/wiki.html'
+        if os.path.exists(schedule_path):
+            with open(schedule_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            s, e = '<!-- AUDIENCE_START -->', '<!-- AUDIENCE_END -->'
+            if s in content and e in content:
+                content = (content.split(s)[0] + s + '\n'
+                           + self.generate_audience_records_html() + e
+                           + content.split(e)[1])
+                with open(schedule_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                print(f"✓ Updated {schedule_path}")
         
         # 2. Update org championship pages
         for org in ['wwf', 'wwo', 'iwb', 'ring']:

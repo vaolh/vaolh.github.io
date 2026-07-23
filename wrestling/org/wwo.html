@@ -415,60 +415,145 @@
 
 <!-- WWORECORDS_START -->
 <h2>WWO Records</h2>
-    <table class="records">
-    <thead>
+<style>
+.records-grid{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;}
+.records-grid > table{width:48%;}
+@media (max-width:760px){.records-grid > table{width:100%;}}
+</style>
+<div class="records-grid">
+    <table class="p4p-rank record-table">
+    <caption>Titles Won</caption>
         <tr>
-            <th rowspan="2" style="width: 5%;">No.</th>
-            <th colspan="2" style="width: 23.75%;">Titles Won</th>
-            <th colspan="2" style="width: 23.75%;">Title Defenses</th>
-            <th colspan="2" style="width: 23.75%;">Days as Champion</th>
-            <th colspan="2" style="width: 23.75%;">Title Bouts</th>
+            <th style="width: 12%;">No.</th>
+            <th style="width: 63%;">Wrestler</th>
+            <th style="width: 25%;">Titles</th>
         </tr>
-        <tr>
-            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>
-            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>
-            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>
-            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>
-        </tr>
-    </thead>
-    <tbody>
         <tr>
             <th>1</th>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/undertaker.html">Undertaker</a> </td><td>1</td>
-            <td><span class="fi fi-cl"></span> <a href="/wrestling/wrestlers/stephanie-vaquer.html">Stephanie Vaquer</a> </td><td>6</td>
-            <td><span class="fi fi-cl"></span> <a href="/wrestling/wrestlers/stephanie-vaquer.html">Stephanie Vaquer</a> </td><td>308</td>
-            <td><span class="fi fi-cl"></span> <a href="/wrestling/wrestlers/stephanie-vaquer.html">Stephanie Vaquer</a> </td><td>7</td>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/undertaker.html">Undertaker</a></td>
+            <td>1</td>
         </tr>
         <tr>
             <th>2</th>
-            <td><span class="fi fi-sn"></span> <a href="/wrestling/wrestlers/ibrahima-diop.html">Ibrahima Diop</a> </td><td>1</td>
-            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/mistico.html">Mistico</a> </td><td>5</td>
-            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/mistico.html">Mistico</a> </td><td>251</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/undertaker.html">Undertaker</a> </td><td>6</td>
+            <td><span class="fi fi-sn"></span> <a href="/wrestling/wrestlers/ibrahima-diop.html">Ibrahima Diop</a></td>
+            <td>1</td>
         </tr>
         <tr>
             <th>3</th>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/montez-ford.html">Montez Ford</a> </td><td>1</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/undertaker.html">Undertaker</a> </td><td>4</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/montez-ford.html">Montez Ford</a> </td><td>238</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/montez-ford.html">Montez Ford</a> </td><td>5</td>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/montez-ford.html">Montez Ford</a></td>
+            <td>1</td>
         </tr>
         <tr>
             <th>4</th>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/cm-punk.html">CM Punk</a> </td><td>1</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/montez-ford.html">Montez Ford</a> </td><td>3</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/undertaker.html">Undertaker</a> </td><td>224</td>
-            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/jj-muñoz.html">JJ Muñoz</a> </td><td>5</td>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/cm-punk.html">CM Punk</a></td>
+            <td>1</td>
         </tr>
         <tr>
             <th>5</th>
-            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/jj-muñoz.html">JJ Muñoz</a> </td><td>1</td>
-            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/jj-muñoz.html">JJ Muñoz</a> </td><td>3</td>
-            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/lepis-24k.html">Lepis 24K</a> </td><td>189</td>
-            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/mistico.html">Mistico</a> </td><td>5</td>
+            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/jj-muñoz.html">JJ Muñoz</a></td>
+            <td>1</td>
         </tr>
-    </tbody>
     </table>
+    <table class="p4p-rank record-table">
+    <caption>Title Defenses</caption>
+        <tr>
+            <th style="width: 12%;">No.</th>
+            <th style="width: 63%;">Wrestler</th>
+            <th style="width: 25%;">Defenses</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-cl"></span> <a href="/wrestling/wrestlers/stephanie-vaquer.html">Stephanie Vaquer</a></td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <th>2</th>
+            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/mistico.html">Mistico</a></td>
+            <td>5</td>
+        </tr>
+        <tr>
+            <th>3</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/undertaker.html">Undertaker</a></td>
+            <td>4</td>
+        </tr>
+        <tr>
+            <th>4</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/montez-ford.html">Montez Ford</a></td>
+            <td>3</td>
+        </tr>
+        <tr>
+            <th>5</th>
+            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/jj-muñoz.html">JJ Muñoz</a></td>
+            <td>3</td>
+        </tr>
+    </table>
+    <table class="p4p-rank record-table">
+    <caption>Days as Champion</caption>
+        <tr>
+            <th style="width: 12%;">No.</th>
+            <th style="width: 63%;">Wrestler</th>
+            <th style="width: 25%;">Days</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-cl"></span> <a href="/wrestling/wrestlers/stephanie-vaquer.html">Stephanie Vaquer</a></td>
+            <td>308</td>
+        </tr>
+        <tr>
+            <th>2</th>
+            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/mistico.html">Mistico</a></td>
+            <td>251</td>
+        </tr>
+        <tr>
+            <th>3</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/montez-ford.html">Montez Ford</a></td>
+            <td>238</td>
+        </tr>
+        <tr>
+            <th>4</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/undertaker.html">Undertaker</a></td>
+            <td>224</td>
+        </tr>
+        <tr>
+            <th>5</th>
+            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/lepis-24k.html">Lepis 24K</a></td>
+            <td>189</td>
+        </tr>
+    </table>
+    <table class="p4p-rank record-table">
+    <caption>Title Bouts</caption>
+        <tr>
+            <th style="width: 12%;">No.</th>
+            <th style="width: 63%;">Wrestler</th>
+            <th style="width: 25%;">Bouts</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-cl"></span> <a href="/wrestling/wrestlers/stephanie-vaquer.html">Stephanie Vaquer</a></td>
+            <td>7</td>
+        </tr>
+        <tr>
+            <th>2</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/undertaker.html">Undertaker</a></td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <th>3</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/montez-ford.html">Montez Ford</a></td>
+            <td>5</td>
+        </tr>
+        <tr>
+            <th>4</th>
+            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/jj-muñoz.html">JJ Muñoz</a></td>
+            <td>5</td>
+        </tr>
+        <tr>
+            <th>5</th>
+            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/mistico.html">Mistico</a></td>
+            <td>5</td>
+        </tr>
+    </table>
+</div>
 
 <!-- WWORECORDS_END -->
 

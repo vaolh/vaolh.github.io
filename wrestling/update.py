@@ -1940,6 +1940,59 @@ class WrestlingDatabase:
         
         return html
 
+    def _infobox_row(self, label, value_html):
+        return (f'                <tr>\n                    <th>{label}</th>\n'
+                f'                    <td>{value_html}</td>\n                </tr>\n')
+
+    def generate_open_infobox_rows(self):
+        """Holders (latest edition winners) + Most titles rows for the Open
+        infobox. Regenerated each run, so it tracks the current winner."""
+        entries = self.tournaments.get('open_with_years', [])
+        rows = ''
+        if entries:
+            latest = max(t['year'] for t in entries)
+            holders = sorted((t for t in entries if t['year'] == latest),
+                             key=lambda t: 0 if t.get('gender', 'men') == 'men' else 1)
+            holder_html = ' <br> '.join(
+                f'<span class="fi fi-{t.get("winner_country", "un")}"></span> '
+                f'{self._wlink(t["winner"])} ({t["year"]})' for t in holders)
+            rows += self._infobox_row('Holders', holder_html)
+        counts, country = defaultdict(int), {}
+        for t in entries:
+            counts[t['winner']] += 1
+            country[t['winner']] = t.get('winner_country', 'un')
+        if counts:
+            name = max(counts, key=lambda k: counts[k])
+            n = counts[name]
+            rows += self._infobox_row('Most titles',
+                f'<span class="fi fi-{country[name]}"></span> {self._wlink(name)} '
+                f'({n} title{"s" if n != 1 else ""})')
+        return rows
+
+    def generate_trios_infobox_rows(self):
+        """Holders (latest winning trio) + Most titles rows for the Trios infobox."""
+        entries = self.tournaments.get('trios_with_years', [])
+        rows = ''
+        if entries:
+            latest = max(t['year'] for t in entries)
+            trio = next(t for t in entries if t['year'] == latest)
+            holder_html = ' <br> '.join(
+                f'<span class="fi fi-{f.get("country", "un")}"></span> {self._wlink(f["name"])}'
+                for f in trio['winners']) + f' ({latest})'
+            rows += self._infobox_row('Holders', holder_html)
+        counts, country = defaultdict(int), {}
+        for t in entries:
+            for f in t['winners']:
+                counts[f['name']] += 1
+                country[f['name']] = f.get('country', 'un')
+        if counts:
+            name = max(counts, key=lambda k: counts[k])
+            n = counts[name]
+            rows += self._infobox_row('Most titles',
+                f'<span class="fi fi-{country[name]}"></span> {self._wlink(name)} '
+                f'({n} title{"s" if n != 1 else ""})')
+        return rows
+
     def _tournament_brackets_html(self, kind):
         """Mirror the rendered <table class="bracket"> markup from ppv/list.html
         onto the Tournaments page (display only — the source stays in the PPV
@@ -2520,6 +2573,16 @@ class WrestlingDatabase:
         return (html.replace('    <details>\n', '').replace('    </details>\n', '')
                     .replace('<details>', '').replace('</details>', ''))
 
+    @staticmethod
+    def _grid_style():
+        """Two-per-line record grid; collapses to one column on narrow screens."""
+        return ('<style>\n'
+                '.records-grid{display:flex;flex-wrap:wrap;justify-content:space-between;'
+                'align-items:flex-start;}\n'
+                '.records-grid > table{width:48%;}\n'
+                '@media (max-width:760px){.records-grid > table{width:100%;}}\n'
+                '</style>\n')
+
     def _rec_table(self, caption, value_label, rows, size=10):
         """A P4P-style record table: rank | wrestler | value. Always renders
         `size` rows — ranks past the data show as empty cells until they fill."""
@@ -2553,7 +2616,8 @@ class WrestlingDatabase:
         wrestler_reigns = defaultdict(list)
         weights = ['heavyweight', 'bridgerweight', 'middleweight',
                    'welterweight', 'lightweight', 'featherweight']
-        for org in ['wwf', 'wwo', 'iwb']:
+        world_orgs = ['wwf', 'wwo', 'iwb', 'ring']
+        for org in world_orgs:
             for weight in weights:
                 for reign in self.championships[org][weight]:
                     start = self.parse_date(reign['date'])
@@ -2569,7 +2633,7 @@ class WrestlingDatabase:
         for event in self.events:
             for match in event['matches']:
                 is_title, orgs = self.is_title_match(match['notes'])
-                if is_title and match['winner'] and any(o in ['wwf', 'wwo', 'iwb'] for o in orgs):
+                if is_title and match['winner'] and any(o in world_orgs for o in orgs):
                     for f in (match['fighter1'], match['fighter2']):
                         if f in wrestler_reigns:
                             totals[f]['title_bouts'] += 1
@@ -2650,7 +2714,7 @@ class WrestlingDatabase:
 
         # Single-reign title streaks (max defenses / days in one reign).
         max_def, max_days, reign_country = defaultdict(int), defaultdict(int), {}
-        for org in ('wwf', 'wwo', 'iwb'):
+        for org in ('wwf', 'wwo', 'iwb', 'ring'):
             for wtk in ['heavyweight', 'bridgerweight', 'middleweight',
                         'welterweight', 'lightweight', 'featherweight']:
                 for reign in self.championships[org][wtk]:
@@ -2677,16 +2741,10 @@ class WrestlingDatabase:
             w['_win_streak'] = mw
             w['_loss_streak'] = ml
 
-        # Finish-rate percentages (min. 5 wins).
-        def pct(field):
-            return rows(top(lambda w: w[field] / w['wins'] if w['wins'] else 0,
-                            lambda w: w['wins'] >= 5),
-                        lambda w: f"{w[field] / w['wins'] * 100:.1f}%")
-
         rt = self._rec_table
         narrow = [
             # ── World titles (most prestigious) ──────────────────────────────
-            rt('Most World Titles Won', 'Reigns', wt_rows(lambda s: s['total_reigns'])),
+            rt('Most World Titles Won', 'Titles', wt_rows(lambda s: s['total_reigns'])),
             rt('Most World Title Defenses', 'Defenses', wt_rows(lambda s: s['total_defenses'])),
             rt('Most Days as World Champion', 'Days',
                [(c, n, fnum(v)) for c, n, v in wt_rows(lambda s: s['total_days'])]),
@@ -2694,15 +2752,15 @@ class WrestlingDatabase:
             rt('Most Consecutive Title Defenses', 'Defenses', kv_rows(max_def)),
             rt('Most World Title Bouts', 'Bouts', wt_rows(lambda s: s['title_bouts'])),
 
-            # ── Giant Killer — filled by elo.py (ratings) ────────────────────
-            '<!-- GIANTKILLER_START -->\n'
-            + rt('Giant Killer &mdash; Biggest Upsets', 'Rating gap', [])
-            + '<!-- GIANTKILLER_END -->\n',
+            # ── Elo — filled by elo.py (ratings) ─────────────────────────────
+            '<!-- OPPRATING_START -->\n'
+            + rt('Highest Average Opponent Rating', 'Avg rating', [])
+            + '<!-- OPPRATING_END -->\n',
+            '<!-- BESTMATCHES_START -->\n'
+            + rt('Best Matches (by Elo)', 'Avg rating', [])
+            + '<!-- BESTMATCHES_END -->\n',
 
             # ── Contender tier ───────────────────────────────────────────────
-            rt('Gatekeeper &mdash; Most Champions Faced', 'Champions',
-               rows(top(lambda w: w['_champs_faced'], lambda w: w['_champs_faced'] > 0),
-                    lambda w: w['_champs_faced'])),
             rt('Most Contender Matches Won', 'Wins',
                rows(top(lambda w: w['_contender_wins'], lambda w: w['_contender_wins'] > 0),
                     lambda w: w['_contender_wins'])),
@@ -2729,11 +2787,6 @@ class WrestlingDatabase:
             rt('Most Submission Wins', 'Submissions',
                rows(top(lambda w: w['submission_wins'], lambda w: w['submission_wins'] > 0),
                     lambda w: w['submission_wins'])),
-
-            # ── Finish-rate percentages (min. 5 wins) ────────────────────────
-            rt('Highest Pinfall Rate', 'Pin / win', pct('pinfall_wins')),
-            rt('Highest Submission Rate', 'Sub / win', pct('submission_wins')),
-            rt('Highest Decision Rate', 'Dec / win', pct('decision_wins')),
 
             # ── Marquee events ───────────────────────────────────────────────
             rt('Most PPV Main Events', 'Main events',
@@ -2764,15 +2817,7 @@ class WrestlingDatabase:
                     lambda w: w.get('trios_tournament_wins', 0))),
         ]
 
-        style = ('<style>\n'
-                 '.records-grid{display:flex;flex-wrap:wrap;justify-content:space-between;'
-                 'align-items:flex-start;}\n'
-                 '.records-grid > table{width:48%;}\n'
-                 '@media (max-width:760px){.records-grid > table{width:100%;}}\n'
-                 '</style>\n')
-
-        p = ['<h2>List of Records</h2>\n', style,
-             '<div class="records-grid">\n', ''.join(narrow), '</div>\n']
+        p = [self._grid_style(), '<div class="records-grid">\n', ''.join(narrow), '</div>\n']
 
         # Business records stay full-width below the grid (multi-metric tables).
         p.append(self._flatten_details(self.generate_drawing_power_html()))
@@ -2782,81 +2827,40 @@ class WrestlingDatabase:
         return '\n'.join(p) + '\n'
     
     def generate_single_org_records_html(self, org):
-        """Generate organization-specific records table for one org"""
+        """Organization records — four P4P-style tables (top 5 each) in a grid."""
         org_display = 'The Ring' if org == 'ring' else org.upper()
-        
-        # Calculate stats per wrestler for this org only
-        wrestler_org_stats = defaultdict(lambda: {'total_reigns': 0, 'total_defenses': 0, 'total_days': 0, 'title_bouts': 0, 'country': 'un'})
-        
-        weights = ['heavyweight', 'bridgerweight', 'middleweight', 'welterweight', 'lightweight', 'featherweight']
-        
-        # Collect reigns from this org
+        stats = defaultdict(lambda: {'total_reigns': 0, 'total_defenses': 0,
+                                     'total_days': 0, 'title_bouts': 0, 'country': 'un'})
+        weights = ['heavyweight', 'bridgerweight', 'middleweight',
+                   'welterweight', 'lightweight', 'featherweight']
         for weight in weights:
             for reign in self.championships[org][weight]:
                 champ = reign['champion']
-                wrestler_org_stats[champ]['total_reigns'] += 1
-                wrestler_org_stats[champ]['total_defenses'] += reign.get('defenses') or 0
-                wrestler_org_stats[champ]['total_days'] += reign.get('days') or 0
-                wrestler_org_stats[champ]['country'] = reign.get('country', 'un')
-        
-        # Count title bouts for this org
+                stats[champ]['total_reigns'] += 1
+                stats[champ]['total_defenses'] += reign.get('defenses') or 0
+                stats[champ]['total_days'] += reign.get('days') or 0
+                stats[champ]['country'] = reign.get('country', 'un')
         for event in self.events:
             for match in event['matches']:
                 is_title, orgs = self.is_title_match(match['notes'])
                 if is_title and org in orgs and match['winner']:
-                    fighter1 = match['fighter1']
-                    fighter2 = match['fighter2']
-                    
-                    if fighter1 in wrestler_org_stats:
-                        wrestler_org_stats[fighter1]['title_bouts'] += 1
-                    if fighter2 in wrestler_org_stats:
-                        wrestler_org_stats[fighter2]['title_bouts'] += 1
-        
-        # Sort and get top 5 for each category
-        top_reigns = sorted(wrestler_org_stats.items(), key=lambda x: x[1]['total_reigns'], reverse=True)[:5]
-        top_defenses = sorted(wrestler_org_stats.items(), key=lambda x: x[1]['total_defenses'], reverse=True)[:5]
-        top_days = sorted(wrestler_org_stats.items(), key=lambda x: x[1]['total_days'], reverse=True)[:5]
-        top_bouts = sorted(wrestler_org_stats.items(), key=lambda x: x[1]['title_bouts'], reverse=True)[:5]
-        
-        # Generate table
-        html = f'<h2>{org_display} Records</h2>\n'
-        html += '    <table class="records">\n'
-        html += '    <thead>\n'
-        html += '        <tr>\n'
-        html += '            <th rowspan="2" style="width: 5%;">No.</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Titles Won</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Title Defenses</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Days as Champion</th>\n'
-        html += '            <th colspan="2" style="width: 23.75%;">Title Bouts</th>\n'
-        html += '        </tr>\n'
-        html += '        <tr>\n'
-        html += '            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>\n' * 4
-        html += '        </tr>\n'
-        html += '    </thead>\n'
-        html += '    <tbody>\n'
-        
-        for i in range(5):
-            html += '        <tr>\n'
-            html += f'            <th>{i+1}</th>\n'
-            
-            for top_list, stat_key in [(top_reigns, 'total_reigns'), (top_defenses, 'total_defenses'), 
-                                        (top_days, 'total_days'), (top_bouts, 'title_bouts')]:
-                if i < len(top_list):
-                    name, stats = top_list[i]
-                    stat = stats[stat_key]
-                    if stat_key == 'total_days':
-                        html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{self.format_number(stat)}</td>\n'
-                    else:
-                        html += f'            <td><span class="fi fi-{stats["country"]}"></span> {self._wlink(name)} </td><td>{stat}</td>\n'
-                else:
-                    html += '            <td><span class="fi fi-xx"></span> Vacant </td><td>0</td>\n'
-            
-            html += '        </tr>\n'
-        
-        html += '    </tbody>\n'
-        html += '    </table>\n\n'
-        
-        return html
+                    for f in (match['fighter1'], match['fighter2']):
+                        if f in stats:
+                            stats[f]['title_bouts'] += 1
+
+        def org_rows(key, fmt=lambda v: v):
+            ranked = sorted(stats.items(), key=lambda kv: kv[1][key], reverse=True)[:5]
+            return [(s['country'], n, fmt(s[key])) for n, s in ranked if s[key]]
+
+        rt = self._rec_table
+        tables = [
+            rt('Titles Won', 'Titles', org_rows('total_reigns'), size=5),
+            rt('Title Defenses', 'Defenses', org_rows('total_defenses'), size=5),
+            rt('Days as Champion', 'Days', org_rows('total_days', self.format_number), size=5),
+            rt('Title Bouts', 'Bouts', org_rows('title_bouts'), size=5),
+        ]
+        return (f'<h2>{org_display} Records</h2>\n' + self._grid_style()
+                + '<div class="records-grid">\n' + ''.join(tables) + '</div>\n\n')
 
     def generate_percentage_records_table(self):
         """Percentage: Win%, Pinfall per Win%, Submission per Win%, Decision per Win%"""
@@ -4388,8 +4392,10 @@ class WrestlingDatabase:
             sections = [
                 ('OPEN', self.generate_open_tournament_html()),
                 ('OPENBRACKETS', self._tournament_brackets_html('Open')),
+                ('OPENHOLDERS', self.generate_open_infobox_rows()),
                 ('TRIOS', self.generate_trios_tournament_html()),
                 ('TRIOSBRACKETS', self._tournament_brackets_html('Trios')),
+                ('TRIOSHOLDERS', self.generate_trios_infobox_rows()),
             ]
             for marker, html in sections:
                 s, e = f'<!-- {marker}_START -->', f'<!-- {marker}_END -->'

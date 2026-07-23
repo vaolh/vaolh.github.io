@@ -656,11 +656,14 @@ def generate_hof_html(db, peaks, peak_rank):
 # FILE WRITERS
 # =============================================================================
 
-def giant_killers(db, top_n=10):
-    """Biggest single upset per wrestler, judged at match time: how big an
-    underdog the winner was, in rating points, including the division-size
-    handicap. Replays the same Elo model as build_snapshots so the ratings a
-    win is measured against are the ones in effect that night."""
+def elo_extras(db, top_n=10, min_bouts=3):
+    """One replay of the Elo model (as build_snapshots) yielding two records:
+
+      * opp_rows  — highest average opponent rating (strength of schedule);
+                    each opponent counted at their rating that night.
+      * best      — the matches with the highest average rating between the two
+                    competitors (the marquee bouts), rated pre-match.
+    """
     ratings = defaultdict(lambda: BASE_RATING)
     div_counts = defaultdict(lambda: defaultdict(int))
 
@@ -670,7 +673,8 @@ def giant_killers(db, top_n=10):
             return None
         return WEIGHT_INDEX[min(counts, key=lambda w: (-counts[w], WEIGHT_INDEX[w]))]
 
-    best = {}
+    opp_sum, opp_n = defaultdict(float), defaultdict(int)
+    rated = []
     for _when, m in singles_matches(db):
         a, b = m['fighter1'], m['fighter2']
         wc = (m.get('weight_class') or '').lower()
@@ -680,17 +684,9 @@ def giant_killers(db, top_n=10):
         idx_a, idx_b = division_index(a), division_index(b)
         ra, rb = ratings[a], ratings[b]
 
-        # Record the upset from the ratings BEFORE this match updates them.
-        if not m.get('is_draw') and m.get('winner'):
-            if m['winner'] == a:
-                win, lose, rw, rl, iw, il = a, b, ra, rb, idx_a, idx_b
-            else:
-                win, lose, rw, rl, iw, il = b, a, rb, ra, idx_b, idx_a
-            hcap = SIZE_STEP * (iw - il) if (iw is not None and il is not None) else 0.0
-            deficit = (rl - rw) + hcap        # > 0 → winner was the underdog
-            cur = best.get(win)
-            if deficit > 0 and (cur is None or deficit > cur['value']):
-                best[win] = {'value': deficit, 'opponent': lose}
+        opp_sum[a] += rb; opp_n[a] += 1
+        opp_sum[b] += ra; opp_n[b] += 1
+        rated.append(((ra + rb) / 2.0, a, b))
 
         ea = expected_score(ra, rb, idx_a, idx_b)
         k = k_factor(db, m)
@@ -698,30 +694,64 @@ def giant_killers(db, top_n=10):
         ratings[a] = ra + k * (sa - ea)
         ratings[b] = rb + k * ((1.0 - sa) - (1.0 - ea))
 
-    ranked = sorted(best.items(), key=lambda kv: -kv[1]['value'])[:top_n]
-    return [{'name': n, 'country': db.wrestlers.get(n, {}).get('country', 'un'),
-             'value': d['value'], 'opponent': d['opponent']} for n, d in ranked]
+    def country(name):
+        return db.wrestlers.get(name, {}).get('country', 'un')
+
+    opp_rows = sorted(
+        ({'name': n, 'country': country(n), 'value': opp_sum[n] / opp_n[n]}
+         for n in opp_n if opp_n[n] >= min_bouts and n in db.ppv_wrestlers),
+        key=lambda r: -r['value'])[:top_n]
+
+    rated.sort(key=lambda t: -t[0])
+    best = [{'a': a, 'b': b, 'value': v,
+             'a_country': country(a), 'b_country': country(b)}
+            for v, a, b in rated[:top_n]]
+    return opp_rows, best
 
 
-def generate_giant_killer_html(db, size=10):
-    """Giant Killer record table in the same P4P style update.py uses. Always
-    renders `size` rows so short lists still fill out with empty cells."""
-    rows = giant_killers(db)
+def generate_opp_rating_html(rows, size=10):
     out = ['    <table class="p4p-rank record-table">',
-           '    <caption>Giant Killer &mdash; Biggest Upsets</caption>',
+           '    <caption>Highest Average Opponent Rating</caption>',
            '        <tr>',
            '            <th style="width: 12%;">No.</th>',
            '            <th style="width: 63%;">Wrestler</th>',
-           '            <th style="width: 25%;">Rating gap</th>',
+           '            <th style="width: 25%;">Avg rating</th>',
            '        </tr>']
     for i in range(size):
         out.append('        <tr>')
         out.append(f'            <th>{i + 1}</th>')
         if i < len(rows):
             r = rows[i]
-            out.append(f'            <td>{flag(r["country"])} {_wlink(r["name"])} '
-                       f'<span class="sub">def. {_wlink(r["opponent"])}</span></td>')
-            out.append(f'            <td>+{r["value"]:.0f}</td>')
+            out.append(f'            <td>{flag(r["country"])} {_wlink(r["name"])}</td>')
+            out.append(f'            <td>{r["value"]:.0f}</td>')
+        else:
+            out.append('            <td></td>')
+            out.append('            <td></td>')
+        out.append('        </tr>')
+    out.append('    </table>')
+    return '\n'.join(out) + '\n'
+
+
+def generate_best_matches_html(rows, size=10):
+    # Two names per cell, so render the matchup a touch smaller to avoid overflow
+    # in the narrow two-per-line tables.
+    out = ['    <table class="p4p-rank record-table">',
+           '    <caption>Best Matches (by Elo)</caption>',
+           '        <tr>',
+           '            <th style="width: 12%;">No.</th>',
+           '            <th style="width: 63%;">Match</th>',
+           '            <th style="width: 25%;">Avg rating</th>',
+           '        </tr>']
+    for i in range(size):
+        out.append('        <tr>')
+        out.append(f'            <th>{i + 1}</th>')
+        if i < len(rows):
+            r = rows[i]
+            out.append('            <td style="font-size: 0.9em;">'
+                       f'{flag(r["a_country"])} {_wlink(r["a"])} '
+                       f'<span class="sub">vs.</span> '
+                       f'{flag(r["b_country"])} {_wlink(r["b"])}</td>')
+            out.append(f'            <td>{r["value"]:.0f}</td>')
         else:
             out.append('            <td></td>')
             out.append('            <td></td>')
@@ -888,9 +918,13 @@ def run(db):
                      '<!-- HOFMEMBERS_START -->', '<!-- HOFMEMBERS_END -->',
                      generate_hof_html(db, peaks, peak_rank), 'Hall of Fame')
 
+    opp_rows, best = elo_extras(db)
     _replace_between('wrestling/records.html',
-                     '<!-- GIANTKILLER_START -->', '<!-- GIANTKILLER_END -->',
-                     generate_giant_killer_html(db), 'Giant Killer records')
+                     '<!-- OPPRATING_START -->', '<!-- OPPRATING_END -->',
+                     generate_opp_rating_html(opp_rows), 'Opponent-rating record')
+    _replace_between('wrestling/records.html',
+                     '<!-- BESTMATCHES_START -->', '<!-- BESTMATCHES_END -->',
+                     generate_best_matches_html(best), 'Best-matches record')
 
     update_infoboxes(db, peak_rank, current_rankings(snapshots, months))
 

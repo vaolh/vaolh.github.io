@@ -392,60 +392,145 @@
 
 <!-- WWFRECORDS_START -->
 <h2>WWF Records</h2>
-    <table class="records">
-    <thead>
+<style>
+.records-grid{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;}
+.records-grid > table{width:48%;}
+@media (max-width:760px){.records-grid > table{width:100%;}}
+</style>
+<div class="records-grid">
+    <table class="p4p-rank record-table">
+    <caption>Titles Won</caption>
         <tr>
-            <th rowspan="2" style="width: 5%;">No.</th>
-            <th colspan="2" style="width: 23.75%;">Titles Won</th>
-            <th colspan="2" style="width: 23.75%;">Title Defenses</th>
-            <th colspan="2" style="width: 23.75%;">Days as Champion</th>
-            <th colspan="2" style="width: 23.75%;">Title Bouts</th>
+            <th style="width: 12%;">No.</th>
+            <th style="width: 63%;">Wrestler</th>
+            <th style="width: 25%;">Titles</th>
         </tr>
-        <tr>
-            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>
-            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>
-            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>
-            <th style="width: 18.75%;">Name</th><th style="width: 5%;">#</th>
-        </tr>
-    </thead>
-    <tbody>
         <tr>
             <th>1</th>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/the-rock.html">The Rock</a> </td><td>1</td>
-            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/el-nieto-del-santo.html">El Nieto del Santo</a> </td><td>7</td>
-            <td><span class="fi fi-ca"></span> <a href="/wrestling/wrestlers/kenny-omega.html">Kenny Omega</a> </td><td>357</td>
-            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/el-nieto-del-santo.html">El Nieto del Santo</a> </td><td>8</td>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/the-rock.html">The Rock</a></td>
+            <td>1</td>
         </tr>
         <tr>
             <th>2</th>
-            <td><span class="fi fi-ca"></span> <a href="/wrestling/wrestlers/kenny-omega.html">Kenny Omega</a> </td><td>1</td>
-            <td><span class="fi fi-ca"></span> <a href="/wrestling/wrestlers/kenny-omega.html">Kenny Omega</a> </td><td>6</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/the-rock.html">The Rock</a> </td><td>322</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/charlotte-flair.html">Charlotte Flair</a> </td><td>7</td>
+            <td><span class="fi fi-ca"></span> <a href="/wrestling/wrestlers/kenny-omega.html">Kenny Omega</a></td>
+            <td>1</td>
         </tr>
         <tr>
             <th>3</th>
-            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/el-nieto-del-santo.html">El Nieto del Santo</a> </td><td>1</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/charlotte-flair.html">Charlotte Flair</a> </td><td>6</td>
-            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/el-nieto-del-santo.html">El Nieto del Santo</a> </td><td>308</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/the-rock.html">The Rock</a> </td><td>6</td>
+            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/el-nieto-del-santo.html">El Nieto del Santo</a></td>
+            <td>1</td>
         </tr>
         <tr>
             <th>4</th>
-            <td><span class="fi fi-gb"></span> <a href="/wrestling/wrestlers/tyler-bate.html">Tyler Bate</a> </td><td>1</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/the-rock.html">The Rock</a> </td><td>5</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/charlotte-flair.html">Charlotte Flair</a> </td><td>294</td>
-            <td><span class="fi fi-ca"></span> <a href="/wrestling/wrestlers/kenny-omega.html">Kenny Omega</a> </td><td>6</td>
+            <td><span class="fi fi-gb"></span> <a href="/wrestling/wrestlers/tyler-bate.html">Tyler Bate</a></td>
+            <td>1</td>
         </tr>
         <tr>
             <th>5</th>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/rey-mysterio.html">Rey Mysterio</a> </td><td>1</td>
-            <td><span class="fi fi-gb"></span> <a href="/wrestling/wrestlers/tyler-bate.html">Tyler Bate</a> </td><td>3</td>
-            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/rey-mysterio.html">Rey Mysterio</a> </td><td>182</td>
-            <td><span class="fi fi-gb"></span> <a href="/wrestling/wrestlers/tyler-bate.html">Tyler Bate</a> </td><td>5</td>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/rey-mysterio.html">Rey Mysterio</a></td>
+            <td>1</td>
         </tr>
-    </tbody>
     </table>
+    <table class="p4p-rank record-table">
+    <caption>Title Defenses</caption>
+        <tr>
+            <th style="width: 12%;">No.</th>
+            <th style="width: 63%;">Wrestler</th>
+            <th style="width: 25%;">Defenses</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/el-nieto-del-santo.html">El Nieto del Santo</a></td>
+            <td>7</td>
+        </tr>
+        <tr>
+            <th>2</th>
+            <td><span class="fi fi-ca"></span> <a href="/wrestling/wrestlers/kenny-omega.html">Kenny Omega</a></td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <th>3</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/charlotte-flair.html">Charlotte Flair</a></td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <th>4</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/the-rock.html">The Rock</a></td>
+            <td>5</td>
+        </tr>
+        <tr>
+            <th>5</th>
+            <td><span class="fi fi-gb"></span> <a href="/wrestling/wrestlers/tyler-bate.html">Tyler Bate</a></td>
+            <td>3</td>
+        </tr>
+    </table>
+    <table class="p4p-rank record-table">
+    <caption>Days as Champion</caption>
+        <tr>
+            <th style="width: 12%;">No.</th>
+            <th style="width: 63%;">Wrestler</th>
+            <th style="width: 25%;">Days</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-ca"></span> <a href="/wrestling/wrestlers/kenny-omega.html">Kenny Omega</a></td>
+            <td>357</td>
+        </tr>
+        <tr>
+            <th>2</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/the-rock.html">The Rock</a></td>
+            <td>322</td>
+        </tr>
+        <tr>
+            <th>3</th>
+            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/el-nieto-del-santo.html">El Nieto del Santo</a></td>
+            <td>308</td>
+        </tr>
+        <tr>
+            <th>4</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/charlotte-flair.html">Charlotte Flair</a></td>
+            <td>294</td>
+        </tr>
+        <tr>
+            <th>5</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/rey-mysterio.html">Rey Mysterio</a></td>
+            <td>182</td>
+        </tr>
+    </table>
+    <table class="p4p-rank record-table">
+    <caption>Title Bouts</caption>
+        <tr>
+            <th style="width: 12%;">No.</th>
+            <th style="width: 63%;">Wrestler</th>
+            <th style="width: 25%;">Bouts</th>
+        </tr>
+        <tr>
+            <th>1</th>
+            <td><span class="fi fi-mx"></span> <a href="/wrestling/wrestlers/el-nieto-del-santo.html">El Nieto del Santo</a></td>
+            <td>8</td>
+        </tr>
+        <tr>
+            <th>2</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/charlotte-flair.html">Charlotte Flair</a></td>
+            <td>7</td>
+        </tr>
+        <tr>
+            <th>3</th>
+            <td><span class="fi fi-us"></span> <a href="/wrestling/wrestlers/the-rock.html">The Rock</a></td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <th>4</th>
+            <td><span class="fi fi-ca"></span> <a href="/wrestling/wrestlers/kenny-omega.html">Kenny Omega</a></td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <th>5</th>
+            <td><span class="fi fi-gb"></span> <a href="/wrestling/wrestlers/tyler-bate.html">Tyler Bate</a></td>
+            <td>5</td>
+        </tr>
+    </table>
+</div>
 
 <!-- WWFRECORDS_END -->
 

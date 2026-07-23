@@ -767,13 +767,16 @@ def card_row(no, notes):
 '''
 
 
-def card_info_row(date_str):
+def card_info_row(date_str, btype='PPV', country='xx', location='City, Country',
+                  venue='Venue', network='Network'):
+    # Attendance and audience (the blank <th> before the date) are always left
+    # empty — the user fills those after the show is played.
     return f'''            <tr>
-                <th> <a href="">PPV</a> </th>
-                <th colspan="2"><span class="fi fi-xx"></span> City, Country </th>
-                <th colspan="2">Venue</th>
+                <th> <a href="">{btype}</a> </th>
+                <th colspan="2"><span class="fi fi-{country}"></span> {location} </th>
+                <th colspan="2">{venue}</th>
                 <th>Attendance: </th>
-                <th>Network</th>
+                <th>{network}</th>
                 <th> </th>
                 <th>{date_str} </th>
             </tr>

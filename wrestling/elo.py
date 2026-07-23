@@ -726,7 +726,14 @@ def elo_extras(db, top_n=10, min_bouts=3):
     return giant, opp, best
 
 
-def _elo_table(caption, value_label, rows, cell_fn, size=10):
+# Two-name matchup cells (Biggest Upsets / Best Matches) render inline (not
+# stacked) at a small size so both wrestlers fit on one line without overflowing
+# the narrow grid tables.
+_MATCHUP = 'font-size: 0.72em;'
+
+
+def _elo_table(caption, value_label, rows, cell_fn, size=10, cell_style=''):
+    style = f' style="{cell_style}"' if cell_style else ''
     out = ['    <table class="p4p-rank record-table">',
            f'    <caption>{caption}</caption>',
            '        <tr>',
@@ -739,7 +746,7 @@ def _elo_table(caption, value_label, rows, cell_fn, size=10):
         out.append(f'            <th>{i + 1}</th>')
         if i < len(rows):
             cell, value = cell_fn(rows[i])
-            out.append(f'            <td>{cell}</td>')
+            out.append(f'            <td{style}>{cell}</td>')
             out.append(f'            <td>{value}</td>')
         else:
             out.append('            <td></td>')
@@ -750,11 +757,10 @@ def _elo_table(caption, value_label, rows, cell_fn, size=10):
 
 
 def generate_giant_killer_html(rows, size=10):
-    # Winner on top, "def. opponent" on its own line — can't overflow sideways.
     return _elo_table('Biggest Upsets', 'Rating gap', rows, lambda r: (
-        f'{flag(r["country"])} {_wlink(r["name"])}<br>'
-        f'<span class="sub">def. {flag(r["opponent_country"])} {_wlink(r["opponent"])}</span>',
-        f'+{r["value"]:.0f}'), size)
+        f'{flag(r["country"])} {_wlink(r["name"])} def. '
+        f'{flag(r["opponent_country"])} {_wlink(r["opponent"])}',
+        f'+{r["value"]:.0f}'), size, cell_style=_MATCHUP)
 
 
 def generate_opp_rating_html(rows, size=10):
@@ -764,12 +770,10 @@ def generate_opp_rating_html(rows, size=10):
 
 
 def generate_best_matches_html(rows, size=10):
-    # Two competitors stacked (each on its own line) so long names wrap instead
-    # of overflowing the narrow two-per-line table.
     return _elo_table('Best Matches (by Elo)', 'Avg rating', rows, lambda r: (
-        f'{flag(r["a_country"])} {_wlink(r["a"])}<br>'
-        f'<span class="sub">vs. {flag(r["b_country"])} {_wlink(r["b"])}</span>',
-        f'{r["value"]:.0f}'), size)
+        f'{flag(r["a_country"])} {_wlink(r["a"])} vs. '
+        f'{flag(r["b_country"])} {_wlink(r["b"])}',
+        f'{r["value"]:.0f}'), size, cell_style=_MATCHUP)
 
 
 def _replace_between(path, start, end, html, what):

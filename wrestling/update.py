@@ -112,14 +112,10 @@ NAV_LINKS = [
     ('/wrestling/wiki.html', 'Wrestling Wiki', ''),
     ('/wrestling/wrestlers/index.html', 'Wrestlers', ''),
     ('/wrestling/records.html', 'Records', 'All-Time Records'),
-    ('/wrestling/tournaments.html', 'Tournaments', 'The Open & Trios Tournament'),
-    ('/wrestling/ppv/wiki.html', 'Schedule', 'Annual Promotion Schedule'),
     ('/wrestling/org/wwf.html', 'WWF', 'World Wrestling Federation'),
     ('/wrestling/org/wwo.html', 'WWO', 'World Wrestling Organization'),
     ('/wrestling/org/iwb.html', 'IWB', 'International Wrestling Board'),
-    ('/wrestling/org/pwhof.html', 'PWHOF', 'Professional Wrestling Hall of Fame'),
     ('/wrestling/org/ring.html', 'The Ring', ''),
-    ('/wrestling/org/draft.html', 'The Draft', ''),
 ]
 
 _THEME_TOGGLE = (
@@ -550,6 +546,7 @@ class WrestlingDatabase:
             'location': event_location,
             'country': event_country,
             'venue': event_venue,
+            'network': network,
             'audience_metric': audience_metric,
             'broadcast_type': broadcast_type,
             'attendance': attendance,
@@ -1211,6 +1208,42 @@ class WrestlingDatabase:
             out.append((org, weight_disp.lower(), weight_disp, country, name))
         return out
 
+    def _next_event_info(self):
+        """Date + venue/location/network for a newly generated card, inherited
+        from the same event one year earlier (the calendar repeats annually).
+        Its date is that event's date + 364 days — same weekday (Saturday),
+        same week of the year. Returns None until a full prior year exists, in
+        which case the caller keeps the blank placeholders."""
+        from datetime import timedelta
+        dated = sorted(((self.parse_date(e['date']), e) for e in self.events
+                        if e.get('date') and self.parse_date(e['date'])),
+                       key=lambda t: t[0])
+        if not dated:
+            return None
+        last_date = dated[-1][0]
+        # How many events make up the trailing year (the annual cycle length).
+        cycle = sum(1 for d, _ in dated if (last_date - d).days < 364)
+        prev_idx = len(dated) - cycle          # counterpart of the new event
+        if prev_idx < 0:
+            return None
+        prev_date, prev = dated[prev_idx]
+        # Calendar lookup: same calendar date one year on, snapped forward to the
+        # weekday the promotion runs on (Saturday) — an actual date lookup, not
+        # fixed-day arithmetic.
+        try:
+            base = prev_date.replace(year=prev_date.year + 1)
+        except ValueError:                     # Feb 29 in a non-leap year
+            base = prev_date.replace(year=prev_date.year + 1, day=28)
+        new_date = base + timedelta(days=(prev_date.weekday() - base.weekday()) % 7)
+        return {
+            'date': new_date.strftime('%B %-d, %Y'),
+            'btype': prev.get('broadcast_type') or 'PPV',
+            'country': prev.get('country') or 'xx',
+            'location': prev.get('location') or 'City, Country',
+            'venue': prev.get('venue') or 'Venue',
+            'network': prev.get('network') or 'Network',
+        }
+
     def generate_next_wts_if_ready(self, path, opmod):
         """If the newest WTS is fully wrestled, append the next one.
 
@@ -1273,11 +1306,25 @@ class WrestlingDatabase:
         kept = setup_rows + title_rows
         rows = [opmod.wts_row(i, mt, wt, nt, f1=f1, f2=f2)
                 for i, (mt, wt, nt, f1, f2) in enumerate(kept, 1)]
+
+        # Inherit date/venue/location/network from the same event a year ago;
+        # fall back to blank placeholders in the first year.
+        try:
+            info = self._next_event_info()
+        except Exception:
+            info = None
+        if info:
+            info_row = opmod.card_info_row(info['date'], btype=info['btype'],
+                                           country=info['country'], location=info['location'],
+                                           venue=info['venue'], network=info['network'])
+        else:
+            info_row = opmod.card_info_row('MONTH DAY, YEAR')
+
         block = (
             f"\n<!-- WTS {number} -->\n"
             "    <details>\n"
             f"        <summary>World Title Series {number}: TBD</summary>\n"
-            f"{opmod.CARD_HEADER}{''.join(rows)}{opmod.card_info_row('MONTH DAY, YEAR')}"
+            f"{opmod.CARD_HEADER}{''.join(rows)}{info_row}"
             "    </details>\n\n"
         )
         anchor = '<div id="bottom"></div>'
@@ -2756,16 +2803,17 @@ class WrestlingDatabase:
             rt('Most Consecutive Title Defenses', 'Defenses', kv_rows(max_def)),
             rt('Most World Title Bouts', 'Bouts', wt_rows(lambda s: s['title_bouts'])),
 
-            # ── Elo — filled by elo.py (ratings) ─────────────────────────────
+            # ── Elo — filled by elo.py (ratings). Biggest Upsets and Best
+            #    Matches are kept adjacent so they share a row in the grid. ────
             '<!-- GIANTKILLER_START -->\n'
             + rt('Biggest Upsets', 'Rating gap', [])
             + '<!-- GIANTKILLER_END -->\n',
-            '<!-- OPPRATING_START -->\n'
-            + rt('Highest Average Opponent Rating', 'Avg rating', [])
-            + '<!-- OPPRATING_END -->\n',
             '<!-- BESTMATCHES_START -->\n'
             + rt('Best Matches (by Elo)', 'Avg rating', [])
             + '<!-- BESTMATCHES_END -->\n',
+            '<!-- OPPRATING_START -->\n'
+            + rt('Highest Average Opponent Rating', 'Avg rating', [])
+            + '<!-- OPPRATING_END -->\n',
 
             # ── Contender tier ───────────────────────────────────────────────
             rt('Most Champions Faced', 'Champions',
@@ -2788,9 +2836,6 @@ class WrestlingDatabase:
             rt('Longest Losing Streak', 'Losses',
                rows(top(lambda w: w['_loss_streak'], lambda w: w['_loss_streak'] > 0),
                     lambda w: w['_loss_streak'])),
-            rt('Most Competitive Losses', 'Losses',
-               rows(top(lambda w: w['_competitive_losses'], lambda w: w['_competitive_losses'] > 0),
-                    lambda w: w['_competitive_losses'])),
             rt('Most Pinfall Wins', 'Pinfalls',
                rows(top(lambda w: w['pinfall_wins'], lambda w: w['pinfall_wins'] > 0),
                     lambda w: w['pinfall_wins'])),

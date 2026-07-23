@@ -116,6 +116,8 @@ NAV_LINKS = [
     ('/wrestling/org/iwb.html', 'IWB', 'International Wrestling Board'),
     ('/wrestling/org/pwhof.html', 'PWHOF', 'Professional Wrestling Hall of Fame'),
     ('/wrestling/org/ring.html', '<i>The Ring</i>', ''),
+    ('/wrestling/records.html', 'Records', 'All-Time Records'),
+    ('/wrestling/tournaments.html', 'Tournaments', 'The Open & Trios Tournament'),
 ]
 
 _THEME_TOGGLE = (
@@ -208,7 +210,8 @@ def abbreviate_dates_in_generated_files():
     targets = (glob.glob('wrestling/wrestlers/*.html')
                + glob.glob('wrestling/org/*.html')
                + glob.glob('wrestling/p4p/*.html')
-               + ['wrestling/wiki.html', 'wrestling/ppv/wiki.html'])
+               + ['wrestling/wiki.html', 'wrestling/ppv/wiki.html',
+                  'wrestling/records.html', 'wrestling/tournaments.html'])
     changed = 0
     for f in targets:
         if not os.path.exists(f):
@@ -1937,6 +1940,37 @@ class WrestlingDatabase:
         
         return html
 
+    def _tournament_brackets_html(self, kind):
+        """Mirror the rendered <table class="bracket"> markup from ppv/list.html
+        onto the Tournaments page (display only — the source stays in the PPV
+        list, populated by open.py). kind = 'Open' or 'Trios'; newest first."""
+        try:
+            with open('wrestling/ppv/list.html', 'r', encoding='utf-8') as f:
+                raw = f.read()
+        except OSError:
+            return ''
+        blocks = []
+        for det in re.findall(r'<details>.*?</details>', raw, re.S):
+            sm = re.search(r'<summary>(.*?)</summary>', det, re.S)
+            if not sm:
+                continue
+            title = re.sub(r'\s+', ' ', sm.group(1)).strip()
+            if kind.lower() not in title.lower():
+                continue
+            tbl = re.search(r'<table[^>]*class="bracket".*?</table>', det, re.S)
+            if not tbl:
+                continue
+            ym = re.search(r'(\d{4})', title)
+            blocks.append((int(ym.group(1)) if ym else 0, title, tbl.group(0)))
+        if not blocks:
+            return ''
+        blocks.sort(key=lambda b: (-b[0], b[1]))
+        out = []
+        for _year, title, tbl in blocks:
+            out.append(f'    <h3>{title}</h3>\n'
+                       f'    <div style="overflow-x: auto;">\n{tbl}\n    </div>\n')
+        return '\n'.join(out)
+
     def generate_trios_tournament_html(self):
         """Generate the Trios Tournament winners table for wiki.html from parsed data.
         Each row has 3 winners (in one cell with <br>) and 3 losers."""
@@ -2464,19 +2498,225 @@ class WrestlingDatabase:
 
         return html + '<!--/NOABBR-->'
 
+    @staticmethod
+    def _flatten_details(html):
+        """Turn <details><summary>X</summary>…</details> into <h3>X</h3>… so the
+        multi-column business tables sit flat in the records list."""
+        html = re.sub(r'\s*<summary>(.*?)</summary>', r'\n    <h3>\1</h3>', html)
+        return (html.replace('    <details>\n', '').replace('    </details>\n', '')
+                    .replace('<details>', '').replace('</details>', ''))
+
+    def _rec_table(self, caption, value_label, rows):
+        """A P4P-style record table: rank | wrestler | value (value right-aligned)."""
+        out = ['    <table class="p4p-rank record-table">',
+               f'    <caption>{caption}</caption>',
+               '        <tr>',
+               '            <th style="width: 10%;">No.</th>',
+               '            <th style="width: 66%;">Wrestler</th>',
+               f'            <th style="width: 24%; text-align: right;">{value_label}</th>',
+               '        </tr>']
+        if not rows:
+            out.append('        <tr><td colspan="3">&mdash;</td></tr>')
+        for i, (country, name, value) in enumerate(rows, 1):
+            out += ['        <tr>',
+                    f'            <th>{i}</th>',
+                    f'            <td><span class="fi fi-{country}"></span> {self._wlink(name)}</td>',
+                    f'            <td style="text-align: right;">{value}</td>',
+                    '        </tr>']
+        out.append('    </table>')
+        return '\n'.join(out) + '\n'
+
+    def _world_title_totals(self):
+        """Per-wrestler world-title aggregates. Overlapping belts held at once
+        count as ONE continuous reign period (adding a belt mid-reign doesn't
+        start a new one). Returns {name: {name, country, total_reigns,
+        total_defenses, total_days, title_bouts}}."""
+        import datetime as _dt
+        wrestler_reigns = defaultdict(list)
+        weights = ['heavyweight', 'bridgerweight', 'middleweight',
+                   'welterweight', 'lightweight', 'featherweight']
+        for org in ['wwf', 'wwo', 'iwb']:
+            for weight in weights:
+                for reign in self.championships[org][weight]:
+                    start = self.parse_date(reign['date'])
+                    if not start:
+                        continue
+                    end = start + _dt.timedelta(days=reign['days']) if reign['days'] else start
+                    wrestler_reigns[reign['champion']].append({
+                        'start': start, 'end': end,
+                        'defenses': reign['defenses'] or 0, 'country': reign['country']})
+
+        totals = defaultdict(lambda: {'name': '', 'country': 'un', 'total_reigns': 0,
+                                      'total_defenses': 0, 'total_days': 0, 'title_bouts': 0})
+        for event in self.events:
+            for match in event['matches']:
+                is_title, orgs = self.is_title_match(match['notes'])
+                if is_title and match['winner'] and any(o in ['wwf', 'wwo', 'iwb'] for o in orgs):
+                    for f in (match['fighter1'], match['fighter2']):
+                        if f in wrestler_reigns:
+                            totals[f]['title_bouts'] += 1
+
+        for champ, reigns in wrestler_reigns.items():
+            merged = []
+            for r in sorted(reigns, key=lambda x: x['start']):
+                if merged and r['start'] <= merged[-1]['end']:
+                    p = merged[-1]
+                    p['end'] = max(p['end'], r['end'])
+                    p['belts'].append(r['defenses'])
+                    p['defenses'] = max(p['belts'])
+                else:
+                    merged.append({'start': r['start'], 'end': r['end'],
+                                   'defenses': r['defenses'], 'country': r['country'],
+                                   'belts': [r['defenses']]})
+            belts = 0
+            for p in merged:
+                belts += len(p['belts'])
+                totals[champ]['total_defenses'] += p['defenses']
+                totals[champ]['total_days'] += (p['end'] - p['start']).days
+                totals[champ]['country'] = p['country']
+            totals[champ]['name'] = champ
+            totals[champ]['total_reigns'] = belts
+        return totals
+
     def generate_records_html(self):
-        """Generate all records page HTML"""
-        html = '<h2>All-Time Records</h2>\n\n'
-        html += self.generate_singles_records_html()
-        html += self.generate_statistics_records_html()
-        html += self.generate_world_titles_records_html()
-        html += self.generate_streaks_records_html()
-        html += self.generate_event_records_html()
-        html += self.generate_misc_records_html()
-        html += self.generate_drawing_power_html()
-        html += self.generate_broadcast_records_html()
-        html += self.generate_attendance_records_html()
-        return html
+        """All-Time Records — one value-ranked table per record (P4P style),
+        flattened into a single list ordered by prestige. Giant Killer is filled
+        in later by elo.py (it needs ratings), so it goes out as a marked stub."""
+        W = list(self.wrestlers.values())
+        fnum = self.format_number
+        bouts = lambda w: w['wins'] + w['losses'] + w['draws']
+
+        def top(key, filt=None, n=10):
+            pool = [w for w in W if (filt(w) if filt else True)]
+            return sorted(pool, key=key, reverse=True)[:n]
+
+        def rows(pool, value_fn):
+            return [(w.get('country', 'un'), w['name'], value_fn(w)) for w in pool]
+
+        # Champions who ever held a world belt (for Gatekeeper).
+        champ_set = set()
+        for org in ('wwf', 'wwo', 'iwb'):
+            for wt in self.championships[org]:
+                for r in self.championships[org][wt]:
+                    champ_set.add(r['champion'])
+
+        # New per-wrestler stats: contender wins, competitive (decision) losses,
+        # distinct champions faced, and PPV bouts/wins.
+        for w in W:
+            cw = cl = 0
+            faced = set()
+            for m in w['matches']:
+                notes = (m.get('notes') or '').lower()
+                if m.get('result') == 'Win' and 'contender' in notes:
+                    cw += 1
+                # Competitive loss = lost without being finished (not pinned or
+                # submitted): a count-out / DQ / time-limit result.
+                if (m.get('result') == 'Loss' and m.get('method')
+                        and m.get('method') not in ('Pinfall', 'Submission')):
+                    cl += 1
+                opp = m['fighter2'] if m.get('fighter1') == w['name'] else m.get('fighter1')
+                if opp and opp != w['name'] and opp in champ_set:
+                    faced.add(opp)
+            w['_contender_wins'] = cw
+            w['_competitive_losses'] = cl
+            w['_champs_faced'] = len(faced)
+            w['_ppv_bouts'] = sum(1 for m in w['matches'] if m.get('event', '') != 'Live TV')
+            w['_ppv_wins'] = sum(1 for m in w['matches']
+                                 if m.get('result') == 'Win' and m.get('event', '') != 'Live TV')
+
+        wt = sorted(self._world_title_totals().values(),
+                    key=lambda s: s['total_reigns'], reverse=True)
+        def wt_rows(key):
+            return [(s['country'], s['name'], key(s))
+                    for s in sorted(wt, key=key, reverse=True)[:10] if key(s)]
+
+        p = ['<h2>List of Records</h2>\n']
+
+        # ── World titles (most prestigious) ──────────────────────────────────
+        p.append(self._rec_table('Most World Titles Won', 'Reigns',
+                 wt_rows(lambda s: s['total_reigns'])))
+        p.append(self._rec_table('Most World Title Defenses', 'Defenses',
+                 wt_rows(lambda s: s['total_defenses'])))
+        p.append(self._rec_table('Most Days as World Champion', 'Days',
+                 [(c, n, fnum(v)) for c, n, v in wt_rows(lambda s: s['total_days'])]))
+        p.append(self._rec_table('Most World Title Bouts', 'Bouts',
+                 wt_rows(lambda s: s['title_bouts'])))
+
+        # ── Giant Killer — filled by elo.py (ratings) ────────────────────────
+        p.append('<!-- GIANTKILLER_START -->\n'
+                 + self._rec_table('Giant Killer &mdash; Biggest Upsets', 'Rating gap', [])
+                 + '<!-- GIANTKILLER_END -->\n')
+
+        # ── Contender tier ───────────────────────────────────────────────────
+        p.append(self._rec_table('Gatekeeper &mdash; Most Champions Faced', 'Champions',
+                 rows(top(lambda w: w['_champs_faced'], lambda w: w['_champs_faced'] > 0),
+                      lambda w: w['_champs_faced'])))
+        p.append(self._rec_table('Most Contender Matches Won', 'Wins',
+                 rows(top(lambda w: w['_contender_wins'], lambda w: w['_contender_wins'] > 0),
+                      lambda w: w['_contender_wins'])))
+
+        # ── Win records ──────────────────────────────────────────────────────
+        p.append(self._rec_table('Most Wins', 'Wins',
+                 rows(top(lambda w: w['wins'], lambda w: w['wins'] > 0), lambda w: w['wins'])))
+        p.append(self._rec_table('Highest Win Percentage', 'Win %',
+                 rows(top(lambda w: w['wins'] / bouts(w), lambda w: bouts(w) >= 5),
+                      lambda w: f"{w['wins'] / bouts(w) * 100:.1f}%")))
+        p.append(self._rec_table('Most Bouts', 'Bouts',
+                 rows(top(bouts, lambda w: bouts(w) > 0), bouts)))
+        p.append(self._rec_table('Most Competitive Losses', 'Losses',
+                 rows(top(lambda w: w['_competitive_losses'], lambda w: w['_competitive_losses'] > 0),
+                      lambda w: w['_competitive_losses'])))
+        p.append(self._rec_table('Most Pinfall Wins', 'Pinfalls',
+                 rows(top(lambda w: w['pinfall_wins'], lambda w: w['pinfall_wins'] > 0),
+                      lambda w: w['pinfall_wins'])))
+        p.append(self._rec_table('Most Submission Wins', 'Submissions',
+                 rows(top(lambda w: w['submission_wins'], lambda w: w['submission_wins'] > 0),
+                      lambda w: w['submission_wins'])))
+
+        # ── Finish-rate percentages (min. 5 wins) ────────────────────────────
+        def pct(field):
+            return rows(top(lambda w: w[field] / w['wins'] if w['wins'] else 0,
+                            lambda w: w['wins'] >= 5),
+                        lambda w: f"{w[field] / w['wins'] * 100:.1f}%")
+        p.append(self._rec_table('Highest Pinfall Rate', 'Pin / win', pct('pinfall_wins')))
+        p.append(self._rec_table('Highest Submission Rate', 'Sub / win', pct('submission_wins')))
+        p.append(self._rec_table('Highest Decision Rate', 'Dec / win', pct('decision_wins')))
+
+        # ── Marquee events ───────────────────────────────────────────────────
+        p.append(self._rec_table('Most PPV Main Events', 'Main events',
+                 rows(top(lambda w: w['main_events'], lambda w: w['main_events'] > 0),
+                      lambda w: w['main_events'])))
+        p.append(self._rec_table('Most WrestleMania Main Events', 'Main events',
+                 rows(top(lambda w: w['wrestlemania_main_events'], lambda w: w['wrestlemania_main_events'] > 0),
+                      lambda w: w['wrestlemania_main_events'])))
+        p.append(self._rec_table('Most LibreMania Main Events', 'Main events',
+                 rows(top(lambda w: w['libremania_main_events'], lambda w: w['libremania_main_events'] > 0),
+                      lambda w: w['libremania_main_events'])))
+        p.append(self._rec_table('Most PPV Bouts', 'Bouts',
+                 rows(top(lambda w: w['_ppv_bouts'], lambda w: w['_ppv_bouts'] > 0),
+                      lambda w: w['_ppv_bouts'])))
+        p.append(self._rec_table('Most PPV Wins', 'Wins',
+                 rows(top(lambda w: w['_ppv_wins'], lambda w: w['_ppv_wins'] > 0),
+                      lambda w: w['_ppv_wins'])))
+
+        # ── Speciality ───────────────────────────────────────────────────────
+        p.append(self._rec_table('Most <i>Luchas de Apuestas</i> Won', 'Wins',
+                 rows(top(lambda w: w.get('lucha_wins', 0), lambda w: w.get('lucha_wins', 0) > 0),
+                      lambda w: w.get('lucha_wins', 0))))
+        p.append(self._rec_table('Most Open Tournament Wins', 'Wins',
+                 rows(top(lambda w: w.get('open_tournament_wins', 0), lambda w: w.get('open_tournament_wins', 0) > 0),
+                      lambda w: w.get('open_tournament_wins', 0))))
+        p.append(self._rec_table('Most Trios Tournament Wins', 'Wins',
+                 rows(top(lambda w: w.get('trios_tournament_wins', 0), lambda w: w.get('trios_tournament_wins', 0) > 0),
+                      lambda w: w.get('trios_tournament_wins', 0))))
+
+        # ── Streaks & business (multi-column, flattened) ─────────────────────
+        p.append(self._flatten_details(self.generate_streaks_records_html()))
+        p.append(self._flatten_details(self.generate_drawing_power_html()))
+        p.append(self._flatten_details(self.generate_broadcast_records_html()))
+        p.append(self._flatten_details(self.generate_attendance_records_html()))
+
+        return '\n'.join(p) + '\n'
     
     def generate_single_org_records_html(self, org):
         """Generate organization-specific records table for one org"""
@@ -4050,20 +4290,8 @@ class WrestlingDatabase:
                 after = content.split('<!-- UNDISPUTED_END -->')[1]
                 content = before + '<!-- UNDISPUTED_START -->\n' + undisputed_html + '<!-- UNDISPUTED_END -->' + after
             
-            # Update Open Tournament table
-            open_html = self.generate_open_tournament_html()
-            if '<!-- OPEN_START -->' in content and '<!-- OPEN_END -->' in content:
-                before = content.split('<!-- OPEN_START -->')[0]
-                after = content.split('<!-- OPEN_END -->')[1]
-                content = before + '<!-- OPEN_START -->\n' + open_html + '<!-- OPEN_END -->' + after
-            
-            # Update Trios Tournament table
-            trios_html = self.generate_trios_tournament_html()
-            if '<!-- TRIOS_START -->' in content and '<!-- TRIOS_END -->' in content:
-                before = content.split('<!-- TRIOS_START -->')[0]
-                after = content.split('<!-- TRIOS_END -->')[1]
-                content = before + '<!-- TRIOS_START -->\n' + trios_html + '<!-- TRIOS_END -->' + after
-            
+            # (Open & Trios tournaments now live on wrestling/tournaments.html.)
+
             # Update apuestas
             apuestas_html = self.generate_apuestas_html()
             if '<!-- APUESTAS_START -->' in content and '<!-- APUESTAS_END -->' in content:
@@ -4071,16 +4299,42 @@ class WrestlingDatabase:
                 after = content.split('<!-- APUESTAS_END -->')[1]
                 content = before + '<!-- APUESTAS_START -->\n' + apuestas_html + '<!-- APUESTAS_END -->' + after
             
-            # Update records
+            with open(wiki_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            print(f"✓ Updated {wiki_path}")
+
+        # 1b. Records now live on their own page (wrestling/records.html).
+        records_path = 'wrestling/records.html'
+        if os.path.exists(records_path):
+            with open(records_path, 'r', encoding='utf-8') as f:
+                content = f.read()
             records_html = self.generate_records_html()
             if '<!-- RECORDS_START -->' in content and '<!-- RECORDS_END -->' in content:
                 before = content.split('<!-- RECORDS_START -->')[0]
                 after = content.split('<!-- RECORDS_END -->')[1]
                 content = before + '<!-- RECORDS_START -->\n' + records_html + '<!-- RECORDS_END -->' + after
-            
-            with open(wiki_path, 'w', encoding='utf-8') as f:
+            with open(records_path, 'w', encoding='utf-8') as f:
                 f.write(content)
-            print(f"✓ Updated {wiki_path}")
+            print(f"✓ Updated {records_path}")
+
+        # 1c. Open & Trios tournaments on their own page (wrestling/tournaments.html).
+        tournaments_path = 'wrestling/tournaments.html'
+        if os.path.exists(tournaments_path):
+            with open(tournaments_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            sections = [
+                ('OPEN', self.generate_open_tournament_html()),
+                ('OPENBRACKETS', self._tournament_brackets_html('Open')),
+                ('TRIOS', self.generate_trios_tournament_html()),
+                ('TRIOSBRACKETS', self._tournament_brackets_html('Trios')),
+            ]
+            for marker, html in sections:
+                s, e = f'<!-- {marker}_START -->', f'<!-- {marker}_END -->'
+                if s in content and e in content:
+                    content = content.split(s)[0] + s + '\n' + html + e + content.split(e)[1]
+            with open(tournaments_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            print(f"✓ Updated {tournaments_path}")
         
         # 2. Update org championship pages
         for org in ['wwf', 'wwo', 'iwb', 'ring']:

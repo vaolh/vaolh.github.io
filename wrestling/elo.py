@@ -656,6 +656,76 @@ def generate_hof_html(db, peaks, peak_rank):
 # FILE WRITERS
 # =============================================================================
 
+def giant_killers(db, top_n=10):
+    """Biggest single upset per wrestler, judged at match time: how big an
+    underdog the winner was, in rating points, including the division-size
+    handicap. Replays the same Elo model as build_snapshots so the ratings a
+    win is measured against are the ones in effect that night."""
+    ratings = defaultdict(lambda: BASE_RATING)
+    div_counts = defaultdict(lambda: defaultdict(int))
+
+    def division_index(name):
+        counts = div_counts.get(name)
+        if not counts:
+            return None
+        return WEIGHT_INDEX[min(counts, key=lambda w: (-counts[w], WEIGHT_INDEX[w]))]
+
+    best = {}
+    for _when, m in singles_matches(db):
+        a, b = m['fighter1'], m['fighter2']
+        wc = (m.get('weight_class') or '').lower()
+        if wc in WEIGHT_INDEX:
+            div_counts[a][wc] += 1
+            div_counts[b][wc] += 1
+        idx_a, idx_b = division_index(a), division_index(b)
+        ra, rb = ratings[a], ratings[b]
+
+        # Record the upset from the ratings BEFORE this match updates them.
+        if not m.get('is_draw') and m.get('winner'):
+            if m['winner'] == a:
+                win, lose, rw, rl, iw, il = a, b, ra, rb, idx_a, idx_b
+            else:
+                win, lose, rw, rl, iw, il = b, a, rb, ra, idx_b, idx_a
+            hcap = SIZE_STEP * (iw - il) if (iw is not None and il is not None) else 0.0
+            deficit = (rl - rw) + hcap        # > 0 → winner was the underdog
+            cur = best.get(win)
+            if deficit > 0 and (cur is None or deficit > cur['value']):
+                best[win] = {'value': deficit, 'opponent': lose}
+
+        ea = expected_score(ra, rb, idx_a, idx_b)
+        k = k_factor(db, m)
+        sa = 0.5 if m.get('is_draw') else (1.0 if m['winner'] == a else 0.0)
+        ratings[a] = ra + k * (sa - ea)
+        ratings[b] = rb + k * ((1.0 - sa) - (1.0 - ea))
+
+    ranked = sorted(best.items(), key=lambda kv: -kv[1]['value'])[:top_n]
+    return [{'name': n, 'country': db.wrestlers.get(n, {}).get('country', 'un'),
+             'value': d['value'], 'opponent': d['opponent']} for n, d in ranked]
+
+
+def generate_giant_killer_html(db):
+    """Giant Killer record table in the same P4P style update.py uses."""
+    rows = giant_killers(db)
+    out = ['    <table class="p4p-rank record-table">',
+           '    <caption>Giant Killer &mdash; Biggest Upsets</caption>',
+           '        <tr>',
+           '            <th style="width: 10%;">No.</th>',
+           '            <th style="width: 66%;">Wrestler</th>',
+           '            <th style="width: 24%; text-align: right;">Rating gap</th>',
+           '        </tr>']
+    if not rows:
+        out.append('        <tr><td colspan="3">&mdash;</td></tr>')
+    for i, r in enumerate(rows, 1):
+        out += ['        <tr>',
+                f'            <th>{i}</th>',
+                f'            <td>{flag(r["country"])} {_wlink(r["name"])} '
+                f'<span class="sub">def. {_wlink(r["opponent"])}</span></td>',
+                f'            <td style="text-align: right;">+{r["value"]:.0f}</td>',
+                '        </tr>']
+    out.append('    </table>')
+    return '\n'.join(out) + '\n'
+
+
 def _replace_between(path, start, end, html, what):
     if not os.path.exists(path):
         print(f"  ⚠ {path} not found")
@@ -813,6 +883,10 @@ def run(db):
     _replace_between('wrestling/org/pwhof.html',
                      '<!-- HOFMEMBERS_START -->', '<!-- HOFMEMBERS_END -->',
                      generate_hof_html(db, peaks, peak_rank), 'Hall of Fame')
+
+    _replace_between('wrestling/records.html',
+                     '<!-- GIANTKILLER_START -->', '<!-- GIANTKILLER_END -->',
+                     generate_giant_killer_html(db), 'Giant Killer records')
 
     update_infoboxes(db, peak_rank, current_rankings(snapshots, months))
 

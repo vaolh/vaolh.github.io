@@ -2043,16 +2043,112 @@ class WrestlingDatabase:
                 f'({n} title{"s" if n != 1 else ""})')
         return rows
 
+    def _open_module(self):
+        """Load open.py once for its bracket template + pairing constants."""
+        if getattr(self, '_opmod_cache', None) is None:
+            import importlib.util
+            op = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'open.py')
+            spec = importlib.util.spec_from_file_location('open_tournament_tool', op)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            self._opmod_cache = mod
+        return self._opmod_cache
+
+    @staticmethod
+    def _parse_tournament_card(card_html):
+        """Parse a tournament match card into bout dicts, keeping each fighter
+        cell's inner HTML so multi-person trios teams render intact."""
+        def txt(h):
+            return re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', '', h)).strip()
+        out = []
+        for row in re.findall(r'<tr>.*?</tr>', card_html, re.S)[1:]:
+            tds = re.findall(r'<td[^>]*>(.*?)</td>', row, re.S)
+            if len(tds) < 8:
+                continue
+            notes = txt(tds[7])
+            if 'tournament' not in notes.lower():
+                continue
+            out.append({
+                'f1': txt(tds[2]), 'f1_html': tds[2].strip(),
+                'f2': txt(tds[4]), 'f2_html': tds[4].strip(),
+                'method': txt(tds[5]), 'notes': notes,
+                'resolved': txt(tds[3]).lower().startswith('def')
+                            and bool(txt(tds[2])) and bool(txt(tds[4])),
+            })
+        return out
+
+    def _fill_bracket(self, matches):
+        """Build a filled 8-seed bracket from bout dicts (QF+SF+F). The four
+        quarterfinals seed the eight slots; the winner of each bout (fighter left
+        of 'def.') advances. Quarterfinals are ordered so the two whose winners
+        meet in the top semifinal sit in the top half, matching the real draw.
+        Works for singles and trios via cell HTML."""
+        op = self._open_module()
+        low = lambda m: m['notes'].lower()
+        qf = [m for m in matches if 'quarterfinal' in low(m)][:4]
+        sf = [m for m in matches if 'semifinal' in low(m)][:2]
+        if len(qf) < 4:
+            return None
+
+        def find(a, b):
+            for m in matches:
+                if m['resolved'] and {m['f1'], m['f2']} == {a, b}:
+                    return m           # winner is f1
+            return None
+
+        # Reorder the quarterfinals so QF-A/QF-B feed the top semifinal and
+        # QF-C/QF-D the bottom one (the bracket's fixed visual pairing).
+        if len(sf) == 2:
+            def feeders(s):
+                names = {s['f1'], s['f2']}
+                return [i for i, m in enumerate(qf) if m['resolved'] and m['f1'] in names]
+            order = feeders(sf[0]) + feeders(sf[1])
+            if sorted(order) == [0, 1, 2, 3]:
+                qf = [qf[i] for i in order]
+
+        seed_idx = sorted(op.TEAMIDX_TO_SEED)          # [0,1,4,5,8,9,12,13]
+        occ = {}                                       # team-cell idx -> (name, html)
+        for i, m in enumerate(qf):
+            occ[seed_idx[2 * i]] = (m['f1'], m['f1_html'])
+            occ[seed_idx[2 * i + 1]] = (m['f2'], m['f2_html'])
+        team_html = {i: occ[i][1] for i in occ}
+        score = {}
+
+        for hi, lo, sf_slot in op.QF_PAIRINGS:
+            ai, bi = op.SEED_TO_TEAMIDX[hi], op.SEED_TO_TEAMIDX[lo]
+            a, b = occ.get(ai), occ.get(bi)
+            m = find(a[0], b[0]) if (a and b) else None
+            if m:
+                occ[sf_slot] = (m['f1'], m['f1_html'])
+                team_html[sf_slot] = m['f1_html']
+                score[ai if m['f1'] == a[0] else bi] = m['method']
+
+        for sa, sb, fin_slot in op.SF_PAIRINGS:
+            a, b = occ.get(sa), occ.get(sb)
+            m = find(a[0], b[0]) if (a and b) else None
+            if m:
+                occ[fin_slot] = (m['f1'], m['f1_html'])
+                team_html[fin_slot] = m['f1_html']
+                score[sa if m['f1'] == a[0] else sb] = m['method']
+
+        fa, fb = occ.get(op.FINAL_SLOTS[0]), occ.get(op.FINAL_SLOTS[1])
+        m = find(fa[0], fb[0]) if (fa and fb) else None
+        if m:
+            score[op.FINAL_SLOTS[0] if m['f1'] == fa[0] else op.FINAL_SLOTS[1]] = m['method']
+
+        bracket = op.replace_by_index(op.BLANK_BRACKET, op.TEAM_RE, team_html)
+        return op.replace_by_index(bracket, op.SCORE_RE, score)
+
     def _tournament_brackets_html(self, kind):
-        """Mirror the rendered <table class="bracket"> markup from ppv/list.html
-        onto the Tournaments page (display only — the source stays in the PPV
-        list, populated by open.py). kind = 'Open' or 'Trios'; newest first."""
+        """Generate the bracket(s) for a tournament ('Open'/'Trios') from the
+        match cards in ppv/list.html — the brackets no longer live there. Newest
+        year first; each bracket in a collapsible <details>."""
         try:
             with open('wrestling/ppv/list.html', 'r', encoding='utf-8') as f:
                 raw = f.read()
         except OSError:
             return ''
-        blocks = []
+        by_year = {}
         for det in re.findall(r'<details>.*?</details>', raw, re.S):
             sm = re.search(r'<summary>(.*?)</summary>', det, re.S)
             if not sm:
@@ -2060,34 +2156,48 @@ class WrestlingDatabase:
             title = re.sub(r'\s+', ' ', sm.group(1)).strip()
             if kind.lower() not in title.lower():
                 continue
-            tbl = re.search(r'<table[^>]*class="bracket".*?</table>', det, re.S)
-            if not tbl:
+            card = re.search(r'<table class="match-card">.*?</table>', det, re.S)
+            if not card:
                 continue
             ym = re.search(r'(\d{4})', title)
-            year = int(ym.group(1)) if ym else 0
-            # The Open runs two brackets a year: the "Qualifiers" day is the
-            # women's bracket, the "Finals" day the men's. Label them as such;
-            # men first. Trios is a single bracket per year.
-            low = title.lower()
-            if kind.lower() == 'open':
-                if 'qualifier' in low:
-                    label, order = f"{year} Open Tournament &mdash; Women's", 1
-                elif 'final' in low:
-                    label, order = f"{year} Open Tournament &mdash; Men's", 0
-                else:
-                    label, order = title, 2
-            else:
-                label, order = title, 0
-            blocks.append((year, order, label, tbl.group(0)))
-        if not blocks:
-            return ''
-        blocks.sort(key=lambda b: (-b[0], b[1], b[2]))
+            by_year.setdefault(int(ym.group(1)) if ym else 0, []).extend(
+                self._parse_tournament_card(card.group(0)))
+
         out = []
-        for _year, _order, label, tbl in blocks:
-            out.append(f'    <details>\n        <summary>{label}</summary>\n'
-                       f'        <div style="overflow-x: auto;">\n{tbl}\n        </div>\n'
-                       f'    </details>\n')
+        for year in sorted(by_year, reverse=True):
+            matches = by_year[year]
+            if kind.lower() == 'open':
+                variants = [
+                    (f"{year} Open Tournament &mdash; Men's",
+                     [m for m in matches if 'men' in m['notes'].lower()
+                      and 'women' not in m['notes'].lower()]),
+                    (f"{year} Open Tournament &mdash; Women's",
+                     [m for m in matches if 'women' in m['notes'].lower()]),
+                ]
+            else:
+                variants = [(f"{year} Trios Tournament", matches)]
+            for label, ms in variants:
+                bracket = self._fill_bracket(ms)
+                if bracket:
+                    out.append(f'    <details>\n        <summary>{label}</summary>\n'
+                               f'        <div style="overflow-x: auto;">\n{bracket}\n'
+                               f'        </div>\n    </details>\n')
         return '\n'.join(out)
+
+    def _strip_brackets_from_list(self):
+        """Delete the bracket tables from ppv/list.html — they're generated on
+        the Tournaments page now, so the PPV list only carries the match cards."""
+        path = 'wrestling/ppv/list.html'
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                raw = f.read()
+        except OSError:
+            return
+        new = re.sub(r'[ \t]*<table[^>]*class="bracket".*?</table>\n?', '', raw, flags=re.S)
+        if new != raw:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(new)
+            print("✓ Removed brackets from ppv/list.html")
 
     def generate_trios_tournament_html(self):
         """Generate the Trios Tournament winners table for wiki.html from parsed data.
@@ -4463,6 +4573,7 @@ class WrestlingDatabase:
             with open(tournaments_path, 'w', encoding='utf-8') as f:
                 f.write(content)
             print(f"✓ Updated {tournaments_path}")
+            self._strip_brackets_from_list()
 
         # 1d. Audience records on the Schedule page (wrestling/ppv/wiki.html).
         schedule_path = 'wrestling/ppv/wiki.html'

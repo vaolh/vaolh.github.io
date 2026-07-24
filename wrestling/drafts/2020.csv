@@ -67,7 +67,7 @@ round,pick,org,slot,division,slug,name,country,rating,is_champ
 16,48,wwf,8,welterweight,templario,Templario,mx,1482,FALSE
 17,49,wwf,3,middleweight,fishman-iii,Fishman III,mx,1485,FALSE
 17,50,wwo,9,heavyweight,timüjin,Timüjin,mn,,FALSE
-17,51,iwb,8,middleweight,penta,Penta,mx,,FALSE
+17,51,iwb,8,middleweight,evil,EVIL,jp,,FALSE
 18,52,iwb,5,bridgerweight,adam-page,Adam Page,us,1476,FALSE
 18,53,wwo,8,welterweight,rey-fenix,Rey Fenix,mx,1463,FALSE
 18,54,wwf,1,welterweight,darby-allin,Darby Allin,us,1498,FALSE
@@ -84,7 +84,7 @@ round,pick,org,slot,division,slug,name,country,rating,is_champ
 22,65,wwo,9,welterweight,volador-jr,Volador Jr.,mx,,FALSE
 22,66,wwf,4,heavyweight,rusev,Rusev,bg,1493,FALSE
 23,67,wwf,2,welterweight,soberano-jr,Soberano Jr.,mx,1497,FALSE
-23,68,wwo,2,middleweight,shingo-takagi,Shingo Takagi,jp,1495,FALSE
+23,68,wwo,2,middleweight,el-solitario-iii,El Solitario III,mx,1479,FALSE
 23,69,iwb,4,heavyweight,goldberg,Goldberg,us,1494,FALSE
 24,70,iwb,5,heavyweight,cien-caras-ii,Cien Caras II,mx,1494,FALSE
 24,71,wwo,3,bridgerweight,zack-sabre-jr,Zack Sabre Jr.,gb,1496,FALSE
@@ -122,7 +122,7 @@ round,pick,org,slot,division,slug,name,country,rating,is_champ
 35,103,wwf,5,middleweight,ricky-saints,Ricky Saints,us,1483,FALSE
 35,104,wwo,10,lightweight,black-diamond,Black Diamond,br,,FALSE
 35,105,iwb,7,bridgerweight,jey-uso,Jey Uso,us,1462,FALSE
-36,106,iwb,6,middleweight,el-solitario-iii,El Solitario III,mx,1479,FALSE
+36,106,iwb,6,middleweight,shingo-takagi,Shingo Takagi,jp,1495,FALSE
 36,107,wwo,5,bridgerweight,ethan-page,Ethan Page,ca,1485,FALSE
 36,108,wwf,3,lightweight,jordynne-grace,Jordynne Grace,us,1495,FALSE
 37,109,wwf,4,middleweight,stuka-jr,Stuka Jr.,mx,1484,FALSE
@@ -135,7 +135,7 @@ round,pick,org,slot,division,slug,name,country,rating,is_champ
 39,116,wwo,9,middleweight,kota-ibushi,Kota Ibushi,jp,,FALSE
 39,117,iwb,7,middleweight,kofi-kingston,Kofi Kingston,gh,1477,FALSE
 40,118,iwb,7,heavyweight,omos,Omos,ng,1482,FALSE
-40,119,wwo,10,middleweight,evil,EVIL,jp,,FALSE
+40,119,wwo,10,middleweight,penta,Penta,mx,,FALSE
 40,120,wwf,10,lightweight,blake-monroe,Blake Monroe,us,,FALSE
 41,121,wwf,9,featherweight,princesa-sugehit,Princesa Sugehit,mx,1465,FALSE
 41,122,wwo,9,featherweight,maxxine-dupri,Maxxine Dupri,us,,FALSE

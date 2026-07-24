@@ -534,10 +534,26 @@ def _field_movement(field, months, rating_by_month):
     return out
 
 
-def render_org_rankings(org, rows, champ_of, ratings, months, rating_by_month, record_by_name):
+def _real_field(org, division, rows, all_champ_names, ratings):
+    """The drafted contenders an org shows for a division: its picks minus
+    anyone who currently holds a belt ANYWHERE (a champion is never listed as a
+    mere contender — this also drops a deposed/vacated champ who's still champ
+    in another org), best Elo first, capped at 10 so we never render 11."""
+    pool = [r for r in rows if r['org'] == org and r['division'] == division]
+    real = [m for m in pool if m['name'] not in all_champ_names]
+    real.sort(key=lambda m: (-(ratings.get(m['name']) or -1e9), m['name']))
+    return real[:10]
+
+
+def render_org_rankings(org, rows, champ_of, ratings, months, rating_by_month,
+                        record_by_name, backfill, all_champ_names):
     """Per-division ranking tables for one org, styled exactly like the P4P
     tables (Rank | Wrestler | Record | Rating | Movement) with the champion
-    pinned atop in a gold C cell; the field below is ranked by live Elo."""
+    pinned atop in a gold C cell; the field below is ranked by live Elo.
+
+    Contenders exclude every current champion, and if that leaves fewer than 10
+    the field is topped back up to exactly 10 from `backfill` (that year's best
+    undrafted reserves), so a division always shows champion/vacant + 10."""
     members = defaultdict(list)          # division -> [member row, ...]
     for r in rows:
         if r['org'] == org:
@@ -558,9 +574,11 @@ def render_org_rankings(org, rows, champ_of, ratings, months, rating_by_month, r
             continue
         champ_row = champ_of.get((org, division))
         champ_name = champ_row['name'] if champ_row else None
-        field = [m for m in pool if m['name'] != champ_name]
-        field.sort(key=lambda m: (-(ratings.get(m['name']) or -1e9), m['name']))
-        mv = _field_movement(field, months, rating_by_month)
+        real = _real_field(org, division, rows, all_champ_names, ratings)
+        reserves = backfill.get((org, division), []) if len(real) < 10 else []
+        reserve_names = {m['name'] for m in reserves}
+        field = real + reserves          # already ≤ 10 total
+        mv = _field_movement(real, months, rating_by_month)
         html.append('    <details class="draft-year">')
         html.append(f'      <summary>{ORG_NAMES[org]} {division.capitalize()} rankings</summary>')
         html.append('      <table class="p4p-rank">')
@@ -583,7 +601,10 @@ def render_org_rankings(org, rows, champ_of, ratings, months, rating_by_month, r
                         '<td>&#8211;</td><td>&#8211;</td>'
                         f'<td>{_mv_html("same", 0)}</td></tr>')
         for i, m in enumerate(field, 1):
-            kind, places = mv[m['name']]
+            if m['name'] in reserve_names:
+                kind, places = 'new', 0        # mid-season reserve call-up
+            else:
+                kind, places = mv[m['name']]
             html.append(f'        <tr><th>{i}</th>'
                         f'<td>{_wlink(m["name"], m["slug"], m["country"])}</td>'
                         f'<td>{rec(m["name"])}</td><td>{rat(m["name"])}</td>'
@@ -619,13 +640,43 @@ def inject_org_rankings():
     roster = load_roster()
     champ_of, _board = build_board(roster)
     ratings, months, rating_by_month, record_by_name = load_ranking_context()
+
+    # Every wrestler currently holding a belt anywhere — kept out of all
+    # contender fields (a champ is never a mere contender, even in another org).
+    all_champ_names = {r['name'] for r in champ_of.values()}
+
+    # Reserve pools: that year's UNDRAFTED wrestlers per division (not retired,
+    # not a champion), best Elo first. Used to top a short field back up to 10.
+    drafted_names = {r['name'] for r in rows}
+    reserve_pool = defaultdict(list)
+    for row in roster:
+        div = (row.get('division') or '').strip().lower()
+        if (div not in WEIGHT_ORDER or truthy(row.get('retired'))
+                or row['name'] in drafted_names or row['name'] in all_champ_names):
+            continue
+        reserve_pool[div].append(row)
+    for div, lst in reserve_pool.items():
+        lst.sort(key=lambda r: (-(ratings.get(r['name']) or -1e9), r['name']))
+
+    # Allocate reserves per (org, division) so no reserve backfills two orgs.
+    ptr = defaultdict(int)
+    backfill = {}
+    for org in ORG_PAGES:
+        for div in WEIGHT_ORDER:
+            need = 10 - len(_real_field(org, div, rows, all_champ_names, ratings))
+            if need > 0:
+                take = reserve_pool[div][ptr[div]:ptr[div] + need]
+                ptr[div] += len(take)
+                backfill[(org, div)] = take
+
     for org, path in ORG_PAGES.items():
         if not os.path.exists(path):
             continue
         with open(path, encoding='utf-8') as f:
             html = f.read()
         block = render_org_rankings(org, rows, champ_of, ratings, months,
-                                    rating_by_month, record_by_name)
+                                    rating_by_month, record_by_name,
+                                    backfill, all_champ_names)
         if RANK_START in html and RANK_END in html:
             pre = html[:html.index(RANK_START)]
             post = html[html.index(RANK_END) + len(RANK_END):]

@@ -22,12 +22,13 @@ Run automatically at the end of `python3 update.py`, or standalone:
     python3 wrestling/awards.py
 """
 
+import csv
 import glob
 import os
 import re
 import sys
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
@@ -56,6 +57,34 @@ def _wlink(name, country='un'):
 
 def ordinal(n):
     return f"{n}{'th' if 10 <= n % 100 <= 20 else {1:'st',2:'nd',3:'rd'}.get(n % 10, 'th')}"
+
+
+def awards_date(year):
+    """The Ring awards ceremony is held on the LAST SUNDAY of December (same
+    calendar style as the draft's second-Saturday-of-January date)."""
+    dec31 = datetime(year, 12, 31)
+    return dec31 - timedelta(days=(dec31.weekday() - 6) % 7)   # Sun = 6
+
+
+def best_draft_picks():
+    """slug -> (pick, year, org) of a wrestler's highest (lowest-numbered) draft
+    pick across every year on record. Reads wrestling/drafts/*.csv."""
+    best = {}
+    for path in glob.glob(os.path.join(SCRIPT_DIR, 'drafts', '*.csv')):
+        year = os.path.basename(path)[:-4]
+        if not year.isdigit():
+            continue
+        year = int(year)
+        with open(path, encoding='utf-8') as f:
+            for r in csv.DictReader(f):
+                pick = (r.get('pick') or '').strip()
+                if not pick.isdigit():         # champ rows have no pick
+                    continue
+                pick = int(pick)
+                slug = r['slug']
+                if slug not in best or pick < best[slug][0]:
+                    best[slug] = (pick, year, (r.get('org') or '').upper())
+    return best
 
 
 # ─── Compute ─────────────────────────────────────────────────────────────────
@@ -127,49 +156,126 @@ def wrestler_of_the_year(year_end, activity):
     return woty
 
 
+def most_improved(year_end, activity):
+    """year -> winner dict with 'gain'. Biggest year-over-year jump in year-end
+    Elo among wrestlers who were active >= 3 times that year AND appeared in the
+    previous year's year-end ranking (so the jump is real, not a debut)."""
+    prev_rating = {}
+    out = {}
+    for y in sorted(year_end):
+        ranking = year_end[y]
+        rate_now = {r['name']: r['rating'] for r in ranking}
+        eligible = [r for r in ranking
+                    if activity.get(y, {}).get(r['name'], 0) >= MIN_YEAR_BOUTS
+                    and r['name'] in prev_rating]
+        if eligible:
+            best = max(eligible, key=lambda r: r['rating'] - prev_rating[r['name']])
+            w = dict(best)
+            w['gain'] = best['rating'] - prev_rating[best['name']]
+            out[y] = w
+        prev_rating = rate_now
+    return out
+
+
 # ─── The Ring page ───────────────────────────────────────────────────────────
 
 GENDER_LABEL = {'men': "Men's", 'women': "Women's"}
 
 
-def render_auto(year_end, woty):
-    """year_end / woty are {'men': {...}, 'women': {...}}."""
+TOP_SHOWN = 10             # only the top 10 are shown on the page; 11-100 live
+                           # on the individual wrestler pages.
+
+
+def _year_award_table(wy, cols, cell):
+    """A newest-first Year|Wrestler|<value> table for a per-year award."""
+    h = ['        <table class="champ-history" style="width:75%;">',
+         '        <tr>' + ''.join(f'<th>{c}</th>' for c in cols) + '</tr>']
+    for y in sorted(wy, reverse=True):
+        r = wy[y]
+        h.append(f'        <tr><th>{y}</th><td>{_wlink(r["name"], r["country"])}</td>'
+                 f'<td>{cell(r)}</td></tr>')
+    if not wy:
+        h.append(f'        <tr><td colspan="{len(cols)}">No qualifying year yet.</td></tr>')
+    h.append('        </table>')
+    return h
+
+
+def _all_time_top(ye):
+    """All-time top-10 names for a gender: each wrestler's best year-end rating
+    across every year, highest first (equal to the latest year while only one
+    year is on record, then it diverges)."""
+    best = {}
+    for rows in ye.values():
+        for r in rows:
+            if r['name'] not in best or r['rating'] > best[r['name']][0]:
+                best[r['name']] = (r['rating'], r['country'])
+    ranked = sorted(best.items(), key=lambda kv: (-kv[1][0], kv[0]))[:TOP_SHOWN]
+    return [{'name': n, 'country': c} for n, (rat, c) in ranked]
+
+
+def _ten_column_table(ye):
+    """The old ten-column table for one gender: ranks 1-10 across the top, one
+    row per year (newest first) plus an all-time 'All' row. Each cell is the
+    wrestler who finished at that rank that year."""
+    h = ['        <div style="overflow-x:auto;">',
+         '        <table class="champ-history ten-col">',
+         '        <tr><th>Year</th>'
+         + ''.join(f'<th>{i}</th>' for i in range(1, TOP_SHOWN + 1)) + '</tr>']
+
+    def row(label, entries):
+        cells = [f'<th>{label}</th>']
+        for i in range(TOP_SHOWN):
+            if i < len(entries):
+                e = entries[i]
+                cells.append(f'<td>{_wlink(e["name"], e["country"])}</td>')
+            else:
+                cells.append('<td></td>')
+        return '        <tr>' + ''.join(cells) + '</tr>'
+
+    h.append(row('All', _all_time_top(ye)))
+    for y in sorted(ye, reverse=True):
+        h.append(row(str(y), ye[y][:TOP_SHOWN]))
+    if not ye:
+        h.append(f'        <tr><td colspan="{TOP_SHOWN + 1}">No qualifying year yet.</td></tr>')
+    h.append('        </table>')
+    h.append('        </div>')
+    return h
+
+
+def render_auto(year_end, woty, improved):
+    """year_end / woty / improved are {'men': {...}, 'women': {...}}."""
     h = [AUTO_START, '    <h2>The Ring Awards</h2>']
+    latest = max((y for g in ('men', 'women') for y in year_end[g]), default=None)
+    if latest is not None:
+        h.append('    <p class="sub">Presented at the year-end ceremony, held the '
+                 f'last Sunday of December ({awards_date(latest).strftime("%B %-d, %Y")}).</p>')
     # Wrestler of the Year — separate men's and women's award.
-    h.append('    <details open>')
+    h.append('    <details>')
     h.append('      <summary><i>The Ring</i> Wrestler of the Year</summary>')
     for gender in ('men', 'women'):
-        wy = woty[gender]
-        title = ('Wrestler of the Year' if gender == 'men'
-                 else 'Woman of the Year')
+        title = 'Wrestler of the Year' if gender == 'men' else 'Woman of the Year'
         h.append(f'        <p class="sub"><b><i>The Ring</i> {title}</b></p>')
-        h.append('        <table class="champ-history" style="width:75%;">')
-        h.append('        <tr><th>Year</th><th>Wrestler</th><th>Year-end rating</th></tr>')
-        for y in sorted(wy, reverse=True):
-            r = wy[y]
-            h.append(f'        <tr><th>{y}</th><td>{_wlink(r["name"], r["country"])}</td>'
-                     f'<td>{r["rating"]:.0f}</td></tr>')
-        if not wy:
-            h.append('        <tr><td colspan="3">No qualifying year yet.</td></tr>')
-        h.append('        </table>')
+        h += _year_award_table(woty[gender], ['Year', 'Wrestler', 'Year-end rating'],
+                               lambda r: f'{r["rating"]:.0f}')
     h.append('    </details>')
-    # Year-End Top 100 — separate men's and women's ranking.
+    # Most Improved Wrestler — biggest year-over-year Elo jump.
     h.append('    <details>')
-    h.append(f'      <summary><i>The Ring</i> Year-End Top {TOP_N}</summary>')
+    h.append('      <summary><i>The Ring</i> Most Improved Wrestler</summary>')
     for gender in ('men', 'women'):
-        ye = year_end[gender]
-        h.append(f'      <p class="sub"><b>{GENDER_LABEL[gender]} Top {TOP_N}</b></p>')
-        for y in sorted(ye, reverse=True):
-            h.append(f'      <details><summary>{y} — {GENDER_LABEL[gender]} Top {TOP_N}</summary>')
-            h.append('        <table class="champ-history" style="width:90%;">')
-            h.append('        <tr><th>Rank</th><th>Wrestler</th><th>Record</th><th>Rating</th></tr>')
-            for r in ye[y]:
-                h.append(f'        <tr><th>{r["rank"]}</th>'
-                         f'<td>{_wlink(r["name"], r["country"])}</td>'
-                         f'<td>{r["record"]}</td><td>{r["rating"]:.0f}</td></tr>')
-            h.append('        </table>')
-            h.append('      </details>')
+        label = 'Most Improved Wrestler' if gender == 'men' else 'Most Improved Woman'
+        h.append(f'        <p class="sub"><b><i>The Ring</i> {label}</b></p>')
+        h += _year_award_table(improved[gender], ['Year', 'Wrestler', 'Elo gain'],
+                               lambda r: f'+{r["gain"]:.0f}')
     h.append('    </details>')
+    # The Ring 100 — only the top 10 shown (the rest lives on wrestler pages).
+    for gender in ('men', 'women'):
+        gl = GENDER_LABEL[gender]
+        h.append('    <details>')
+        h.append(f'      <summary><i>The Ring</i> {gl} {TOP_N}</summary>')
+        h.append(f'        <p class="sub">Year-end top {TOP_SHOWN}. The full '
+                 f'{gl} {TOP_N} is recorded on each wrestler\'s page.</p>')
+        h += _ten_column_table(year_end[gender])
+        h.append('    </details>')
     h.append(f'    {AUTO_END}')
     return '\n'.join(h)
 
@@ -193,6 +299,7 @@ def render_hand_template():
         '    <!-- Hand-authored awards. Edit freely; awards.py never rewrites '
         'anything between these two markers. -->',
         tbl('<i>The Ring</i> Match of the Year', ['Year', 'Match', 'Event']),
+        tbl('<i>The Ring</i> Comeback of the Year', ['Year', 'Wrestler']),
         tbl('<i>The Ring</i> Rookie of the Year', ['Year', 'Wrestler']),
         tbl('<i>The Ring</i> Lifetime Achievement Award', ['Year', 'Wrestler']),
         f'    {HAND_END}',
@@ -205,10 +312,10 @@ def _replace_between(text, start, end, block):
     return None
 
 
-def write_ring_awards(year_end, woty):
+def write_ring_awards(year_end, woty, improved):
     with open(RING_HTML, encoding='utf-8') as f:
         html = f.read()
-    auto = render_auto(year_end, woty)
+    auto = render_auto(year_end, woty, improved)
 
     # 1) Auto section — always refreshed.
     updated = _replace_between(html, AUTO_START, AUTO_END, auto)
@@ -237,12 +344,18 @@ def write_ring_awards(year_end, woty):
 
 # ─── Per-wrestler accolades ──────────────────────────────────────────────────
 
-def wrestler_accolades(year_end, woty):
-    """slug -> list of accolade strings (newest first). year_end / woty are
-    {'men': ..., 'women': ...}; each wrestler is ranked within their gender."""
+def _years_str(years):
+    return ', '.join(str(y) for y in sorted(years, reverse=True))
+
+
+def wrestler_accolades(year_end, woty, improved, picks):
+    """slug -> list of accolade strings (newest first). year_end / woty /
+    improved are {'men': ..., 'women': ...}; each wrestler is ranked within
+    their gender. picks is best_draft_picks()."""
     acc = defaultdict(list)
     for gender in ('men', 'women'):
         title = ('Wrestler of the Year' if gender == 'men' else 'Woman of the Year')
+        imp = ('Most Improved Wrestler' if gender == 'men' else 'Most Improved Woman')
         gword = 'male' if gender == 'men' else 'female'
         woty_years = defaultdict(list)
         for y, r in woty[gender].items():
@@ -250,15 +363,31 @@ def wrestler_accolades(year_end, woty):
         for slug, years in woty_years.items():
             for y in sorted(years, reverse=True):
                 acc[slug].append(f'<i>The Ring</i> {title} ({y})')
-        finishes = defaultdict(list)   # slug -> [(year, rank)]
+        imp_years = defaultdict(list)
+        for y, r in improved[gender].items():
+            imp_years[slugify(r['name'])].append(y)
+        for slug, years in imp_years.items():
+            for y in sorted(years, reverse=True):
+                acc[slug].append(f'<i>The Ring</i> {imp} ({y})')
+        # Only the BEST rank ever achieved, with every year it happened.
+        best_rank = {}                 # slug -> (rank, [years])
         for y, ranking in year_end[gender].items():
             for r in ranking:
-                finishes[slugify(r['name'])].append((y, r['rank']))
-        for slug, fs in finishes.items():
-            for y, rk in sorted(fs, reverse=True):
-                acc[slug].append(
-                    f'Ranked No. {rk} of the top {TOP_N} {gword} singles wrestlers '
-                    f'in <i>The Ring</i> {TOP_N} in {y}')
+                slug = slugify(r['name'])
+                cur = best_rank.get(slug)
+                if cur is None or r['rank'] < cur[0]:
+                    best_rank[slug] = (r['rank'], [y])
+                elif r['rank'] == cur[0]:
+                    cur[1].append(y)
+        for slug, (rk, years) in best_rank.items():
+            acc[slug].append(
+                f'Ranked No. {rk} of the top {TOP_N} {gword} singles wrestlers '
+                f'in <i>The Ring</i> {TOP_N} ({_years_str(years)})')
+    # Highest draft pick ever (lowest overall pick number).
+    for slug, (pick, year, org) in picks.items():
+        acc[slug].append(
+            f'Drafted No. {pick} overall by {org} in <a href="/wrestling/org/'
+            f'draft.html">The Draft</a> ({year})')
     return acc
 
 
@@ -270,8 +399,8 @@ def render_wrestler_block(items):
             f'    {WA_END}')
 
 
-def inject_wrestler_awards(year_end, woty):
-    acc = wrestler_accolades(year_end, woty)
+def inject_wrestler_awards(year_end, woty, improved, picks):
+    acc = wrestler_accolades(year_end, woty, improved, picks)
     if not os.path.isdir(WRESTLERS_DIR):
         print("  ⚠ wrestlers/ not found, skipping accolades")
         return
@@ -316,8 +445,10 @@ def run(db):
     year_end = gendered_year_end(snaps, months)
     activity = yearly_activity(db)
     woty = {g: wrestler_of_the_year(year_end[g], activity) for g in ('men', 'women')}
-    write_ring_awards(year_end, woty)
-    inject_wrestler_awards(year_end, woty)
+    improved = {g: most_improved(year_end[g], activity) for g in ('men', 'women')}
+    picks = best_draft_picks()
+    write_ring_awards(year_end, woty, improved)
+    inject_wrestler_awards(year_end, woty, improved, picks)
 
 
 def main():

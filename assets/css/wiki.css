@@ -603,7 +603,6 @@ table.matchesum td {
 .draft-board {
     border-collapse: collapse;
     width: 100%;
-    font-size: 0.82em;
 }
 .draft-board th,
 .draft-board td {
@@ -615,7 +614,6 @@ table.matchesum td {
 .draft-board tr > th:first-child {
     text-align: center;
     width: 46px;
-    color: #666;
 }
 .draft-board tr:first-child th {
     background-color: #dce8ff;
@@ -626,7 +624,6 @@ table.matchesum td {
 [data-theme="dark"] .draft-board th,
 [data-theme="dark"] .draft-board td { border-color: #444; }
 [data-theme="dark"] .draft-board tr:first-child th { background-color: #24324a; color: #dbe6ff; }
-[data-theme="dark"] .draft-board tr > th:first-child { color: #999; }
 [data-theme="dark"] .draft-board .sub { color: #99a; }
 
 /* Champion sits atop the table in a yellow "C" cell, boxing style. */

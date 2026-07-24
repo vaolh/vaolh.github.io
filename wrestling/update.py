@@ -4868,6 +4868,9 @@ def main():
     try:
         import draft as _draft
         _draft.book_singles_contenders(quiet=False)
+        # Refresh the org divisional rankings (Elo order + current champion, so a
+        # title change swaps the champ back into the field) on every update.
+        _draft.inject_org_rankings()
     except Exception as _e:
         print(f"  (Contender booking skipped: {_e})")
 

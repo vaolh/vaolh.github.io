@@ -464,37 +464,49 @@ def latest_draft_rows():
     return y, years[y]
 
 
-def render_org_rankings(org, year, rows):
-    """The six per-division ranking tables for one org (champ + 10), each in a
-    <details>, newest draft. Champion sits atop in a yellow 'C' cell."""
-    by = defaultdict(dict)     # division -> {slot: row}
+def render_org_rankings(org, rows, roster, ratings, champ_of):
+    """Per-division ranking tables for one org: champion as C, field by Elo."""
+    # division -> [member row, ...]  (the drafted pool + the drafted champ)
+    members = defaultdict(list)
     for r in rows:
         if r['org'] == org:
-            by[r['division']][r['slot']] = r
-    html = [RANK_START,
-            f'    <h2>{ORG_NAMES[org]} divisional rankings</h2>',
-            f'    <p class="sub">Contenders drafted for {year} '
-            f'(draft held {draft_date(year).strftime("%B %-d, %Y")}). The '
-            'champion (C) defends against the field over the year.</p>']
+            members[r['division']].append(r)
+    # slug/country for anyone who has appeared in a draft, for the live champ.
+    who = {r['name']: (r['slug'], r['country']) for r in rows}
+    html = [RANK_START, f'    <h2>{ORG_NAMES[org]} Rankings</h2>']
     for division in WEIGHT_ORDER:
-        cells = by.get(division)
-        if not cells:
+        pool = members.get(division)
+        if not pool:
             continue
-        open_attr = ' open' if division in ('heavyweight', 'lightweight') else ''
-        html.append(f'    <details class="draft-year"{open_attr}>')
+        champ_row = champ_of.get((org, division))
+        champ_name = champ_row['name'] if champ_row else None
+        # Field = everyone in the pool except the current champion, by Elo.
+        field = [m for m in pool if m['name'] != champ_name]
+        field.sort(key=lambda m: (-(ratings.get(m['name']) or -1e9), m['name']))
+        html.append('    <details class="draft-year">')
         html.append(f'      <summary>{ORG_NAMES[org]} {division.capitalize()} rankings</summary>')
-        html.append('      <div class="draft-row">')
-        html.append('        <table class="draft-table">')
-        champ = cells.get('C')
-        cch = (_wlink(champ['name'], champ['slug'], champ['country'])
-               if champ else '<span class="sub">vacant</span>')
-        html.append(f'          <tr><td class="rank-champ">C</td><td>{cch}</td></tr>')
-        for i in range(1, SLOTS_PER_ORG + 1):
-            r = cells.get(str(i))
-            inner = _wlink(r['name'], r['slug'], r['country']) if r else ''
-            html.append(f'          <tr><td>{i}</td><td>{inner}</td></tr>')
-        html.append('        </table>')
-        html.append('      </div>')
+        html.append('      <table class="p4p-rank">')
+        html.append('        <tr><th style="width:12%;">Rank</th>'
+                    '<th style="width:58%;">Wrestler</th>'
+                    '<th style="width:30%;">Rating</th></tr>')
+        if champ_name:
+            slug, country = who.get(champ_name,
+                                    (champ_row['slug'], champ_row['country']))
+            crat = ratings.get(champ_name)
+            crat = f'{crat:.0f}' if crat is not None else '&#8211;'
+            html.append(f'        <tr><th class="rank-champ">C</th>'
+                        f'<td>{_wlink(champ_name, slug, country)}</td>'
+                        f'<td>{crat}</td></tr>')
+        else:
+            html.append('        <tr><th class="rank-champ">C</th>'
+                        '<td><span class="sub">vacant</span></td><td>&#8211;</td></tr>')
+        for i, m in enumerate(field, 1):
+            rat = ratings.get(m['name'])
+            rat = f'{rat:.0f}' if rat is not None else '&#8211;'
+            html.append(f'        <tr><th>{i}</th>'
+                        f'<td>{_wlink(m["name"], m["slug"], m["country"])}</td>'
+                        f'<td>{rat}</td></tr>')
+        html.append('      </table>')
         html.append('    </details>')
     html.append(f'    {RANK_END}')
     return '\n'.join(html)
@@ -522,12 +534,15 @@ def inject_org_rankings():
                     f.write(new)
         print("  No draft on disk — cleared any existing rankings from org pages.")
         return
+    roster = load_roster()
+    ratings, _ranks, _sd = load_ratings_and_site_date()
+    champ_of, _board = build_board(roster)
     for org, path in ORG_PAGES.items():
         if not os.path.exists(path):
             continue
         with open(path, encoding='utf-8') as f:
             html = f.read()
-        block = render_org_rankings(org, year, rows)
+        block = render_org_rankings(org, rows, roster, ratings, champ_of)
         if RANK_START in html and RANK_END in html:
             pre = html[:html.index(RANK_START)]
             post = html[html.index(RANK_END) + len(RANK_END):]

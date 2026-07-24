@@ -565,6 +565,83 @@ table.matchesum td {
     font-weight: bold;
 }
 
+/* ── The Draft: per-org, per-division rosters (champ + 10) ─────────────── */
+.draft-div {
+    margin: 1.1em 0 0.3em;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 2px;
+}
+.draft-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+}
+.draft-table {
+    flex: 1 1 200px;
+    min-width: 180px;
+    border-collapse: collapse;
+    font-size: 0.85em;
+}
+.draft-table th,
+.draft-table td {
+    border: 1px solid #ccc;
+    padding: 3px 6px;
+    text-align: left;
+}
+.draft-table th[colspan] {
+    text-align: center;
+    background-color: #dce8ff;
+    color: #222;
+}
+.draft-table td:first-child {
+    width: 26px;
+    text-align: center;
+    color: #666;
+}
+/* NBA-style draft board: rounds down, orgs across. */
+.draft-board {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.82em;
+}
+.draft-board th,
+.draft-board td {
+    border: 1px solid #ccc;
+    padding: 4px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+.draft-board tr > th:first-child {
+    text-align: center;
+    width: 46px;
+    color: #666;
+}
+.draft-board tr:first-child th {
+    background-color: #dce8ff;
+    color: #222;
+    text-align: center;
+}
+.draft-board .sub { font-size: 0.85em; color: #777; }
+[data-theme="dark"] .draft-board th,
+[data-theme="dark"] .draft-board td { border-color: #444; }
+[data-theme="dark"] .draft-board tr:first-child th { background-color: #24324a; color: #dbe6ff; }
+[data-theme="dark"] .draft-board tr > th:first-child { color: #999; }
+[data-theme="dark"] .draft-board .sub { color: #99a; }
+
+/* Champion sits atop the table in a yellow "C" cell, boxing style. */
+.draft-table td.rank-champ {
+    background-color: #FFFFBF !important;
+    color: #000;
+    font-weight: bold;
+    text-align: center;
+}
+[data-theme="dark"] .draft-table th[colspan] { background-color: #24324a; color: #dbe6ff; }
+[data-theme="dark"] .draft-table th,
+[data-theme="dark"] .draft-table td { border-color: #444; }
+[data-theme="dark"] .draft-table td:first-child { color: #999; }
+[data-theme="dark"] .draft-div { border-color: #444; }
+
 /* Organisation left-border accent stripes — no background color on cells */
 
 /* Weight-class group separator rows */

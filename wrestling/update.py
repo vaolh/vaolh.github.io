@@ -4854,6 +4854,23 @@ def main():
     except Exception as _e:
         print(f"  (Elo/P4P generation skipped: {_e})")
 
+    # The Ring yearly awards + year-end Top 100 + per-wrestler accolades. Runs
+    # after elo (it reuses the Elo snapshots and patches the same pages).
+    try:
+        import awards
+        awards.run(db)
+    except Exception as _e:
+        print(f"  (Awards generation skipped: {_e})")
+
+    # Book the SINGLES contender eliminators of the newest WTS from the current
+    # draft (top-5 vs bottom-5 per division). Battle-royal rows stay blank. Only
+    # acts once a draft for the season has been run.
+    try:
+        import draft as _draft
+        _draft.book_singles_contenders(quiet=False)
+    except Exception as _e:
+        print(f"  (Contender booking skipped: {_e})")
+
     # Abbreviate month names in dates across all generated pages (except the
     # NOABBR-protected current-champions summary).
     print("Abbreviating dates in generated pages...")

@@ -1,35 +1,37 @@
 #!/usr/bin/env python3
 """
-roster.py — Seed / refresh wrestling/rosters.json
-=================================================
+roster.py — Seed / refresh wrestling/rosters.csv
+================================================
 Builds the roster data file the draft (draft.py) reads from. It scans the real
 match history (ppv/list.html + weekly/list.html) via update.py's parser and,
 for every wrestler who has actually wrestled, fills in:
 
-  - division      most-fought weight class (same rule elo.py uses)
-  - gender        'w' if they ever fought a women's division, else 'm'
-  - country       flag code from their matches
-  - debuted       True (they have a real match on record)
-  - champion      {org, weight} if they currently hold a belt, else null
-  - last_active   date of their most recent match (for inactivity priority)
+  - division        most-fought weight class (same rule elo.py uses)
+  - gender          'w' if they ever fought a women's division, else 'm'
+  - country         flag code from their matches
+  - debuted         TRUE (they have a real match on record)
+  - champion_org/_weight   the belt they currently hold, if any
+  - last_active     date of their most recent match (for inactivity priority)
 
 It is SAFE TO RE-RUN. Anything you have hand-edited is preserved:
 
-  - "division_source": "manual"  -> the division field is never overwritten
-  - undebuted wrestlers you added (debuted:false) are kept verbatim; only their
-    champion/last_active stay null.
+  - division_source = manual  -> the division field is never overwritten
+  - undebuted wrestlers you added (debuted = FALSE) are kept verbatim; only
+    their champion / last_active stay blank.
   - inferred fields on debuted wrestlers are refreshed from the latest results.
 
-So the workflow is:
-  1. python3 wrestling/roster.py         # seeds the 191 real wrestlers
-  2. hand-add the ~110 undebuted names in rosters.json (see _TEMPLATE below),
-     tagging each with a division and "division_source": "manual"
-  3. python3 wrestling/roster.py         # re-run any time; your edits survive
+WORKFLOW — add undebuted wrestlers by appending ROWS to the CSV:
+  1. python3 wrestling/roster.py     # seeds the ~185 real wrestlers
+  2. open rosters.csv in any spreadsheet; add one row per undebuted wrestler.
+     You only need:  name, country, gender, division, division_source=manual,
+     debuted=FALSE.  Leave slug blank — it's filled in on the next run.
+     (Also tag any debuted wrestler whose 'division' came out blank.)
+  3. python3 wrestling/roster.py     # re-run any time; your edits survive
 
 Run from anywhere; it chdir's to the site root like elo.py does.
 """
 
-import json
+import csv
 import os
 import sys
 from collections import defaultdict
@@ -47,22 +49,34 @@ WEIGHT_INDEX = {w: i for i, w in enumerate(WEIGHT_ORDER)}
 WOMENS_WEIGHTS = ('lightweight', 'featherweight')
 ORGS = ('wwf', 'wwo', 'iwb')
 
-ROSTER_PATH = os.path.join(SCRIPT_DIR, 'rosters.json')
+ROSTER_PATH = os.path.join(SCRIPT_DIR, 'rosters.csv')
 
-# What a hand-added undebuted entry should look like. Copied into _meta so the
-# schema is documented right inside the file you edit.
-_TEMPLATE = {
-    "name": "Full Name",
-    "country": "us",
-    "gender": "m",
-    "division": "heavyweight",
-    "division_source": "manual",
-    "debuted": False,
-    "champion": None,
-    "org": None,
-    "drafted_year": None,
-    "last_active": None,
-}
+# Column order in the CSV. draft.py reads these back. (Per-year org / draft
+# assignments do NOT live here — there's a draft every year, so they go in the
+# per-year draft records under wrestling/drafts/. This file is the master pool.)
+FIELDS = ['slug', 'name', 'country', 'gender', 'division', 'division_source',
+          'debuted', 'champion_org', 'champion_weight', 'champion_all',
+          'retired', 'retired_reason', 'last_active']
+
+
+def read_text_any(path):
+    """Read a CSV that may carry a stray non-UTF-8 byte from an Excel round-trip.
+
+    The site is UTF-8 (accented luchador names decode correctly that way), so we
+    do NOT fall back to a whole-file cp1252 decode: a single bad byte would then
+    turn every valid 'ñ'/'é' into mojibake ('Ã±'/'Ã©') and spawn duplicate rows.
+    Instead we keep UTF-8 and replace only the genuinely invalid byte(s) with '�'
+    so the offending name is easy to spot and retype. roster.py rewrites clean
+    UTF-8 on the way out.
+    """
+    with open(path, 'rb') as f:
+        raw = f.read()
+    for enc in ('utf-8-sig', 'utf-8'):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode('utf-8', errors='replace')
 
 
 def slugify(name):
@@ -138,15 +152,40 @@ def current_champions(db):
     return champ_of
 
 
+def career_retirements(db):
+    """slug -> reason for every wrestler who LOST a Lucha de Apuestas whose
+    wager involved a career (career vs. career, mask vs. career, hair vs.
+    career). Losing your career = retirement (e.g. Kurt Angle). Ambiguous
+    mask/hair-vs-career cases are still flagged; flip 'retired' to FALSE in the
+    CSV to override — the override is preserved on re-run."""
+    out = {}
+    for a in getattr(db, 'apuestas', []):
+        wager = (a.get('wager') or '').lower()
+        if 'career' in wager and a.get('loser'):
+            reason = f"Lost career apuesta ({a.get('wager', '').strip()}) at {a.get('event', '')}".strip()
+            out[slugify(a['loser'])] = reason
+    return out
+
+
 def load_existing():
+    """slug -> row dict from a previous rosters.csv (empty if none). Rows whose
+    slug cell is blank are keyed by slugify(name), so hand-added rows only need
+    a name."""
     if not os.path.exists(ROSTER_PATH):
         return {}
-    with open(ROSTER_PATH, 'r', encoding='utf-8') as f:
-        try:
-            data = json.load(f)
-        except json.JSONDecodeError as e:
-            sys.exit(f"rosters.json is not valid JSON ({e}). Fix or delete it.")
-    return data.get('wrestlers', {})
+    rows = {}
+    text = read_text_any(ROSTER_PATH)
+    import io
+    with io.StringIO(text) as f:
+        for r in csv.DictReader(f):
+            slug = (r.get('slug') or '').strip() or slugify((r.get('name') or '').strip())
+            if slug:
+                rows[slug] = {k: (v or '').strip() for k, v in r.items()}
+    return rows
+
+
+def truthy(v):
+    return str(v).strip().lower() in ('true', '1', 'yes', 'y')
 
 
 def main():
@@ -155,15 +194,18 @@ def main():
 
     div_counts, women, last_active = infer_from_history(db)
     champ_of = current_champions(db)
+    retired_of = career_retirements(db)
     existing = load_existing()
 
     out = {}
+
+    def blank_row():
+        return {k: '' for k in FIELDS}
 
     # 1. Everyone with real matches -> seed / refresh inferred fields.
     for name in sorted(db.wrestlers):
         slug = slugify(name)
         prev = existing.get(slug, {})
-        debuted = name in db.ppv_wrestlers
         champ = champ_of.get(slug)
         champ = champ[0] if champ else None      # primary belt; extras below
 
@@ -173,68 +215,78 @@ def main():
             div_source = 'manual'
         else:
             division = most_fought_division(div_counts.get(name)) \
-                or prev.get('division')
+                or prev.get('division', '')
             div_source = 'inferred'
 
+        # Retirement: auto-detected career-apuesta loss, unless hand-cleared.
+        auto_retire = retired_of.get(slug)
+        if prev.get('retired', '').strip():        # user set an explicit value
+            retired = 'TRUE' if truthy(prev['retired']) else 'FALSE'
+            reason = prev.get('retired_reason', '') or (auto_retire or '')
+        elif auto_retire:
+            retired, reason = 'TRUE', auto_retire
+        else:
+            retired, reason = '', ''
+
         la = last_active.get(name)
-        entry = {
+        row = blank_row()
+        row.update({
+            'slug': slug,
             'name': name,
             'country': db.wrestlers[name].get('country', 'un'),
             'gender': 'w' if name in women else 'm',
-            'division': division,
+            'division': division or '',
             'division_source': div_source,
-            'debuted': debuted,
-            'champion': champ,
-            'org': (champ['org'] if champ else prev.get('org')),
-            'drafted_year': prev.get('drafted_year'),
-            'last_active': la.strftime('%Y-%m-%d') if la else prev.get('last_active'),
-        }
-        if champ_of.get(slug) and len(champ_of[slug]) > 1:
-            entry['champion_all'] = champ_of[slug]   # unified: every belt held
-        out[slug] = entry
+            'debuted': 'TRUE' if name in db.ppv_wrestlers else 'FALSE',
+            'champion_org': champ['org'] if champ else '',
+            'champion_weight': champ['weight'] if champ else '',
+            'champion_all': (';'.join(f"{c['org']}:{c['weight']}" for c in champ_of[slug])
+                             if champ_of.get(slug) and len(champ_of[slug]) > 1 else ''),
+            'retired': retired,
+            'retired_reason': reason,
+            'last_active': la.strftime('%Y-%m-%d') if la else prev.get('last_active', ''),
+        })
+        out[slug] = row
 
     # 2. Preserve hand-added undebuted wrestlers (no match history).
     kept_manual = 0
     for slug, prev in existing.items():
         if slug in out:
             continue
-        if prev.get('debuted'):
-            # Was debuted before but has no matches now? Data changed; drop the
-            # stale champion/last_active but keep the record for review.
-            prev = {**prev, 'champion': None}
-        prev.setdefault('drafted_year', None)
-        prev.setdefault('last_active', None)
-        out[slug] = prev
+        row = blank_row()
+        row.update(prev)
+        row['slug'] = slug
+        if not truthy(row.get('debuted')):
+            # Genuinely undebuted: no auto champion / last_active.
+            row['champion_org'] = row['champion_weight'] = row['champion_all'] = ''
+            row['last_active'] = row.get('last_active', '')
+        out[slug] = row
         kept_manual += 1
 
-    payload = {
-        '_meta': {
-            'generated': format_site_date(db.cutoff) or datetime.now().strftime('%Y-%m-%d'),
-            'orgs': list(ORGS),
-            'divisions': list(WEIGHT_ORDER),
-            'womens_divisions': list(WOMENS_WEIGHTS),
-            'help': ("Add undebuted wrestlers as new keys under 'wrestlers' using "
-                     "the slug (lowercase, spaces->'-', dots removed). Tag each "
-                     "with a division and set 'division_source' to 'manual' so a "
-                     "re-run never overwrites it. Template below."),
-            'entry_template': _TEMPLATE,
-        },
-        'wrestlers': out,
-    }
+    # Sort: division (heaviest first), then gender, then name — easy to scan.
+    def sort_key(r):
+        d = r.get('division', '')
+        return (WEIGHT_INDEX.get(d, 99), r.get('gender', 'm'), r.get('name', ''))
 
-    with open(ROSTER_PATH, 'w', encoding='utf-8') as f:
-        json.dump(payload, f, indent=2, ensure_ascii=False)
-        f.write('\n')
+    ordered = sorted(out.values(), key=sort_key)
 
-    debuted_n = sum(1 for e in out.values() if e.get('debuted'))
-    champs_n = sum(1 for e in out.values() if e.get('champion'))
-    no_div = [s for s, e in out.items() if not e.get('division')]
+    with open(ROSTER_PATH, 'w', encoding='utf-8', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS)
+        w.writeheader()
+        for row in ordered:
+            w.writerow({k: row.get(k, '') for k in FIELDS})
+
+    debuted_n = sum(1 for r in out.values() if truthy(r.get('debuted')))
+    champs_n = sum(1 for r in out.values() if r.get('champion_org'))
+    retired_n = sum(1 for r in out.values() if truthy(r.get('retired')))
+    no_div = [r['name'] for r in out.values() if not r.get('division')]
     print(f"\n✓ Wrote {ROSTER_PATH}")
     print(f"  {len(out)} wrestlers  ({debuted_n} debuted, "
-          f"{len(out) - debuted_n} undebuted/manual, {champs_n} current champions)")
-    print(f"  {kept_manual} hand-added entries preserved")
+          f"{len(out) - debuted_n} undebuted/manual, {champs_n} current champions, "
+          f"{retired_n} retired)")
+    print(f"  {kept_manual} hand-added rows preserved")
     if no_div:
-        print(f"  ⚠ {len(no_div)} without a division (tag them manually): "
+        print(f"  ⚠ {len(no_div)} without a division (tag them): "
               f"{', '.join(no_div[:8])}{' …' if len(no_div) > 8 else ''}")
 
 

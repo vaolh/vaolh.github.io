@@ -1,0 +1,199 @@
+round,pick,org,slot,division,slug,name,country,rating,is_champ
+,,iwb,C,heavyweight,brock-lesnar,Brock Lesnar,ca,1566,TRUE
+,,wwo,C,heavyweight,ibrahima-diop,Ibrahima Diop,sn,1553,TRUE
+,,wwf,C,heavyweight,the-rock,The Rock,us,1673,TRUE
+,,wwo,C,bridgerweight,cm-punk,CM Punk,us,1521,TRUE
+,,iwb,C,bridgerweight,kazuchika-okada,Kazuchika Okada,jp,1530,TRUE
+,,wwf,C,bridgerweight,kenny-omega,Kenny Omega,ca,1624,TRUE
+,,iwb,C,middleweight,bryan-danielson,Bryan Danielson,us,1553,TRUE
+,,wwf,C,middleweight,el-nieto-del-santo,El Nieto del Santo,mx,1666,TRUE
+,,wwo,C,middleweight,el-nieto-del-santo,El Nieto del Santo,mx,1666,TRUE
+,,wwf,C,welterweight,blue-demon-iii,Blue Demon III,mx,1527,TRUE
+,,iwb,C,welterweight,dragon-lee,Dragon Lee,mx,1624,TRUE
+,,wwo,C,welterweight,mistico,Mistico,mx,1629,TRUE
+,,wwf,C,lightweight,bianca-belair,Bianca Belair,us,1574,TRUE
+,,iwb,C,lightweight,futura,Futura,mx,1557,TRUE
+,,wwo,C,lightweight,toni-storm,Toni Storm,au,1528,TRUE
+,,iwb,C,featherweight,iyo-sky,Iyo Sky,jp,1615,TRUE
+,,wwf,C,featherweight,sareee,Sareee,jp,1539,TRUE
+,,wwo,C,featherweight,stephanie-vaquer,Stephanie Vaquer,cl,1622,TRUE
+1,1,wwf,1,lightweight,lepis-24k,Lepis 24K,mx,1590,FALSE
+1,2,wwo,1,welterweight,tyler-bate,Tyler Bate,gb,1565,FALSE
+1,3,iwb,1,heavyweight,jon-moxley,Jon Moxley,us,1539,FALSE
+2,4,iwb,1,middleweight,jj-muñoz,JJ Muñoz,mx,1578,FALSE
+2,5,wwo,1,middleweight,hiroshi-tanahashi,Hiroshi Tanahashi,jp,1551,FALSE
+2,6,wwf,1,heavyweight,undertaker,Undertaker,us,1575,FALSE
+3,7,wwf,2,bridgerweight,aj-styles,AJ Styles,us,1539,FALSE
+3,8,wwo,1,lightweight,charlotte-flair,Charlotte Flair,us,1562,FALSE
+3,9,iwb,2,middleweight,atlantis-iii,Atlantis III,mx,1519,FALSE
+4,10,iwb,1,bridgerweight,angel-blanco-iv,Angel Blanco IV,pa,1522,FALSE
+4,11,wwo,1,bridgerweight,will-ospreay,Will Ospreay,gb,1511,FALSE
+4,12,wwf,1,bridgerweight,montez-ford,Montez Ford,us,1557,FALSE
+5,13,wwf,1,middleweight,blue-panther-iv,Blue Panther IV,mx,1510,FALSE
+5,14,wwo,1,featherweight,alexa-bliss,Alexa Bliss,us,1521,FALSE
+5,15,iwb,1,welterweight,bandido,Bandido,mx,1509,FALSE
+6,16,iwb,1,lightweight,lone-star-iii,Lone-Star III,us,1516,FALSE
+6,17,wwo,2,welterweight,rey-mysterio,Rey Mysterio,us,1519,FALSE
+6,18,wwf,4,welterweight,jushin-liger-ii,Jushin Liger II,jp,1494,FALSE
+7,19,wwf,3,heavyweight,john-cena,John Cena,us,1515,FALSE
+7,20,wwo,2,featherweight,el-halcon-ii,El Halcon II,mx,1519,FALSE
+7,21,iwb,4,middleweight,esqueleto-ii,Esqueleto II,mx,1498,FALSE
+8,22,iwb,2,heavyweight,randy-orton,Randy Orton,us,1497,FALSE
+8,23,wwo,8,heavyweight,gunther,Gunther,at,,FALSE
+8,24,wwf,2,featherweight,nikki-bella,Nikki Bella,us,1494,FALSE
+9,25,wwf,2,middleweight,ilja-dragunov,Ilja Dragunov,su,1500,FALSE
+9,26,wwo,2,lightweight,asuka,Asuka,jp,1539,FALSE
+9,27,iwb,2,featherweight,giulia,Giulia,jp,1497,FALSE
+10,28,iwb,8,welterweight,tiger-mask-x,Tiger Mask X,jp,,FALSE
+10,29,wwo,3,middleweight,tetsuya-naito,Tetsuya Naito,jp,1495,FALSE
+10,30,wwf,10,welterweight,supremo,Supremo,kh,,FALSE
+11,31,wwf,2,lightweight,la-tigresa,La Tigresa,ec,1515,FALSE
+11,32,wwo,2,heavyweight,damian-priest,Damian Priest,pr,1483,FALSE
+11,33,iwb,1,featherweight,kairi-sane,Kairi Sane,jp,1497,FALSE
+12,34,iwb,3,lightweight,jamie-hayter,Jamie Hayter,gb,1494,FALSE
+12,35,wwo,1,heavyweight,cody-rhodes,Cody Rhodes,us,1491,FALSE
+12,36,wwf,2,heavyweight,drew-mcintyre,Drew McIntyre,gb,1515,FALSE
+13,37,wwf,7,bridgerweight,edge,Edge,ca,,FALSE
+13,38,wwo,7,bridgerweight,jeff-hardy,Jeff Hardy,us,,FALSE
+13,39,iwb,3,heavyweight,sheamus,Sheamus,ie,1496,FALSE
+14,40,iwb,2,bridgerweight,la-knight,LA Knight,us,1496,FALSE
+14,41,wwo,3,heavyweight,triple-h,Triple H,us,1482,FALSE
+14,42,wwf,9,lightweight,rhea-ripley,Rhea Ripley,au,,FALSE
+15,43,wwf,3,featherweight,aj-lee,AJ Lee,us,1491,FALSE
+15,44,wwo,4,featherweight,flammer,Flammer,mx,1493,FALSE
+15,45,iwb,3,middleweight,convoy-ii,Convoy II,bo,1501,FALSE
+16,46,iwb,4,bridgerweight,sami-zayn,Sami Zayn,ca,1478,FALSE
+16,47,wwo,8,middleweight,andrade,Andrade,mx,,FALSE
+16,48,wwf,8,welterweight,templario,Templario,mx,1482,FALSE
+17,49,wwf,3,middleweight,fishman-iii,Fishman III,mx,1485,FALSE
+17,50,wwo,9,heavyweight,timüjin,Timüjin,mn,,FALSE
+17,51,iwb,8,middleweight,penta,Penta,mx,,FALSE
+18,52,iwb,5,bridgerweight,adam-page,Adam Page,us,1476,FALSE
+18,53,wwo,8,welterweight,rey-fenix,Rey Fenix,mx,1463,FALSE
+18,54,wwf,1,welterweight,darby-allin,Darby Allin,us,1498,FALSE
+19,55,wwf,8,bridgerweight,swerve-strickland,Swerve Strickland,us,,FALSE
+19,56,wwo,4,bridgerweight,mr-niebla-ii,Mr. Niebla II,mx,1493,FALSE
+19,57,iwb,2,welterweight,angel-garza,Angel Garza,mx,1496,FALSE
+20,58,iwb,3,featherweight,miyu-yamashita,Miyu Yamashita,jp,1494,FALSE
+20,59,wwo,9,lightweight,olympia,Olympia,mx,,FALSE
+20,60,wwf,4,featherweight,lyra-valkyria,Lyra Valkyria,ie,1484,FALSE
+21,61,wwf,8,lightweight,nia-jax,Nia Jax,au,1460,FALSE
+21,62,wwo,6,lightweight,mercedes-moné,Mercedes Moné,us,1477,FALSE
+21,63,iwb,8,lightweight,lady-shani,Lady Shani,mx,,FALSE
+22,64,iwb,4,featherweight,princesa-azul,Princesa Azul,mx,1484,FALSE
+22,65,wwo,9,welterweight,volador-jr,Volador Jr.,mx,,FALSE
+22,66,wwf,4,heavyweight,rusev,Rusev,bg,1493,FALSE
+23,67,wwf,2,welterweight,soberano-jr,Soberano Jr.,mx,1497,FALSE
+23,68,wwo,2,middleweight,shingo-takagi,Shingo Takagi,jp,1495,FALSE
+23,69,iwb,4,heavyweight,goldberg,Goldberg,us,1494,FALSE
+24,70,iwb,5,heavyweight,cien-caras-ii,Cien Caras II,mx,1494,FALSE
+24,71,wwo,3,bridgerweight,zack-sabre-jr,Zack Sabre Jr.,gb,1496,FALSE
+24,72,wwf,4,lightweight,athena,Athena,us,1494,FALSE
+25,73,wwf,7,middleweight,mjf,MJF,us,,FALSE
+25,74,wwo,8,featherweight,liv-morgan,Liv Morgan,us,1475,FALSE
+25,75,iwb,6,welterweight,el-hijo-del-vikingo,El Hijo del Vikingo,mx,1479,FALSE
+26,76,iwb,2,lightweight,skadi,Skadi,mx,1500,FALSE
+26,77,wwo,2,bridgerweight,yota-tsuji,Yota Tsuji,jp,1500,FALSE
+26,78,wwf,1,featherweight,saya-iida,Saya Iida,jp,1496,FALSE
+27,79,wwf,8,middleweight,olimpico-ii,Olimpico II,co,,FALSE
+27,80,wwo,7,featherweight,sanely,Sanely,mx,1481,FALSE
+27,81,iwb,4,welterweight,chad-gable,Chad Gable,us,1493,FALSE
+28,82,iwb,3,bridgerweight,matt-cardona,Matt Cardona,us,1484,FALSE
+28,83,wwo,5,middleweight,hiromu-takahashi,Hiromu Takahashi,jp,1480,FALSE
+28,84,wwf,9,heavyweight,roman-reigns,Roman Reigns,us,,FALSE
+29,85,wwf,5,bridgerweight,joe-hendry,Joe Hendry,gb,1483,FALSE
+29,86,wwo,7,welterweight,axiom,Axiom,es,1464,FALSE
+29,87,iwb,4,lightweight,anna-reyes,Anna Reyes,mx,1494,FALSE
+30,88,iwb,7,welterweight,adam-cole,Adam Cole,us,1467,FALSE
+30,89,wwo,4,lightweight,naomi,Naomi,us,1484,FALSE
+30,90,wwf,5,featherweight,candela,Candela,mx,1484,FALSE
+31,91,wwf,6,welterweight,finn-balor,Finn Balor,ie,1491,FALSE
+31,92,wwo,3,lightweight,trish-stratus,Trish Stratus,ca,1486,FALSE
+31,93,iwb,5,welterweight,mr-iguana,Mr. Iguana,mx,1484,FALSE
+32,94,iwb,9,lightweight,mina-shirakawa,Mina Shirakawa,jp,,FALSE
+32,95,wwo,4,heavyweight,batista,Batista,us,1471,FALSE
+32,96,wwf,5,heavyweight,the-fiend,The Fiend,us,1480,FALSE
+33,97,wwf,3,bridgerweight,shinsuke-nakamura,Shinsuke Nakamura,jp,1497,FALSE
+33,98,wwo,8,bridgerweight,dr-wagner-iii,Dr. Wagner III,mx,,FALSE
+33,99,iwb,8,featherweight,kira,Kira,mx,,FALSE
+34,100,iwb,6,featherweight,la-jarochita,La Jarochita,mx,1478,FALSE
+34,101,wwo,7,heavyweight,kane-ii,Kane II,us,1461,FALSE
+34,102,wwf,5,welterweight,impostor-ii,Impostor II,sv,1491,FALSE
+35,103,wwf,5,middleweight,ricky-saints,Ricky Saints,us,1483,FALSE
+35,104,wwo,10,lightweight,black-diamond,Black Diamond,br,,FALSE
+35,105,iwb,7,bridgerweight,jey-uso,Jey Uso,us,1462,FALSE
+36,106,iwb,6,middleweight,el-solitario-iii,El Solitario III,mx,1479,FALSE
+36,107,wwo,5,bridgerweight,ethan-page,Ethan Page,ca,1485,FALSE
+36,108,wwf,3,lightweight,jordynne-grace,Jordynne Grace,us,1495,FALSE
+37,109,wwf,4,middleweight,stuka-jr,Stuka Jr.,mx,1484,FALSE
+37,110,wwo,3,welterweight,zandokan-jr,Zandokan Jr.,mx,1484,FALSE
+37,111,iwb,5,featherweight,becky-lynch,Becky Lynch,ie,1483,FALSE
+38,112,iwb,9,heavyweight,jacob-fatu,Jacob Fatu,us,,FALSE
+38,113,wwo,6,featherweight,la-incognita,La Incognita,mx,1482,FALSE
+38,114,wwf,4,bridgerweight,aleister-black,Aleister Black,nl,1483,FALSE
+39,115,wwf,3,welterweight,rayo-de-jalisco-iii,Rayo de Jalisco III,mx,1496,FALSE
+39,116,wwo,9,middleweight,kota-ibushi,Kota Ibushi,jp,,FALSE
+39,117,iwb,7,middleweight,kofi-kingston,Kofi Kingston,gh,1477,FALSE
+40,118,iwb,7,heavyweight,omos,Omos,ng,1482,FALSE
+40,119,wwo,10,middleweight,evil,EVIL,jp,,FALSE
+40,120,wwf,10,lightweight,blake-monroe,Blake Monroe,us,,FALSE
+41,121,wwf,9,featherweight,princesa-sugehit,Princesa Sugehit,mx,1465,FALSE
+41,122,wwo,9,featherweight,maxxine-dupri,Maxxine Dupri,us,,FALSE
+41,123,iwb,9,middleweight,mano-negra-ii,Mano Negra II,mx,,FALSE
+42,124,iwb,3,welterweight,carmelo-hayes,Carmelo Hayes,us,1493,FALSE
+42,125,wwo,9,bridgerweight,depredador,Depredador,mx,,FALSE
+42,126,wwf,6,heavyweight,konosuke-takeshita,Konosuke Takeshita,jp,1473,FALSE
+43,127,wwf,6,featherweight,zelina-vega,Zelina Vega,us,1484,FALSE
+43,128,wwo,6,bridgerweight,seth-rollins,Seth Rollins,us,1475,FALSE
+43,129,iwb,6,bridgerweight,psycho-clown,Psycho Clown,mx,1473,FALSE
+44,130,iwb,9,featherweight,la-metalica,La Metalica,mx,,FALSE
+44,131,wwo,10,heavyweight,argus,Argus,dk,,FALSE
+44,132,wwf,5,lightweight,la-vibora,La Vibora,mx,1484,FALSE
+45,133,wwf,8,heavyweight,bronson-reed,Bronson Reed,au,1468,FALSE
+45,134,wwo,6,heavyweight,jeff-cobb,Jeff Cobb,gu,1468,FALSE
+45,135,iwb,9,welterweight,fuerza-guerrera-ii,Fuerza Guerrera II,mx,,FALSE
+46,136,iwb,5,lightweight,zeuxis,Zeuxis,pr,1476,FALSE
+46,137,wwo,4,welterweight,el-malo-ii,El Malo II,mx,1484,FALSE
+46,138,wwf,7,lightweight,persephone,Persephone,us,1466,FALSE
+47,139,wwf,9,middleweight,el-grande-americano-ii,El Grande Americano II,us,,FALSE
+47,140,wwo,6,welterweight,super-muñeco-ii,Super Muñeco II,mx,1469,FALSE
+47,141,iwb,10,lightweight,mayu-iwatani,Mayu Iwatani,jp,,FALSE
+48,142,iwb,10,welterweight,je'von-evans,Je'von Evans,us,,FALSE
+48,143,wwo,4,middleweight,logan-paul,Logan Paul,us,1484,FALSE
+48,144,wwf,10,featherweight,lola-vice,Lola Vice,us,,FALSE
+49,145,wwf,6,bridgerweight,universo-2002,Universo 2002,mx,1462,FALSE
+49,146,wwo,3,featherweight,ivy-nile,Ivy Nile,us,1514,FALSE
+49,147,iwb,5,middleweight,villano-iii-jr,Villano III Jr.,mx,1479,FALSE
+50,148,iwb,6,heavyweight,wade-barrett,Wade Barrett,gb,1484,FALSE
+50,149,wwo,5,lightweight,natalya,Natalya,ca,1484,FALSE
+50,150,wwf,10,middleweight,rush,Rush,mx,,FALSE
+51,151,wwf,9,bridgerweight,the-miz,The Miz,us,,FALSE
+51,152,wwo,5,heavyweight,mark-henry,Mark Henry,us,1469,FALSE
+51,153,iwb,8,bridgerweight,jimmy-uso,Jimmy Uso,us,,FALSE
+52,154,iwb,8,heavyweight,adam-pearce,Adam Pearce,us,1481,FALSE
+52,155,wwo,10,bridgerweight,mascara-año-2002,Mascara Año 2002,mx,,FALSE
+52,156,wwf,6,middleweight,kobayashi-yamamoto,Kobayashi Yamamoto,jp,1477,FALSE
+53,157,wwf,10,heavyweight,talla-tonga,Talla Tonga,us,,FALSE
+53,158,wwo,5,featherweight,chelsea-green,Chelsea Green,ca,1493,FALSE
+53,159,iwb,6,lightweight,bayley,Bayley,us,1468,FALSE
+54,160,iwb,9,bridgerweight,la-parka-iii,La Parka III,mx,,FALSE
+54,161,wwo,5,welterweight,el-hijo-de-villano-iii,El Hijo de Villano III,mx,1484,FALSE
+54,162,wwf,7,welterweight,francesco-akira,Francesco Akira,it,1484,FALSE
+55,163,wwf,7,heavyweight,erick-rowan,Erick Rowan,us,1469,FALSE
+55,164,wwo,8,lightweight,raquel-rodriguez,Raquel Rodriguez,us,1460,FALSE
+55,165,iwb,10,middleweight,ludwig-kaiser,Ludwig Kaiser,de,,FALSE
+56,166,iwb,10,bridgerweight,matt-hardy,Matt Hardy,us,,FALSE
+56,167,wwo,6,middleweight,tama-tonga,Tama Tonga,to,1477,FALSE
+56,168,wwf,7,featherweight,candice-lerae,Candice LeRae,us,1484,FALSE
+57,169,wwf,9,welterweight,johnny-gargano,Johnny Gargano,us,1477,FALSE
+57,170,wwo,10,welterweight,la-mascara,La Mascara,mx,,FALSE
+57,171,iwb,10,heavyweight,angelo-dawkins,Angelo Dawkins,us,,FALSE
+58,172,iwb,7,featherweight,wendy-choo,Wendy Choo,us,1469,FALSE
+58,173,wwo,7,lightweight,maryse,Maryse,ca,1467,FALSE
+58,174,wwf,6,lightweight,piper-niven,Piper Niven,gb,1469,FALSE
+59,175,wwf,8,featherweight,stacy-keibler,Stacy Keibler,us,1476,FALSE
+59,176,wwo,10,featherweight,roxanne-perez,Roxanne Perez,us,,FALSE
+59,177,iwb,10,featherweight,fallon-henley,Fallon Henley,us,,FALSE
+60,178,iwb,7,lightweight,nikkita-lyons,Nikkita Lyons,us,1464,FALSE
+60,179,wwo,7,middleweight,elio-lefleur,Elio LeFleur,fr,1468,FALSE
+60,180,wwf,10,bridgerweight,solo-sikoa,Solo Sikoa,us,,FALSE

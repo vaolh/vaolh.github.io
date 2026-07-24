@@ -56,8 +56,10 @@ def load_roster():
 
 
 def load_ratings_and_site_date():
-    """Return (ratings, ranks, site_date). ratings/ranks map wrestler NAME ->
-    current Elo / global rank, from the latest monthly snapshot elo.py builds."""
+    """Return (ratings, ranks, site_date). ratings maps wrestler NAME -> current
+    Elo for EVERYONE who has wrestled a singles match (not just the >= MIN_BOUTS
+    wrestlers the P4P ranking publishes), so the draft board isn't mostly blank.
+    ranks are the published P4P global ranks (rated wrestlers only)."""
     os.chdir(os.path.dirname(SCRIPT_DIR))
     ppv, weekly = 'wrestling/ppv/list.html', 'wrestling/weekly/list.html'
     db = WrestlingDatabase()
@@ -68,13 +70,13 @@ def load_ratings_and_site_date():
         db.parse_events(weekly, is_weekly=True)
     db.events.sort(key=lambda e: elo._parse_date(e.get('date')) or datetime.min)
     db.reprocess_championships_chronologically()
+    ratings, _bouts = elo.current_ratings(db)          # everyone who wrestled
+    ranks = {}
     months, snaps = elo.build_snapshots(db)
-    ratings, ranks = {}, {}
     if months:
         last = snaps[months[-1]]
         for gender in ('men', 'women'):
             for r in last[gender]:
-                ratings[r['name']] = r['rating']
                 ranks[r['name']] = r['rank']
     sd = elo._parse_date(format_site_date(site_date)) if site_date else None
     return ratings, ranks, sd
@@ -164,21 +166,33 @@ def _menu_sort(rows, ratings, site_date):
         inactivity_days(r, site_date), r['name']))
 
 
+def _fmt_line(i, r, ratings, site_date):
+    el = _rating(r, ratings)
+    el = f"{el:4.0f}" if el is not None else "  — "
+    days = inactivity_days(r, site_date)
+    dd = 'never' if days >= 10 ** 6 else f"{days}d"
+    return (f"     {i:3}. {r['name']:<22} {r['division'].capitalize():13} "
+            f"Elo {el}  idle {dd}")
+
+
+def _show(av, ratings, site_date, lo, hi):
+    for i in range(lo, min(hi, len(av))):
+        print(_fmt_line(i + 1, av[i], ratings, site_date))
+    if hi < len(av):
+        print(f"     … {len(av) - hi} more — 'more' to scroll, 'all' for the whole "
+              f"board, 'div <weight>' to filter")
+
+
 def _prompt_pick(org, rnd, pickno, av, counts, ratings, site_date, board_left):
     print(f"\n── Round {rnd}, pick {pickno} — {ORG_NAMES[org]} on the clock "
-          f"({board_left} on the board) ──")
+          f"({board_left} on the board, {len(av)} eligible) ──")
     fills = '  '.join(f"{d[:4].capitalize()} {counts[(org, d)]}/{SLOTS_PER_ORG}"
                       for d in WEIGHT_ORDER)
     print(f"   {ORG_NAMES[org]}: {fills}")
-    top = av[:10]                                  # top 10 by Elo on the board
-    for i, r in enumerate(top, 1):
-        el = _rating(r, ratings)
-        el = f"{el:4.0f}" if el is not None else "  — "
-        days = inactivity_days(r, site_date)
-        dd = 'never' if days >= 10 ** 6 else f"{days}d"
-        print(f"     {i:2}. {r['name']:<22} {r['division'].capitalize():13} "
-              f"Elo {el}  idle {dd}")
-    print("   enter #, or a name; 'auto'=take best, 'autoall'=finish rest, 'quit'")
+    shown = [10]                                   # how many rows currently listed
+    _show(av, ratings, site_date, 0, shown[0])
+    print("   enter # (from the FULL list), or a name; 'more'/'all' to scroll, "
+          "'div <weight>' to filter, 'auto'/'autoall'/'quit'")
     while True:
         try:
             cmd = input("   > ").strip()
@@ -186,18 +200,37 @@ def _prompt_pick(org, rnd, pickno, av, counts, ratings, site_date, board_left):
             return av[0], True
         low = cmd.lower()
         if not cmd:
-            return top[0], False                   # Enter = take #1
+            return av[0], False                    # Enter = take #1 (best)
         if low == 'quit':
             sys.exit("Aborted; nothing written.")
         if low == 'auto':
             return av[0], False
         if low == 'autoall':
             return av[0], True
+        if low in ('more', 'm'):
+            _show(av, ratings, site_date, shown[0], shown[0] + 20)
+            shown[0] = min(shown[0] + 20, len(av))
+            continue
+        if low == 'all':
+            _show(av, ratings, site_date, shown[0], len(av))
+            shown[0] = len(av)
+            continue
+        if low.startswith('div '):
+            w = low[4:].strip()
+            sub = [r for r in av if r['division'].startswith(w)]
+            if not sub:
+                print(f"   ? no eligible wrestler in a division matching '{w}'")
+                continue
+            print(f"   — {len(sub)} eligible in {w} —")
+            for r in sub:
+                # index within the full list, so the shown number still picks it
+                print(_fmt_line(av.index(r) + 1, r, ratings, site_date))
+            continue
         if cmd.isdigit():
             k = int(cmd)
-            if 1 <= k <= len(top):
-                return top[k - 1], False
-            print("   ? out of range")
+            if 1 <= k <= len(av):                  # pick by number from FULL list
+                return av[k - 1], False
+            print(f"   ? out of range (1–{len(av)})")
             continue
         hit = ([r for r in av if low in (r['name'].lower(), r['slug'])]
                or [r for r in av if low in r['name'].lower()])
@@ -207,7 +240,7 @@ def _prompt_pick(org, rnd, pickno, av, counts, ratings, site_date, board_left):
             print("   ? not available (already drafted, retired, or that "
                   "division is full for this org)")
         else:
-            print("   ? ambiguous:", ', '.join(r['name'] for r in hit[:6]))
+            print("   ? ambiguous:", ', '.join(r['name'] for r in hit[:8]))
 
 
 def snake_draft(roster, ratings, site_date, auto):

@@ -537,6 +537,38 @@ def peak_elo(db):
     return peaks
 
 
+def current_ratings(db):
+    """(ratings, bouts) for EVERY wrestler who has had a singles match — no
+    MIN_BOUTS filter (unlike the published P4P ranking). Same Elo replay, so a
+    wrestler with >= MIN_BOUTS gets the identical number they show in the
+    rankings; those with fewer still get a usable rating for the draft board."""
+    ratings = defaultdict(lambda: BASE_RATING)
+    bouts = defaultdict(int)
+    div_counts = defaultdict(lambda: defaultdict(int))
+
+    def division_index(name):
+        counts = div_counts.get(name)
+        if not counts:
+            return None
+        return WEIGHT_INDEX[min(counts, key=lambda w: (-counts[w], WEIGHT_INDEX[w]))]
+
+    for when, m in singles_matches(db):
+        a, b = m['fighter1'], m['fighter2']
+        wc = (m.get('weight_class') or '').lower()
+        if wc in WEIGHT_INDEX:
+            div_counts[a][wc] += 1
+            div_counts[b][wc] += 1
+        ra, rb = ratings[a], ratings[b]
+        ea = expected_score(ra, rb, division_index(a), division_index(b))
+        k = k_factor(db, m)
+        sa = 0.5 if m.get('is_draw') else (1.0 if m['winner'] == a else 0.0)
+        ratings[a] = ra + k * (sa - ea)
+        ratings[b] = rb + k * ((1.0 - sa) - (1.0 - ea))
+        bouts[a] += 1
+        bouts[b] += 1
+    return dict(ratings), dict(bouts)
+
+
 def last_match_year(db, name):
     years = [_parse_date(m.get('date')).year
              for m in db.wrestlers[name]['matches']

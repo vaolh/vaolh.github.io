@@ -304,11 +304,9 @@ caption {
     vertical-align: middle;
     font-size: 0.85em;
     overflow-wrap: break-word;
-    border: 1px solid #ccc;
+    border: 1px solid #ddd;
 }
 /* Header row and Year label column use the default gray/bold <th> style. */
-[data-theme="dark"] .p4p-grid th,
-[data-theme="dark"] .p4p-grid td { border-color: #444; }
 
 /* Year column narrow; the 10 rank columns share the rest equally. Names wrap
    onto multiple lines within 960px, like Wikipedia's PWI 500 table. */
@@ -610,21 +608,20 @@ table.matchesum td {
 }
 .draft-board th,
 .draft-board td {
-    border: 1px solid #ccc;
+    border: 1px solid #ddd;
     padding: 4px 8px;
     text-align: left;
     vertical-align: top;
 }
 .draft-board tr > th:first-child {
     text-align: center;
+    vertical-align: middle;
     width: 46px;
 }
 .draft-board tr:first-child th {
     text-align: center;
 }
 .draft-board .sub { font-size: 0.85em; color: #777; }
-[data-theme="dark"] .draft-board th,
-[data-theme="dark"] .draft-board td { border-color: #444; }
 [data-theme="dark"] .draft-board .sub { color: #99a; }
 
 /* Champion sits atop the table in a yellow "C" cell, boxing style. */

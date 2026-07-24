@@ -331,6 +331,24 @@ def _hand_details(summary, rows, cols, width):
     return h
 
 
+def _rookie_details(hand):
+    """Rookie of the Year — men's and women's, two sub-tables like WOTY."""
+    h = ['    <details>',
+         '      <summary><i>The Ring</i> Rookie of the Year</summary>']
+    for label, rows in (('Rookie of the Year', hand['rookie']),
+                        ('Woman Rookie of the Year', hand['rookie_w'])):
+        h.append(f'        <p class="sub"><b><i>The Ring</i> {label}</b></p>')
+        h.append('        <table class="champ-history" style="width:33%;">')
+        h.append('        <tr><th>Year</th><th>Wrestler</th></tr>')
+        for r in sorted(rows, key=lambda r: -r['year']):
+            h.append(f'        <tr><th>{r["year"]}</th><td>{r["cells"][1].strip()}</td></tr>')
+        if not rows:
+            h.append('        <tr><td colspan="2">No qualifying year yet.</td></tr>')
+        h.append('        </table>')
+    h.append('    </details>')
+    return h
+
+
 def render_auto(year_end, woty, improved, hand):
     """Full awards section, in order. `hand` is parse_hand_awards() output. Order:
     Men's 100, Women's 100, Wrestler of the Year, Match of the Year, Rookie of
@@ -345,8 +363,7 @@ def render_auto(year_end, woty, improved, hand):
     h += _woty_details(woty)
     h += _hand_details('<i>The Ring</i> Match of the Year', hand['match'],
                        ['Year', 'Match', 'Event', 'Date'], '75%')
-    h += _hand_details('<i>The Ring</i> Rookie of the Year', hand['rookie'],
-                       ['Year', 'Wrestler'], '33%')
+    h += _rookie_details(hand)
     h += _hand_details('<i>The Ring</i> Comeback of the Year', hand['comeback'],
                        ['Year', 'Wrestler'], '33%')
     h += _improved_details(improved)
@@ -378,7 +395,19 @@ def render_hand_template():
         '    <div style="display:none" aria-hidden="true">',
         tbl('<i>The Ring</i> Match of the Year', ['Year', 'Match', 'Event', 'Date']),
         tbl('<i>The Ring</i> Comeback of the Year', ['Year', 'Wrestler']),
-        tbl('<i>The Ring</i> Rookie of the Year', ['Year', 'Wrestler']),
+        # Rookie of the Year: one details, two tables (men's, then women's).
+        ('    <details>\n'
+         '      <summary><i>The Ring</i> Rookie of the Year</summary>\n'
+         '        <!-- first table = men\'s Rookie of the Year, second = Woman Rookie of the Year -->\n'
+         '        <table class="champ-history" style="width:75%;">\n'
+         '        <tr><th>Year</th><th>Wrestler</th></tr>\n'
+         '        <tr><td>YEAR</td><td>&nbsp;</td></tr>\n'
+         '        </table>\n'
+         '        <table class="champ-history" style="width:75%;">\n'
+         '        <tr><th>Year</th><th>Wrestler</th></tr>\n'
+         '        <tr><td>YEAR</td><td>&nbsp;</td></tr>\n'
+         '        </table>\n'
+         '    </details>'),
         tbl('<i>The Ring</i> Lifetime Achievement Award', ['Year', 'Wrestler']),
         '    </div>',
         f'    {HAND_END}',
@@ -427,15 +456,10 @@ def _years_str(years):
     return ', '.join(str(y) for y in sorted(years, reverse=True))
 
 
-def _parse_hand_award(html, summary):
-    """Parse one hand-authored award table (identified by its <summary>) into
-    rows: {'year', 'cells': [raw <td> html...], 'wrestlers': [(slug,name,country)]}.
-    Placeholder rows (year not a number) are skipped."""
-    m = re.search(re.escape(summary) + r'</summary>(.*?)</details>', html, re.S)
-    if not m:
-        return []
+def _parse_rows(table_html):
+    """Rows of one table: {'year', 'cells', 'wrestlers'}; placeholders skipped."""
     rows = []
-    for tr in re.findall(r'<tr>(.*?)</tr>', m.group(1), re.S):
+    for tr in re.findall(r'<tr>(.*?)</tr>', table_html, re.S):
         tds = re.findall(r'<td[^>]*>(.*?)</td>', tr, re.S)
         if not tds or not tds[0].strip().isdigit():
             continue
@@ -447,15 +471,34 @@ def _parse_hand_award(html, summary):
     return rows
 
 
+def _award_tables(html, summary):
+    """All <table> HTML blocks inside the award identified by its <summary>."""
+    m = re.search(re.escape(summary) + r'</summary>(.*?)</details>', html, re.S)
+    return re.findall(r'<table.*?</table>', m.group(1), re.S) if m else []
+
+
+def _parse_hand_award(html, summary):
+    """Parse a single-table hand award (identified by its <summary>) into rows."""
+    tables = _award_tables(html, summary)
+    return _parse_rows(tables[0]) if tables else []
+
+
 def parse_hand_awards():
     """All four hand-authored awards, parsed from ring.html (the hidden data
     block). Every award gets a parser so it can render into the section and be
     injected onto the wrestlers' pages."""
     with open(RING_HTML, encoding='utf-8') as f:
         html = f.read()
+    # Restrict to the hidden hand DATA block — the auto section above now
+    # contains the same summaries (its rendered copies), which must be ignored.
+    if HAND_START in html and HAND_END in html:
+        html = html[html.index(HAND_START):html.index(HAND_END)]
+    # Rookie is one award with two tables (men's, then women's), like WOTY.
+    rk = _award_tables(html, '<i>The Ring</i> Rookie of the Year')
     return {
         'match':    _parse_hand_award(html, '<i>The Ring</i> Match of the Year'),
-        'rookie':   _parse_hand_award(html, '<i>The Ring</i> Rookie of the Year'),
+        'rookie':   _parse_rows(rk[0]) if len(rk) > 0 else [],
+        'rookie_w': _parse_rows(rk[1]) if len(rk) > 1 else [],
         'comeback': _parse_hand_award(html, '<i>The Ring</i> Comeback of the Year'),
         'lifetime': _parse_hand_award(html, '<i>The Ring</i> Lifetime Achievement Award'),
     }
@@ -476,28 +519,26 @@ def wrestler_accolades(year_end, woty, improved, picks, hand):
     {'men': ..., 'women': ...}; picks is best_draft_picks(); hand is
     parse_hand_awards() (every hand award is injected onto wrestler pages)."""
     acc = defaultdict(list)
-    # Match of the Year — a SHARED award: every participant won it. One accolade
-    # per wrestler, grouped, with a smaller line per match (opponent + event).
-    moty_by_slug = defaultdict(list)      # slug -> [(year, subline)]
+    # Match of the Year — a SHARED award: every participant won it. One line per
+    # match: the award (with year), then a smaller (same-colour) "vs." tail. No
+    # flags, no line breaks; repeats simply add another line.
+    moty_by_slug = defaultdict(list)      # slug -> [(year, line)]
     for match in hand['match']:
         parts = match['wrestlers']
         event = re.split(r'<', match['cells'][2], 1)[0].strip()
         date = _pretty_date(match['cells'][3])
         for i, (slug, name, country) in enumerate(parts):
-            opp = [p for j, p in enumerate(parts) if j != i]
-            opp_txt = ', '.join(
-                f'<span class="fi fi-{c}"></span> {n}' for _s, n, c in opp)
-            sub = (f'vs. {opp_txt} at {event} on {date}'
-                   if opp_txt else f'at {event} on {date}')
-            moty_by_slug[slug].append((match['year'], sub))
+            opp = ', '.join(n for j, (_s, n, _c) in enumerate(parts) if j != i)
+            tail = f'vs. {opp} at {event} on {date}' if opp else f'at {event} on {date}'
+            line = (f'Match of the Year Award ({match["year"]}) '
+                    f'<span style="font-size:0.85em">{tail}</span>')
+            moty_by_slug[slug].append((match['year'], line))
     for slug, entries in moty_by_slug.items():
-        entries.sort(reverse=True)
-        yrs = _years_str([y for y, _ in entries])
-        subs = '<br>\n'.join(f'<span class="sub">{s}</span>' for _y, s in entries)
-        acc[slug].append(
-            f'<i>The Ring</i> Match of the Year Award ({yrs})<br>\n{subs}')
-    # Rookie / Comeback / Lifetime — one accolade per wrestler, years grouped.
+        for _y, line in sorted(entries, reverse=True):
+            acc[slug].append(line)
+    # Rookie / Woman Rookie / Comeback / Lifetime — one per wrestler, years grouped.
     for key, label in (('rookie', 'Rookie of the Year'),
+                       ('rookie_w', 'Woman Rookie of the Year'),
                        ('comeback', 'Comeback of the Year'),
                        ('lifetime', 'Lifetime Achievement Award')):
         years_by_slug = defaultdict(list)
@@ -505,7 +546,7 @@ def wrestler_accolades(year_end, woty, improved, picks, hand):
             for slug, _name, _c in row['wrestlers']:
                 years_by_slug[slug].append(row['year'])
         for slug, years in years_by_slug.items():
-            acc[slug].append(f'<i>The Ring</i> {label} ({_years_str(years)})')
+            acc[slug].append(f'{label} ({_years_str(years)})')
     for gender in ('men', 'women'):
         title = ('Wrestler of the Year' if gender == 'men' else 'Woman of the Year')
         imp = ('Most Improved Wrestler' if gender == 'men' else 'Most Improved Woman')
@@ -515,13 +556,13 @@ def wrestler_accolades(year_end, woty, improved, picks, hand):
             woty_years[slugify(r['name'])].append(y)
         for slug, years in woty_years.items():
             for y in sorted(years, reverse=True):
-                acc[slug].append(f'<i>The Ring</i> {title} ({y})')
+                acc[slug].append(f'{title} ({y})')
         imp_years = defaultdict(list)
         for y, r in improved[gender].items():
             imp_years[slugify(r['name'])].append(y)
         for slug, years in imp_years.items():
             for y in sorted(years, reverse=True):
-                acc[slug].append(f'<i>The Ring</i> {imp} ({y})')
+                acc[slug].append(f'{imp} ({y})')
         # Only the BEST rank ever achieved, with every year it happened.
         best_rank = {}                 # slug -> (rank, [years])
         for y, ranking in year_end[gender].items():

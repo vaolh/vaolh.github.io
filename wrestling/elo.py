@@ -449,8 +449,20 @@ def write_index_page(db, snapshots, months):
         'than a win inside your own. '
         '<a href="/wrestling/org/ring.html">The Ring</a></p>',
         '',
+        '<h2>No. 1 ranking history</h2>',
+        '',
+        '<p>Each monthly ranking counts as four weeks. A player’s <i>Total</i> is '
+        'their cumulative weeks at No. 1; repeat runs at the top are tagged '
+        '(2), (3)…</p>',
+        '',
+        render_no1_history(snapshots, months, 'men', "Men's No. 1 History"),
+        '',
+        render_no1_history(snapshots, months, 'women', "Women's No. 1 History"),
+        '',
+        '<h2>Archived rankings</h2>',
+        '',
         '    <table class="p4p-months">',
-        '    <caption>Archived rankings</caption>',
+        '    <caption>Monthly rankings</caption>',
         '        <tr>',
         '            <th style="width: 34%;">Month</th>',
         '            <th style="width: 33%;">Men\'s No. 1</th>',
@@ -758,7 +770,7 @@ def elo_extras(db, top_n=10, min_bouts=3):
     return giant, opp, best
 
 
-# Two-name matchup cells (Biggest Upsets / Best Matches) render inline (not
+# Two-name matchup cells (Biggest Upsets / Highest Matches by Rating) render inline (not
 # stacked) at a small size so both wrestlers fit on one line without overflowing
 # the narrow grid tables.
 _MATCHUP = 'font-size: 0.72em;'
@@ -802,7 +814,7 @@ def generate_opp_rating_html(rows, size=10):
 
 
 def generate_best_matches_html(rows, size=10):
-    return _elo_table('Best Matches (by Elo)', 'Avg rating', rows, lambda r: (
+    return _elo_table('Highest Matches by Rating', 'Avg rating', rows, lambda r: (
         f'{flag(r["a_country"])} {_wlink(r["a"])} vs. '
         f'{flag(r["b_country"])} {_wlink(r["b"])}',
         f'{r["value"]:.0f}'), size, cell_style=_MATCHUP)
@@ -933,6 +945,105 @@ def update_infoboxes(db, peak_rank, current_rank):
 # ENTRY POINT
 # =============================================================================
 
+# =============================================================================
+# TIME AT NO. 1 (P4P)
+# =============================================================================
+# The Ring publishes one ranking per month, so a month at the top is counted as
+# four weeks — the granularity the "weeks at No. 1" records and the No. 1 history
+# table on the P4P index are expressed in.
+WEEKS_PER_MONTH = 4
+
+
+def no1_reigns(snapshots, months, gender):
+    """Contiguous runs at No. 1 for one gender, chronological. Each reign is a
+    dict {name, country, start, end, months, weeks, reign_no, total_weeks}; a
+    reign breaks when the No. 1 changes (or a month has no published ranking)."""
+    reigns = []
+    prev = None
+    for key in months:
+        snap = snapshots[key][gender]
+        if not snap:
+            prev = None
+            continue
+        top = snap[0]
+        if prev is not None and prev['name'] == top['name']:
+            prev['end'] = key
+            prev['months'] += 1
+        else:
+            prev = {'name': top['name'], 'country': top['country'],
+                    'start': key, 'end': key, 'months': 1}
+            reigns.append(prev)
+
+    seen, cum = defaultdict(int), defaultdict(int)
+    for r in reigns:
+        r['weeks'] = r['months'] * WEEKS_PER_MONTH
+        seen[r['name']] += 1
+        r['reign_no'] = seen[r['name']]
+        cum[r['name']] += r['weeks']
+        r['total_weeks'] = cum[r['name']]
+    return reigns
+
+
+def p4p_week_records(snapshots, months):
+    """(total_weeks_rows, consecutive_weeks_rows) across both genders, each a
+    list of (country, name, weeks) sorted for a top-10 record table."""
+    total, longest, country = defaultdict(int), defaultdict(int), {}
+    for gender in ('men', 'women'):
+        for r in no1_reigns(snapshots, months, gender):
+            total[r['name']] += r['weeks']
+            longest[r['name']] = max(longest[r['name']], r['weeks'])
+            country[r['name']] = r['country']
+
+    def rows(d):
+        return sorted(((country[n], n, v) for n, v in d.items() if v),
+                      key=lambda t: (-t[2], t[1]))[:10]
+    return rows(total), rows(longest)
+
+
+def generate_p4p_weeks_html(rows, size=10):
+    return _elo_table('Most Weeks at No. 1 (P4P)', 'Weeks', rows,
+                      lambda r: (f'{flag(r[0])} {_wlink(r[1])}', r[2]), size)
+
+
+def generate_p4p_consec_html(rows, size=10):
+    return _elo_table('Most Consecutive Weeks at No. 1', 'Weeks', rows,
+                      lambda r: (f'{flag(r[0])} {_wlink(r[1])}', r[2]), size)
+
+
+def render_no1_history(snapshots, months, gender, label):
+    """A tennis-style No. 1 ranking history table: a row per reign, with the
+    No. column numbering first-time No. 1s and repeat reigns tagged (2), (3)…"""
+    out = ['    <table class="p4p-months p4p-history">',
+           f'    <caption>{label}</caption>',
+           '        <tr>',
+           '            <th style="width: 8%;">No.</th>',
+           '            <th style="width: 42%;">Player</th>',
+           '            <th style="width: 17%;">Start date</th>',
+           '            <th style="width: 17%;">End date</th>',
+           '            <th style="width: 8%;">Weeks</th>',
+           '            <th style="width: 8%;">Total</th>',
+           '        </tr>']
+    counter = 0
+    for r in no1_reigns(snapshots, months, gender):
+        player = f'{flag(r["country"])} {_wlink(r["name"])}'
+        if r['reign_no'] == 1:
+            counter += 1
+            no_cell = str(counter)
+        else:
+            no_cell = ''
+            player += f' ({r["reign_no"]})'
+        out += ['        <tr>',
+                f'            <th>{no_cell}</th>',
+                f'            <td>{player}</td>',
+                f'            <td>{_month_label(r["start"])}</td>',
+                f'            <td>{_month_label(r["end"])}</td>',
+                f'            <td>{r["weeks"]}</td>',
+                f'            <td>{r["total_weeks"]}</td>',
+                '        </tr>']
+    out.append('    </table>')
+    return '\n'.join(out) + '\n'
+
+
 def run(db):
     """Compute ratings and regenerate every page that depends on them."""
     print("Computing Elo ratings...")
@@ -965,6 +1076,14 @@ def run(db):
     _replace_between('wrestling/org/pwhof.html',
                      '<!-- HOFMEMBERS_START -->', '<!-- HOFMEMBERS_END -->',
                      generate_hof_html(db, peaks, peak_rank), 'Hall of Fame')
+
+    weeks_rows, consec_rows = p4p_week_records(snapshots, months)
+    _replace_between('wrestling/records.html',
+                     '<!-- P4PWEEKS_START -->', '<!-- P4PWEEKS_END -->',
+                     generate_p4p_weeks_html(weeks_rows), 'Weeks-at-No.1 record')
+    _replace_between('wrestling/records.html',
+                     '<!-- P4PCONSEC_START -->', '<!-- P4PCONSEC_END -->',
+                     generate_p4p_consec_html(consec_rows), 'Consecutive-weeks-at-No.1 record')
 
     giant, opp_rows, best = elo_extras(db)
     _replace_between('wrestling/records.html',

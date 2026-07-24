@@ -2913,13 +2913,24 @@ class WrestlingDatabase:
             rt('Most Consecutive Title Defenses', 'Defenses', kv_rows(max_def)),
             rt('Most World Title Bouts', 'Bouts', wt_rows(lambda s: s['title_bouts'])),
 
-            # ── Elo — filled by elo.py (ratings). Biggest Upsets and Best
+            # ── P4P reign length — filled by elo.py (needs the monthly
+            #    snapshots). Kept adjacent so they share a row in the grid, and
+            #    placed just before the upset/rating pair. Each archived month
+            #    counts as four weeks. ──────────────────────────────────────────
+            '<!-- P4PWEEKS_START -->\n'
+            + rt('Most Weeks at No. 1 (P4P)', 'Weeks', [])
+            + '<!-- P4PWEEKS_END -->\n',
+            '<!-- P4PCONSEC_START -->\n'
+            + rt('Most Consecutive Weeks at No. 1', 'Weeks', [])
+            + '<!-- P4PCONSEC_END -->\n',
+
+            # ── Elo — filled by elo.py (ratings). Biggest Upsets and Highest
             #    Matches are kept adjacent so they share a row in the grid. ────
             '<!-- GIANTKILLER_START -->\n'
             + rt('Biggest Upsets', 'Rating gap', [])
             + '<!-- GIANTKILLER_END -->\n',
             '<!-- BESTMATCHES_START -->\n'
-            + rt('Best Matches (by Elo)', 'Avg rating', [])
+            + rt('Highest Matches by Rating', 'Avg rating', [])
             + '<!-- BESTMATCHES_END -->\n',
             '<!-- OPPRATING_START -->\n'
             + rt('Highest Average Opponent Rating', 'Avg rating', [])

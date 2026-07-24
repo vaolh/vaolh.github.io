@@ -1126,6 +1126,15 @@ table#sched .belt-label-head {
     margin-top: 2rem;
 }
 
+/* No. 1 ranking history (tennis-style) on the P4P index. Six columns, so it
+   takes the full content width; only the player name is left-aligned, and the
+   Weeks / Total figures use tabular numerals so they line up. */
+.p4p-history th,
+.p4p-history td { text-align: center; }
+.p4p-history td:nth-child(2) { text-align: left; }
+.p4p-history td:nth-child(5),
+.p4p-history td:nth-child(6) { font-variant-numeric: tabular-nums; }
+
 [data-theme="dark"] .mv-up   { color: #5bd67f; }
 [data-theme="dark"] .mv-down { color: #ff7b7b; }
 [data-theme="dark"] .mv-same { color: #7fb0ff; }

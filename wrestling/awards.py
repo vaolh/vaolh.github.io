@@ -44,6 +44,8 @@ MIN_YEAR_BOUTS = 3         # minimum bouts in a year to qualify for WOTY
 AUTO_START, AUTO_END = '<!-- RINGAWARDS_AUTO_START -->', '<!-- RINGAWARDS_AUTO_END -->'
 HAND_START, HAND_END = '<!-- RINGAWARDS_HAND_START -->', '<!-- RINGAWARDS_HAND_END -->'
 WA_START, WA_END = '<!-- WAWARDS_START -->', '<!-- WAWARDS_END -->'
+WREC_START, WREC_END = '<!-- WRECORDS_START -->', '<!-- WRECORDS_END -->'
+RECORDS_HTML = os.path.join(SCRIPT_DIR, 'records.html')
 
 
 def slugify(name):
@@ -633,6 +635,87 @@ def inject_wrestler_awards(year_end, woty, improved, picks, hand):
     print(f"  ✓ Injected accolades into {touched} wrestler page(s)")
 
 
+# ─── Per-wrestler records ("No. 1 in …") ─────────────────────────────────────
+
+def collect_record_leaders():
+    """slug -> [(caption, value)] for every All-Time Records table where the
+    wrestler sits at No. 1. records.html is fully rendered by the time this runs
+    (update.py fills the stat tables, elo.py fills the rating ones). Two-wrestler
+    matchup tables (Biggest Upsets / Highest Matches by Rating) have no single
+    record-holder and are skipped."""
+    if not os.path.exists(RECORDS_HTML):
+        return {}
+    html = open(RECORDS_HTML, encoding='utf-8').read()
+    leaders = defaultdict(list)
+    for tbl in re.findall(
+            r'<table class="p4p-rank record-table">.*?</table>', html, re.S):
+        cap = re.search(r'<caption>(.*?)</caption>', tbl, re.S)
+        row = re.search(
+            r'<th>1</th>\s*<td[^>]*>(.*?)</td>\s*<td[^>]*>(.*?)</td>', tbl, re.S)
+        if not (cap and row):
+            continue
+        caption, cell, value = cap.group(1).strip(), row.group(1), row.group(2).strip()
+        links = re.findall(r'/wrestling/wrestlers/([a-z0-9\-]+)\.html', cell)
+        if len(links) != 1 or not value:      # skip matchup tables + empty tables
+            continue
+        leaders[links[0]].append((caption, value))
+    return leaders
+
+
+def render_records_block(items):
+    """A pyramid-ordered Records section (shortest visible line on top), each
+    line 'Record name – value'."""
+    def line(cap, val):
+        return f'{cap} &ndash; {val}'
+
+    def visible_len(s):
+        return len(re.sub(r'<[^>]+>', '', s))
+
+    lines = sorted((line(c, v) for c, v in items), key=visible_len)
+    body = ' <br>\n    '.join(lines)
+    return (f'{WREC_START}\n'
+            f'    <h3>Records</h3>\n'
+            f'    <p>{body}</p>\n'
+            f'    {WREC_END}')
+
+
+def inject_wrestler_records():
+    """Add a Records section (directly under Awards and honors) to every wrestler
+    who leads at least one All-Time Records table."""
+    leaders = collect_record_leaders()
+    if not os.path.isdir(WRESTLERS_DIR):
+        print("  ⚠ wrestlers/ not found, skipping records")
+        return
+    touched = 0
+    for path in glob.glob(os.path.join(WRESTLERS_DIR, '*.html')):
+        slug = os.path.basename(path)[:-5]
+        with open(path, encoding='utf-8') as f:
+            html = f.read()
+        # Drop any stale block first so re-runs stay idempotent.
+        if WREC_START in html and WREC_END in html:
+            html = (html[:html.index(WREC_START)]
+                    + html[html.index(WREC_END) + len(WREC_END):])
+            html = re.sub(r'\n{3,}', '\n\n', html)
+        items = leaders.get(slug)
+        if not items:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(html)
+            continue
+        block = render_records_block(items)
+        if WA_END in html:                     # right after Awards and honors
+            html = html.replace(WA_END, f'{WA_END}\n\n{block}', 1)
+        else:                                  # no awards: sit above the record
+            anchor = re.search(r'<h3>\s*Professional wrestling record\s*</h3>', html)
+            if anchor:
+                html = html[:anchor.start()] + block + '\n\n' + html[anchor.start():]
+            else:
+                html = html.replace('</body>', block + '\n</body>', 1)
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(html)
+        touched += 1
+    print(f"  ✓ Injected records into {touched} wrestler page(s)")
+
+
 # ─── Entry points ────────────────────────────────────────────────────────────
 
 def run(db):
@@ -649,6 +732,9 @@ def run(db):
     hand = parse_hand_awards()   # parse the hand data block before it renders
     write_ring_awards(year_end, woty, improved, hand)
     inject_wrestler_awards(year_end, woty, improved, picks, hand)
+    # After awards land, tag each record-leading wrestler with a Records section
+    # (records.html is already fully rendered by update.py + elo.py at this point).
+    inject_wrestler_records()
 
 
 def main():

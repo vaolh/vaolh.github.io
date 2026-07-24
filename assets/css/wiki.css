@@ -306,20 +306,9 @@ caption {
     overflow-wrap: break-word;
     border: 1px solid #ccc;
 }
-/* Header row and the Year label column are shaded, like every other table. */
-.p4p-grid tr:first-child th,
-.p4p-grid th:first-child {
-    background-color: #dce8ff;
-    color: #222;
-    font-weight: bold;
-}
+/* Header row and Year label column use the default gray/bold <th> style. */
 [data-theme="dark"] .p4p-grid th,
 [data-theme="dark"] .p4p-grid td { border-color: #444; }
-[data-theme="dark"] .p4p-grid tr:first-child th,
-[data-theme="dark"] .p4p-grid th:first-child {
-    background-color: #24324a;
-    color: #dbe6ff;
-}
 
 /* Year column narrow; the 10 rank columns share the rest equally. Names wrap
    onto multiple lines within 960px, like Wikipedia's PWI 500 table. */
@@ -631,14 +620,11 @@ table.matchesum td {
     width: 46px;
 }
 .draft-board tr:first-child th {
-    background-color: #dce8ff;
-    color: #222;
     text-align: center;
 }
 .draft-board .sub { font-size: 0.85em; color: #777; }
 [data-theme="dark"] .draft-board th,
 [data-theme="dark"] .draft-board td { border-color: #444; }
-[data-theme="dark"] .draft-board tr:first-child th { background-color: #24324a; color: #dbe6ff; }
 [data-theme="dark"] .draft-board .sub { color: #99a; }
 
 /* Champion sits atop the table in a yellow "C" cell, boxing style. */
@@ -648,6 +634,12 @@ table.matchesum td {
     color: #000;
     font-weight: bold;
     text-align: center;
+}
+/* Match the schedule's gold defense cell (.cell-D) in dark mode too. */
+[data-theme="dark"] .draft-table td.rank-champ,
+[data-theme="dark"] .p4p-rank td.rank-champ {
+    background-color: #FFFFBF !important;
+    color: #000 !important;
 }
 [data-theme="dark"] .draft-table th[colspan] { background-color: #24324a; color: #dbe6ff; }
 [data-theme="dark"] .draft-table th,

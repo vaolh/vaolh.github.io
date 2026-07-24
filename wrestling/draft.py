@@ -516,24 +516,21 @@ def _mv_html(kind, places):
     return '<span class="mv mv-same">&#8211;</span>'
 
 
-def _field_movement(field, months, rating_by_month, ratings):
-    """name -> (kind, places): where each field member moved since last month,
-    ranked within this division field (same idea as the P4P Movement column)."""
+def _field_movement(field, months, rating_by_month):
+    """name -> (kind, places): movement WITHIN this division field only, versus
+    the previous archived month. `field` is already in current (display) order.
+    The season's field is fixed, so members simply reshuffle — no 'NEW'."""
     if len(months) < 2:
-        return {m['name']: ('new', 0) for m in field}
+        return {m['name']: ('same', 0) for m in field}
     prev = rating_by_month[months[-2]]
-    cur_rank = {m['name']: i for i, m in enumerate(
-        sorted(field, key=lambda m: (-(ratings.get(m['name']) or -1e9), m['name'])), 1)}
-    prev_rank = {m['name']: i for i, m in enumerate(
-        sorted(field, key=lambda m: (-(prev.get(m['name'], -1e9)), m['name'])), 1)}
+    cur_rank = {m['name']: i for i, m in enumerate(field, 1)}
+    prev_order = sorted(field, key=lambda m: (-(prev.get(m['name'], -1e9)), m['name']))
+    prev_rank = {m['name']: i for i, m in enumerate(prev_order, 1)}
     out = {}
     for m in field:
-        n = m['name']
-        if n not in prev:
-            out[n] = ('new', 0)
-            continue
-        delta = prev_rank[n] - cur_rank[n]
-        out[n] = ('up', delta) if delta > 0 else ('down', -delta) if delta < 0 else ('same', 0)
+        delta = prev_rank[m['name']] - cur_rank[m['name']]
+        out[m['name']] = (('up', delta) if delta > 0
+                          else ('down', -delta) if delta < 0 else ('same', 0))
     return out
 
 
@@ -563,7 +560,7 @@ def render_org_rankings(org, rows, champ_of, ratings, months, rating_by_month, r
         champ_name = champ_row['name'] if champ_row else None
         field = [m for m in pool if m['name'] != champ_name]
         field.sort(key=lambda m: (-(ratings.get(m['name']) or -1e9), m['name']))
-        mv = _field_movement(field, months, rating_by_month, ratings)
+        mv = _field_movement(field, months, rating_by_month)
         html.append('    <details class="draft-year">')
         html.append(f'      <summary>{ORG_NAMES[org]} {division.capitalize()} rankings</summary>')
         html.append('      <table class="p4p-rank">')

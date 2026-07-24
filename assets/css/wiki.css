@@ -304,6 +304,21 @@ caption {
     vertical-align: middle;
     font-size: 0.85em;
     overflow-wrap: break-word;
+    border: 1px solid #ccc;
+}
+/* Header row and the Year label column are shaded, like every other table. */
+.p4p-grid tr:first-child th,
+.p4p-grid th:first-child {
+    background-color: #dce8ff;
+    color: #222;
+    font-weight: bold;
+}
+[data-theme="dark"] .p4p-grid th,
+[data-theme="dark"] .p4p-grid td { border-color: #444; }
+[data-theme="dark"] .p4p-grid tr:first-child th,
+[data-theme="dark"] .p4p-grid th:first-child {
+    background-color: #24324a;
+    color: #dbe6ff;
 }
 
 /* Year column narrow; the 10 rank columns share the rest equally. Names wrap
@@ -627,7 +642,8 @@ table.matchesum td {
 [data-theme="dark"] .draft-board .sub { color: #99a; }
 
 /* Champion sits atop the table in a yellow "C" cell, boxing style. */
-.draft-table td.rank-champ {
+.draft-table td.rank-champ,
+.p4p-rank td.rank-champ {
     background-color: #FFFFBF !important;
     color: #000;
     font-weight: bold;

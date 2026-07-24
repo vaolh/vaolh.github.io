@@ -214,31 +214,66 @@ def _all_time_top(ye):
 
 
 def _ten_column_table(ye):
-    """The old ten-column table for one gender: ranks 1-10 across the top, one
-    row per year (newest first) plus an all-time 'All' row. Each cell is the
-    wrestler who finished at that rank that year."""
+    """The ten-column grid for one gender (imitates the classic P4P-by-year
+    table): ranks 1-10 across the top, an all-time 'All' row, then one row per
+    year (newest first). Identical names in the same rank column across adjacent
+    years are merged vertically with rowspan, exactly like the reference table."""
     h = ['        <div style="overflow-x:auto;">',
-         '        <table class="champ-history ten-col">',
+         '        <table class="p4p-grid">',
          '        <tr><th>Year</th>'
          + ''.join(f'<th>{i}</th>' for i in range(1, TOP_SHOWN + 1)) + '</tr>']
-
-    def row(label, entries):
-        cells = [f'<th>{label}</th>']
-        for i in range(TOP_SHOWN):
-            if i < len(entries):
-                e = entries[i]
-                cells.append(f'<td>{_wlink(e["name"], e["country"])}</td>')
-            else:
-                cells.append('<td></td>')
-        return '        <tr>' + ''.join(cells) + '</tr>'
-
-    h.append(row('All', _all_time_top(ye)))
-    for y in sorted(ye, reverse=True):
-        h.append(row(str(y), ye[y][:TOP_SHOWN]))
     if not ye:
         h.append(f'        <tr><td colspan="{TOP_SHOWN + 1}">No qualifying year yet.</td></tr>')
-    h.append('        </table>')
-    h.append('        </div>')
+        h += ['        </table>', '        </div>']
+        return h
+
+    def cell(e):
+        # No flags in this grid — names only, to match the reference table.
+        return (f'<a href="/wrestling/wrestlers/{slugify(e["name"])}.html">'
+                f'{e["name"]}</a>') if e else ''
+
+    # All-time row (never merged with the year rows below it).
+    allrow = _all_time_top(ye)
+    h.append('        <tr><th>All</th>'
+             + ''.join(f'<td>{cell(allrow[i] if i < len(allrow) else None)}</td>'
+                       for i in range(TOP_SHOWN)) + '</tr>')
+
+    years = sorted(ye, reverse=True)
+    grid = [ye[y][:TOP_SHOWN] for y in years]        # grid[row][col] -> entry
+    n = len(years)
+
+    def name_at(r, c):
+        return grid[r][c]['name'] if c < len(grid[r]) else None
+
+    # Vertical merge: a run of identical names down a rank column becomes one
+    # rowspan cell emitted at the top of the run.
+    skip = [[False] * TOP_SHOWN for _ in range(n)]
+    span = [[1] * TOP_SHOWN for _ in range(n)]
+    for c in range(TOP_SHOWN):
+        r = 0
+        while r < n:
+            nm = name_at(r, c)
+            if nm is None:
+                r += 1
+                continue
+            k = r + 1
+            while k < n and name_at(k, c) == nm:
+                k += 1
+            span[r][c] = k - r
+            for rr in range(r + 1, k):
+                skip[rr][c] = True
+            r = k
+
+    for r in range(n):
+        cells = [f'<th>{years[r]}</th>']
+        for c in range(TOP_SHOWN):
+            if skip[r][c]:
+                continue
+            e = grid[r][c] if c < len(grid[r]) else None
+            rs = f' rowspan="{span[r][c]}"' if span[r][c] > 1 else ''
+            cells.append(f'<td{rs}>{cell(e)}</td>')
+        h.append('        <tr>' + ''.join(cells) + '</tr>')
+    h += ['        </table>', '        </div>']
     return h
 
 
@@ -382,7 +417,8 @@ def wrestler_accolades(year_end, woty, improved, picks):
         for slug, (rk, years) in best_rank.items():
             acc[slug].append(
                 f'Ranked No. {rk} of the top {TOP_N} {gword} singles wrestlers '
-                f'in <i>The Ring</i> {TOP_N} ({_years_str(years)})')
+                f'in <a href="/wrestling/org/ring.html"><i>The Ring</i> {TOP_N}</a> '
+                f'({_years_str(years)})')
     # Highest draft pick ever (lowest overall pick number).
     for slug, (pick, year, org) in picks.items():
         acc[slug].append(
@@ -392,10 +428,14 @@ def wrestler_accolades(year_end, woty, improved, picks):
 
 
 def render_wrestler_block(items):
-    lis = '\n'.join(f'      <li>{it}</li>' for it in items)
+    # Pyramid order: shortest visible line on top, longest at the bottom.
+    def visible_len(s):
+        return len(re.sub(r'<[^>]+>', '', s))
+    items = sorted(items, key=visible_len)
+    lines = ' <br>\n'.join(items)
     return (f'{WA_START}\n'
             f'    <h3>Awards and honors</h3>\n'
-            f'    <ul class="awards-list">\n{lis}\n    </ul>\n'
+            f'    <p>{lines}</p>\n'
             f'    {WA_END}')
 
 

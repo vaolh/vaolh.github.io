@@ -82,6 +82,48 @@ def load_ratings_and_site_date():
     return ratings, ranks, sd
 
 
+def load_ranking_context():
+    """For the org divisional rankings: current Elo (everyone), the archived
+    month keys, per-month name->rating (for Movement), and name->record from the
+    latest month (for the Record column) — so the tables mirror the P4P tables."""
+    os.chdir(os.path.dirname(SCRIPT_DIR))
+    ppv, weekly = 'wrestling/ppv/list.html', 'wrestling/weekly/list.html'
+    db = WrestlingDatabase()
+    site_date, _ = resolve_site_date(ppv, weekly)
+    db.cutoff = site_date
+    db.parse_events(ppv, is_weekly=False)
+    if os.path.exists(weekly):
+        db.parse_events(weekly, is_weekly=True)
+    db.events.sort(key=lambda e: elo._parse_date(e.get('date')) or datetime.min)
+    db.reprocess_championships_chronologically()
+    ratings, _bouts = elo.current_ratings(db)
+    months, snaps = elo.build_snapshots(db)
+    rating_by_month = {}
+    for key in months:
+        rm = {}
+        for g in ('men', 'women'):
+            for r in snaps[key][g]:
+                rm[r['name']] = r['rating']
+        rating_by_month[key] = rm
+    # Full W-L-D for everyone who has wrestled a singles match (not just the
+    # >= MIN_BOUTS names the P4P snapshot publishes), so the Record column fills.
+    wins, losses, draws = defaultdict(int), defaultdict(int), defaultdict(int)
+    for _when, m in elo.singles_matches(db):
+        a, b = m['fighter1'], m['fighter2']
+        if m.get('is_draw'):
+            draws[a] += 1
+            draws[b] += 1
+        elif m['winner'] == a:
+            wins[a] += 1
+            losses[b] += 1
+        else:
+            wins[b] += 1
+            losses[a] += 1
+    record_by_name = {n: f"{wins[n]}-{losses[n]}-{draws[n]}"
+                      for n in set(wins) | set(losses) | set(draws)}
+    return ratings, months, rating_by_month, record_by_name
+
+
 def inactivity_days(row, site_date):
     """How long since this wrestler last competed. Never-competed / unknown =
     very large, so they sort as 'most in need of an opportunity'."""
@@ -464,15 +506,54 @@ def latest_draft_rows():
     return y, years[y]
 
 
-def render_org_rankings(org, rows, roster, ratings, champ_of):
-    """Per-division ranking tables for one org: champion as C, field by Elo."""
-    # division -> [member row, ...]  (the drafted pool + the drafted champ)
-    members = defaultdict(list)
+def _mv_html(kind, places):
+    if kind == 'up':
+        return f'<span class="mv mv-up"><span class="mv-arrow">&#9650;</span> {places}</span>'
+    if kind == 'down':
+        return f'<span class="mv mv-down"><span class="mv-arrow">&#9660;</span> {places}</span>'
+    if kind == 'new':
+        return '<span class="mv mv-new">NEW</span>'
+    return '<span class="mv mv-same">&#8211;</span>'
+
+
+def _field_movement(field, months, rating_by_month, ratings):
+    """name -> (kind, places): where each field member moved since last month,
+    ranked within this division field (same idea as the P4P Movement column)."""
+    if len(months) < 2:
+        return {m['name']: ('new', 0) for m in field}
+    prev = rating_by_month[months[-2]]
+    cur_rank = {m['name']: i for i, m in enumerate(
+        sorted(field, key=lambda m: (-(ratings.get(m['name']) or -1e9), m['name'])), 1)}
+    prev_rank = {m['name']: i for i, m in enumerate(
+        sorted(field, key=lambda m: (-(prev.get(m['name'], -1e9)), m['name'])), 1)}
+    out = {}
+    for m in field:
+        n = m['name']
+        if n not in prev:
+            out[n] = ('new', 0)
+            continue
+        delta = prev_rank[n] - cur_rank[n]
+        out[n] = ('up', delta) if delta > 0 else ('down', -delta) if delta < 0 else ('same', 0)
+    return out
+
+
+def render_org_rankings(org, rows, champ_of, ratings, months, rating_by_month, record_by_name):
+    """Per-division ranking tables for one org, styled exactly like the P4P
+    tables (Rank | Wrestler | Record | Rating | Movement) with the champion
+    pinned atop in a gold C cell; the field below is ranked by live Elo."""
+    members = defaultdict(list)          # division -> [member row, ...]
     for r in rows:
         if r['org'] == org:
             members[r['division']].append(r)
-    # slug/country for anyone who has appeared in a draft, for the live champ.
     who = {r['name']: (r['slug'], r['country']) for r in rows}
+
+    def rec(name):
+        return record_by_name.get(name, '&#8211;')
+
+    def rat(name):
+        v = ratings.get(name)
+        return f'{v:.0f}' if v is not None else '&#8211;'
+
     html = [RANK_START, f'    <h2>{ORG_NAMES[org]} Rankings</h2>']
     for division in WEIGHT_ORDER:
         pool = members.get(division)
@@ -480,32 +561,36 @@ def render_org_rankings(org, rows, roster, ratings, champ_of):
             continue
         champ_row = champ_of.get((org, division))
         champ_name = champ_row['name'] if champ_row else None
-        # Field = everyone in the pool except the current champion, by Elo.
         field = [m for m in pool if m['name'] != champ_name]
         field.sort(key=lambda m: (-(ratings.get(m['name']) or -1e9), m['name']))
+        mv = _field_movement(field, months, rating_by_month, ratings)
         html.append('    <details class="draft-year">')
         html.append(f'      <summary>{ORG_NAMES[org]} {division.capitalize()} rankings</summary>')
         html.append('      <table class="p4p-rank">')
-        html.append('        <tr><th style="width:12%;">Rank</th>'
-                    '<th style="width:58%;">Wrestler</th>'
-                    '<th style="width:30%;">Rating</th></tr>')
+        html.append('        <tr>'
+                    '<th style="width: 10%;">Rank</th>'
+                    '<th style="width: 40%;">Wrestler</th>'
+                    '<th style="width: 16%;">Record</th>'
+                    '<th style="width: 16%;">Rating</th>'
+                    '<th style="width: 18%;">Movement</th></tr>')
         if champ_name:
             slug, country = who.get(champ_name,
                                     (champ_row['slug'], champ_row['country']))
-            crat = ratings.get(champ_name)
-            crat = f'{crat:.0f}' if crat is not None else '&#8211;'
-            html.append(f'        <tr><th class="rank-champ">C</th>'
+            html.append(f'        <tr><td class="rank-champ">C</td>'
                         f'<td>{_wlink(champ_name, slug, country)}</td>'
-                        f'<td>{crat}</td></tr>')
+                        f'<td>{rec(champ_name)}</td><td>{rat(champ_name)}</td>'
+                        f'<td>{_mv_html("same", 0)}</td></tr>')
         else:
-            html.append('        <tr><th class="rank-champ">C</th>'
-                        '<td><span class="sub">vacant</span></td><td>&#8211;</td></tr>')
+            html.append('        <tr><td class="rank-champ">C</td>'
+                        '<td><span class="sub">vacant</span></td>'
+                        '<td>&#8211;</td><td>&#8211;</td>'
+                        f'<td>{_mv_html("same", 0)}</td></tr>')
         for i, m in enumerate(field, 1):
-            rat = ratings.get(m['name'])
-            rat = f'{rat:.0f}' if rat is not None else '&#8211;'
+            kind, places = mv[m['name']]
             html.append(f'        <tr><th>{i}</th>'
                         f'<td>{_wlink(m["name"], m["slug"], m["country"])}</td>'
-                        f'<td>{rat}</td></tr>')
+                        f'<td>{rec(m["name"])}</td><td>{rat(m["name"])}</td>'
+                        f'<td>{_mv_html(kind, places)}</td></tr>')
         html.append('      </table>')
         html.append('    </details>')
     html.append(f'    {RANK_END}')
@@ -535,14 +620,15 @@ def inject_org_rankings():
         print("  No draft on disk — cleared any existing rankings from org pages.")
         return
     roster = load_roster()
-    ratings, _ranks, _sd = load_ratings_and_site_date()
     champ_of, _board = build_board(roster)
+    ratings, months, rating_by_month, record_by_name = load_ranking_context()
     for org, path in ORG_PAGES.items():
         if not os.path.exists(path):
             continue
         with open(path, encoding='utf-8') as f:
             html = f.read()
-        block = render_org_rankings(org, rows, roster, ratings, champ_of)
+        block = render_org_rankings(org, rows, champ_of, ratings, months,
+                                    rating_by_month, record_by_name)
         if RANK_START in html and RANK_END in html:
             pre = html[:html.index(RANK_START)]
             post = html[html.index(RANK_END) + len(RANK_END):]

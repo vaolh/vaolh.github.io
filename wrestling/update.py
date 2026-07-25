@@ -1208,13 +1208,12 @@ class WrestlingDatabase:
             out.append((org, weight_disp.lower(), weight_disp, country, name))
         return out
 
-    def _next_event_info(self):
-        """Date + venue/location/network for a newly generated card, inherited
-        from the same event one year earlier (the calendar repeats annually).
-        Its date is that event's date + 364 days — same weekday (Saturday),
-        same week of the year. Returns None until a full prior year exists, in
-        which case the caller keeps the blank placeholders."""
-        from datetime import timedelta
+    def _yearly_counterpart(self):
+        """(date, event) of the slot one annual cycle before the next card — the
+        single event the new WTS inherits its date, venue AND match schedule
+        from. The cycle length is however many events fell in the trailing 364
+        days, so it self-adjusts as the calendar grows. None until a full prior
+        year of events exists."""
         dated = sorted(((self.parse_date(e['date']), e) for e in self.events
                         if e.get('date') and self.parse_date(e['date'])),
                        key=lambda t: t[0])
@@ -1226,7 +1225,19 @@ class WrestlingDatabase:
         prev_idx = len(dated) - cycle          # counterpart of the new event
         if prev_idx < 0:
             return None
-        prev_date, prev = dated[prev_idx]
+        return dated[prev_idx]
+
+    def _next_event_info(self):
+        """Date + venue/location/network for a newly generated card, inherited
+        from the same event one year earlier (the calendar repeats annually).
+        Its date is that event's date + 364 days — same weekday (Saturday),
+        same week of the year. Returns None until a full prior year exists, in
+        which case the caller keeps the blank placeholders."""
+        from datetime import timedelta
+        cp = self._yearly_counterpart()
+        if not cp:
+            return None
+        prev_date, prev = cp
         # Calendar lookup: same calendar date one year on, snapped forward to the
         # weekday the promotion runs on (Saturday) — an actual date lookup, not
         # fixed-day arithmetic.
@@ -1248,7 +1259,8 @@ class WrestlingDatabase:
         """If the newest WTS is fully wrestled, append the next one.
 
         - This week's own contendership / battle-royal rows come from the
-          schedule (WTS N-15); their entrants are blank (set up FUTURE cards).
+          schedule of the yearly counterpart (the same event a year earlier that
+          sets the date); their entrants are blank (set up FUTURE cards).
         - Title matches are driven by the contenders crowned in the feeder event
           (WTS N-2): exactly one defence per contender, champion vs. that
           contender, defending every belt the champion holds at the weight.
@@ -1279,7 +1291,23 @@ class WrestlingDatabase:
         if not opmod.wts_is_complete(soup, highest):
             return
         number = highest + 1
-        template = opmod.wts_schedule_rows(soup, number - opmod.SCHEDULE_PERIOD)
+        # The schedule (match types / weights / notes) comes from the SAME event
+        # one year earlier that supplies the date — the yearly counterpart — so a
+        # card that runs two multi-man bouts once a year keeps both. Only fall
+        # back to the fixed N-15 slot, then a blank card, if that isn't available.
+        cp = self._yearly_counterpart()
+        sched_num = None
+        if cp:
+            # Only a WTS counterpart carries a card schedule; if the slot a year
+            # ago was WrestleMania/LibreMania/a tournament, sched_num stays None
+            # and we fall back below.
+            m = re.search(r'WTS\s+(\d+)', cp[1].get('name', ''))
+            if m:
+                sched_num = int(m.group(1))
+        template = opmod.wts_schedule_rows(soup, sched_num) if sched_num else None
+        if template is None:
+            sched_num = number - opmod.SCHEDULE_PERIOD
+            template = opmod.wts_schedule_rows(soup, sched_num)
         if not template:
             opmod.generate_wts(path)   # no schedule yet -> plain blank card
             return
@@ -1335,7 +1363,7 @@ class WrestlingDatabase:
         with open(path, 'w', encoding='utf-8') as f:
             f.write(raw)
         print(f"Appended World Title Series {number} "
-              f"(schedule WTS {number - opmod.SCHEDULE_PERIOD}, "
+              f"(schedule WTS {sched_num}, "
               f"contenders from WTS {number - self.CONTENDER_LEAD}).")
         if dropped:
             print("  Vacant titles skipped: " + "; ".join(dropped))

@@ -121,7 +121,23 @@ def load_ranking_context():
             losses[a] += 1
     record_by_name = {n: f"{wins[n]}-{losses[n]}-{draws[n]}"
                       for n in set(wins) | set(losses) | set(draws)}
-    return ratings, months, rating_by_month, record_by_name
+    # LIVE champions straight from the reprocessed DB — the rankings refresh on
+    # every update, so the champ pinned atop each division must come from the
+    # current reigns, NOT from rosters.csv (whose champion_* fields are only
+    # rebuilt yearly at draft time and go stale the moment a title changes).
+    live_champ_of = {}          # (org, division) -> {'name','slug','country'}
+    all_champ_names = set()     # every current belt holder, any org/weight
+    for org in db.championships:
+        for weight in WEIGHT_ORDER:
+            cur = db._current_champion(org, weight)
+            if not cur:
+                continue
+            all_champ_names.add(cur[0])
+            if org in ORG_PAGES:
+                live_champ_of[(org, weight)] = {
+                    'name': cur[0], 'slug': slugify(cur[0]), 'country': cur[1]}
+    return (ratings, months, rating_by_month, record_by_name,
+            live_champ_of, all_champ_names)
 
 
 def inactivity_days(row, site_date):
@@ -638,12 +654,13 @@ def inject_org_rankings():
         print("  No draft on disk — cleared any existing rankings from org pages.")
         return
     roster = load_roster()
-    champ_of, _board = build_board(roster)
-    ratings, months, rating_by_month, record_by_name = load_ranking_context()
+    (ratings, months, rating_by_month, record_by_name,
+     champ_of, all_champ_names) = load_ranking_context()
 
-    # Every wrestler currently holding a belt anywhere — kept out of all
+    # champ_of and all_champ_names now come from the LIVE reprocessed DB (see
+    # load_ranking_context): a title change swaps the new champion atop the
+    # division on the very next update, and every belt holder is kept out of the
     # contender fields (a champ is never a mere contender, even in another org).
-    all_champ_names = {r['name'] for r in champ_of.values()}
 
     # Reserve pools: that year's UNDRAFTED wrestlers per division (not retired,
     # not a champion), best Elo first. Used to top a short field back up to 10.

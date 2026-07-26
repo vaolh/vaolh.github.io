@@ -203,7 +203,7 @@ volador-jr,Volador Jr.,mx,m,welterweight,,,,,,,,
 yutani,Yutani,jp,m,welterweight,,,,,,,,
 zandokan-jr,Zandokan Jr.,mx,m,welterweight,inferred,TRUE,,,,,,2019-09-28
 black-diamond,Black Diamond,br,m,lightweight,inferred,TRUE,,,,,,
-mayu-iwatani,Mayu Iwatani,jp,m,lightweight,inferred,TRUE,,,,,,
+mayu-iwatani,Mayu Iwatani,jp,m,featherweight,manual,TRUE,,,,,,
 mina-shirakawa,Mina Shirakawa,jp,m,lightweight,inferred,TRUE,,,,,,
 alba-fyre,Alba Fyre,gb,w,lightweight,,,,,,,,
 anna-reyes,Anna Reyes,mx,w,lightweight,inferred,TRUE,,,,,,2019-10-19
@@ -252,7 +252,7 @@ odette-beaumont,Odette Beaumont,us,m,featherweight,,,,,,,,
 wren-sinclair,Wren Sinclair,us,m,featherweight,inferred,TRUE,,,,,,
 aj-lee,AJ Lee,us,w,featherweight,inferred,TRUE,,,,,,2019-11-16
 alexa-bliss,Alexa Bliss,us,w,featherweight,inferred,TRUE,,,,,,2019-10-05
-becky-lynch,Becky Lynch,ie,w,featherweight,inferred,TRUE,,,,,,2019-12-14
+becky-lynch,Becky Lynch,ie,w,lightweight,manual,TRUE,,,,,,2019-12-14
 candela,Candela,mx,w,featherweight,inferred,TRUE,,,,,,2019-07-20
 candice-lerae,Candice LeRae,us,w,featherweight,inferred,TRUE,,,,,,2019-11-16
 chelsea-green,Chelsea Green,ca,w,featherweight,inferred,TRUE,,,,,,2019-04-21

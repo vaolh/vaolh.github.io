@@ -79,7 +79,7 @@ round,pick,org,slot,division,slug,name,country,rating,is_champ
 20,60,wwf,4,featherweight,lyra-valkyria,Lyra Valkyria,ie,1484,FALSE
 21,61,wwf,8,lightweight,nia-jax,Nia Jax,au,1460,FALSE
 21,62,wwo,6,lightweight,mercedes-moné,Mercedes Moné,us,1477,FALSE
-21,63,iwb,8,lightweight,lady-shani,Lady Shani,mx,,FALSE
+21,63,iwb,9,lightweight,lady-shani,Lady Shani,mx,,FALSE
 22,64,iwb,4,featherweight,princesa-azul,Princesa Azul,mx,1484,FALSE
 22,65,wwo,9,welterweight,volador-jr,Volador Jr.,mx,,FALSE
 22,66,wwf,4,heavyweight,rusev,Rusev,bg,1493,FALSE
@@ -110,13 +110,13 @@ round,pick,org,slot,division,slug,name,country,rating,is_champ
 31,91,wwf,6,welterweight,finn-balor,Finn Balor,ie,1491,FALSE
 31,92,wwo,3,lightweight,trish-stratus,Trish Stratus,ca,1486,FALSE
 31,93,iwb,5,welterweight,mr-iguana,Mr. Iguana,mx,1484,FALSE
-32,94,iwb,9,lightweight,mina-shirakawa,Mina Shirakawa,jp,,FALSE
+32,94,iwb,10,lightweight,mina-shirakawa,Mina Shirakawa,jp,,FALSE
 32,95,wwo,4,heavyweight,batista,Batista,us,1471,FALSE
 32,96,wwf,5,heavyweight,the-fiend,The Fiend,us,1480,FALSE
 33,97,wwf,3,bridgerweight,shinsuke-nakamura,Shinsuke Nakamura,jp,1497,FALSE
 33,98,wwo,8,bridgerweight,dr-wagner-iii,Dr. Wagner III,mx,,FALSE
-33,99,iwb,8,featherweight,kira,Kira,mx,,FALSE
-34,100,iwb,6,featherweight,la-jarochita,La Jarochita,mx,1478,FALSE
+33,99,iwb,7,featherweight,kira,Kira,mx,,FALSE
+34,100,iwb,5,featherweight,la-jarochita,La Jarochita,mx,1478,FALSE
 34,101,wwo,7,heavyweight,kane-ii,Kane II,us,1461,FALSE
 34,102,wwf,5,welterweight,impostor-ii,Impostor II,sv,1491,FALSE
 35,103,wwf,5,middleweight,ricky-saints,Ricky Saints,us,1483,FALSE
@@ -127,7 +127,7 @@ round,pick,org,slot,division,slug,name,country,rating,is_champ
 36,108,wwf,3,lightweight,jordynne-grace,Jordynne Grace,us,1495,FALSE
 37,109,wwf,4,middleweight,stuka-jr,Stuka Jr.,mx,1484,FALSE
 37,110,wwo,3,welterweight,zandokan-jr,Zandokan Jr.,mx,1484,FALSE
-37,111,iwb,5,featherweight,becky-lynch,Becky Lynch,ie,1483,FALSE
+37,111,iwb,8,featherweight,mayu-iwatani,Mayu Iwatani,jp,,FALSE
 38,112,iwb,9,heavyweight,jacob-fatu,Jacob Fatu,us,,FALSE
 38,113,wwo,6,featherweight,la-incognita,La Incognita,mx,1482,FALSE
 38,114,wwf,4,bridgerweight,aleister-black,Aleister Black,nl,1483,FALSE
@@ -152,12 +152,12 @@ round,pick,org,slot,division,slug,name,country,rating,is_champ
 45,133,wwf,8,heavyweight,bronson-reed,Bronson Reed,au,1468,FALSE
 45,134,wwo,6,heavyweight,jeff-cobb,Jeff Cobb,gu,1468,FALSE
 45,135,iwb,9,welterweight,fuerza-guerrera-ii,Fuerza Guerrera II,mx,,FALSE
-46,136,iwb,5,lightweight,zeuxis,Zeuxis,pr,1476,FALSE
+46,136,iwb,6,lightweight,zeuxis,Zeuxis,pr,1476,FALSE
 46,137,wwo,4,welterweight,el-malo-ii,El Malo II,mx,1484,FALSE
 46,138,wwf,7,lightweight,persephone,Persephone,us,1466,FALSE
 47,139,wwf,9,middleweight,el-grande-americano-ii,El Grande Americano II,us,,FALSE
 47,140,wwo,6,welterweight,super-muñeco-ii,Super Muñeco II,mx,1469,FALSE
-47,141,iwb,10,lightweight,mayu-iwatani,Mayu Iwatani,jp,,FALSE
+47,141,iwb,5,lightweight,becky-lynch,Becky Lynch,ie,1483,FALSE
 48,142,iwb,10,welterweight,je'von-evans,Je'von Evans,us,,FALSE
 48,143,wwo,4,middleweight,logan-paul,Logan Paul,us,1484,FALSE
 48,144,wwf,10,featherweight,lola-vice,Lola Vice,us,,FALSE
@@ -175,7 +175,7 @@ round,pick,org,slot,division,slug,name,country,rating,is_champ
 52,156,wwf,6,middleweight,kobayashi-yamamoto,Kobayashi Yamamoto,jp,1477,FALSE
 53,157,wwf,10,heavyweight,talla-tonga,Talla Tonga,us,,FALSE
 53,158,wwo,5,featherweight,chelsea-green,Chelsea Green,ca,1493,FALSE
-53,159,iwb,6,lightweight,bayley,Bayley,us,1468,FALSE
+53,159,iwb,7,lightweight,bayley,Bayley,us,1468,FALSE
 54,160,iwb,9,bridgerweight,la-parka-iii,La Parka III,mx,,FALSE
 54,161,wwo,5,welterweight,el-hijo-de-villano-iii,El Hijo de Villano III,mx,1484,FALSE
 54,162,wwf,7,welterweight,francesco-akira,Francesco Akira,it,1484,FALSE
@@ -188,12 +188,12 @@ round,pick,org,slot,division,slug,name,country,rating,is_champ
 57,169,wwf,9,welterweight,johnny-gargano,Johnny Gargano,us,1477,FALSE
 57,170,wwo,10,welterweight,la-mascara,La Mascara,mx,,FALSE
 57,171,iwb,10,heavyweight,angelo-dawkins,Angelo Dawkins,us,,FALSE
-58,172,iwb,7,featherweight,wendy-choo,Wendy Choo,us,1469,FALSE
+58,172,iwb,6,featherweight,wendy-choo,Wendy Choo,us,1469,FALSE
 58,173,wwo,7,lightweight,maryse,Maryse,ca,1467,FALSE
 58,174,wwf,6,lightweight,piper-niven,Piper Niven,gb,1469,FALSE
 59,175,wwf,8,featherweight,stacy-keibler,Stacy Keibler,us,1476,FALSE
 59,176,wwo,10,featherweight,roxanne-perez,Roxanne Perez,us,,FALSE
 59,177,iwb,10,featherweight,fallon-henley,Fallon Henley,us,,FALSE
-60,178,iwb,7,lightweight,nikkita-lyons,Nikkita Lyons,us,1464,FALSE
+60,178,iwb,8,lightweight,nikkita-lyons,Nikkita Lyons,us,1464,FALSE
 60,179,wwo,7,middleweight,elio-lefleur,Elio LeFleur,fr,1468,FALSE
 60,180,wwf,10,bridgerweight,solo-sikoa,Solo Sikoa,us,,FALSE

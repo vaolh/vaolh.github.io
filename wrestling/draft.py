@@ -19,10 +19,19 @@ USAGE  (run from the wrestling/ folder; venv with bs4 active)
   python3 draft.py --year 2020     # draft a specific year
   python3 draft.py --auto          # auto-fill every division, no prompts
   python3 draft.py --render        # only rebuild draft.html from drafts/*.csv
+  python3 draft.py --callups       # fill divisions that lost their champion
+
+Mid-season, a belt changing hands leaves that division a contender short: the
+new champion steps out of the field, and the champion he dethroned is OFF the
+division (he was never drafted into the contender pool — champions are locked,
+not drafted). update.py forces you to fill each empty slot: re-sign the deposed
+champion, or call up someone the draft passed over. Call-ups are not draft
+picks — they live in their own file and never appear on the draft board.
 
 Writes:
-  wrestling/drafts/<year>.csv      one row per (division, org, slot)
-  wrestling/org/draft.html         between <!-- DRAFT_RECORDS_START/END -->
+  wrestling/drafts/<year>.csv           one row per (division, org, slot)
+  wrestling/drafts/<year>-callups.csv   mid-season call-ups (off the board)
+  wrestling/org/draft.html              between <!-- DRAFT_RECORDS_START/END -->
 """
 
 import csv
@@ -70,6 +79,8 @@ def load_ratings_and_site_date():
         db.parse_events(weekly, is_weekly=True)
     db.events.sort(key=lambda e: elo._parse_date(e.get('date')) or datetime.min)
     db.reprocess_championships_chronologically()
+    db.process_vacancies()      # reprocess wipes and rebuilds the reigns, so the
+                                # vacancies have to be re-applied on top of it
     ratings, _bouts = elo.current_ratings(db)          # everyone who wrestled
     ranks = {}
     months, snaps = elo.build_snapshots(db)
@@ -82,10 +93,22 @@ def load_ratings_and_site_date():
     return ratings, ranks, sd
 
 
-def load_ranking_context():
+_RANK_CTX = None
+
+
+def load_ranking_context(force=False):
     """For the org divisional rankings: current Elo (everyone), the archived
-    month keys, per-month name->rating (for Movement), and name->record from the
-    latest month (for the Record column) — so the tables mirror the P4P tables."""
+    month keys, per-month name->rating (for Movement), name->record from the
+    latest month (for the Record column) — so the tables mirror the P4P tables —
+    plus the LIVE champion of every division and every champion DEPOSED since
+    the season's draft.
+
+    Memoised: update.py resolves short divisions, books contenders and renders
+    the rankings in one process, and all three need the same live picture. Pass
+    force=True to re-read after the source HTML has changed."""
+    global _RANK_CTX
+    if _RANK_CTX is not None and not force:
+        return _RANK_CTX
     os.chdir(os.path.dirname(SCRIPT_DIR))
     ppv, weekly = 'wrestling/ppv/list.html', 'wrestling/weekly/list.html'
     db = WrestlingDatabase()
@@ -96,6 +119,9 @@ def load_ranking_context():
         db.parse_events(weekly, is_weekly=True)
     db.events.sort(key=lambda e: elo._parse_date(e.get('date')) or datetime.min)
     db.reprocess_championships_chronologically()
+    db.process_vacancies()      # reprocess wipes and rebuilds the reigns; without
+                                # this a vacated belt still reads as held, so the
+                                # division shows a champion who has given it up
     ratings, _bouts = elo.current_ratings(db)
     months, snaps = elo.build_snapshots(db)
     rating_by_month = {}
@@ -136,8 +162,106 @@ def load_ranking_context():
             if org in ORG_PAGES:
                 live_champ_of[(org, weight)] = {
                     'name': cur[0], 'slug': slugify(cur[0]), 'country': cur[1]}
-    return (ratings, months, rating_by_month, record_by_name,
-            live_champ_of, all_champ_names)
+    year, _rows = latest_draft_rows()
+    deposed = _deposed_champions(db, draft_date(year) if year else None,
+                                 all_champ_names)
+    _RANK_CTX = (ratings, months, rating_by_month, record_by_name,
+                 live_champ_of, all_champ_names, deposed, _last_active(db))
+    return _RANK_CTX
+
+
+def _last_active(db):
+    """name -> date of their most recent appearance, singles OR multi-man. Live
+    from the parsed cards, not rosters.csv's last_active (which is only rebuilt
+    when roster.py runs and goes stale between drafts). Drives the "spread the
+    opportunities" pick: the longest-idle wrestler in a bucket gets the shot."""
+    seen = {}
+
+    def mark(name, when):
+        if name and when and (name not in seen or when > seen[name]):
+            seen[name] = when
+
+    for event in db.events:
+        when = elo._parse_date(event.get('date'))
+        for m in event.get('matches', []):
+            mark(m.get('fighter1'), when)
+            mark(m.get('fighter2'), when)
+        for mm in event.get('multi_man_matches', []):
+            for side in ('winners', 'losers', 'participants'):
+                for f in mm.get(side) or []:
+                    mark(f.get('name'), when)
+    return seen
+
+
+def _deposed_champions(db, season_start, all_champ_names):
+    """(org, division) -> [{name, country, lost_on, lost_to}] for every champion
+    who LOST that belt since the season's draft and holds no belt anywhere now.
+
+    A dethroned champion is off the division, full stop. They were never drafted
+    into the contender pool (champions are locked, not drafted), so silently
+    sliding them back in at the top of the rankings invents a contender the
+    draft never allocated. resolve_short_divisions() makes the call instead.
+    Only reigns that ended THIS season count — anyone who lost a belt in an
+    earlier year and was drafted since is an ordinary contender."""
+    out = defaultdict(list)
+    for org in db.championships:
+        if org not in ORG_PAGES:
+            continue
+        for weight in WEIGHT_ORDER:
+            reigns = db.championships[org].get(weight) or []
+            for i, reign in enumerate(reigns):
+                nxt = reigns[i + 1] if i + 1 < len(reigns) else None
+                if reign.get('vacancy_date'):
+                    lost_on, lost_to = reign['vacancy_date'], None
+                elif nxt:
+                    lost_on, lost_to = nxt.get('date'), nxt.get('champion')
+                else:
+                    continue                       # still the reigning champion
+                when = elo._parse_date(lost_on)
+                if season_start and when and when < season_start:
+                    continue
+                if reign['champion'] in all_champ_names:
+                    continue                       # still holds a belt elsewhere
+                out[(org, weight)].append({'name': reign['champion'],
+                                           'country': reign.get('country', 'un'),
+                                           'lost_on': lost_on, 'lost_to': lost_to})
+    return out
+
+
+# ─── Mid-season call-ups (the forced mini-draft) ─────────────────────────────
+#
+# When a belt changes hands the division is a contender short: the new champion
+# steps out of the field, and the deposed champion is OFF the division. The gap
+# is filled by a call-up — re-sign the deposed champion, or promote someone the
+# draft passed over. Call-ups are NOT draft picks: they live in their own file
+# and never appear on the draft board.
+
+CALLUP_FIELDS = ['org', 'division', 'slug', 'name', 'country', 'replaces', 'date']
+
+
+def callups_path(year):
+    return os.path.join(DRAFTS_DIR, f"{year}-callups.csv")
+
+
+def load_callups(year):
+    if not year:
+        return []
+    path = callups_path(year)
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding='utf-8') as f:
+        return [r for r in csv.DictReader(f) if (r.get('name') or '').strip()]
+
+
+def append_callup(year, row):
+    os.makedirs(DRAFTS_DIR, exist_ok=True)
+    path = callups_path(year)
+    fresh = not os.path.exists(path)
+    with open(path, 'a', encoding='utf-8', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=CALLUP_FIELDS)
+        if fresh:
+            w.writeheader()
+        w.writerow(row)
 
 
 def inactivity_days(row, site_date):
@@ -550,19 +674,48 @@ def _field_movement(field, months, rating_by_month):
     return out
 
 
-def _real_field(org, division, rows, all_champ_names, ratings):
-    """The drafted contenders an org shows for a division: its picks minus
-    anyone who currently holds a belt ANYWHERE (a champion is never listed as a
-    mere contender — this also drops a deposed/vacated champ who's still champ
-    in another org), best Elo first, capped at 10 so we never render 11."""
-    pool = [r for r in rows if r['org'] == org and r['division'] == division]
-    real = [m for m in pool if m['name'] not in all_champ_names]
-    real.sort(key=lambda m: (-(ratings.get(m['name']) or -1e9), m['name']))
-    return real[:10]
+def division_field(org, division, rows, callups):
+    """THE contender field for one org+division — the single source of truth the
+    rankings render and the contender eliminators are booked from, so the card
+    can never disagree with the published table.
+
+    Always ten deep. It is that org's draft picks, plus any mid-season call-ups,
+    minus:
+      - anyone who currently holds a belt ANYWHERE (a champion is never a mere
+        contender, and above all is never booked to earn a shot at himself), and
+      - anyone who lost the belt this season and has not been called back up —
+        BEATEN OR VACATED. Vacating is losing the title to nobody, so it costs
+        them their place in the division exactly the same way.
+
+    A vacancy therefore leaves the ten contenders untouched (the champion was
+    never one of them) and simply empties the C row. Nothing needs refilling
+    until somebody WINS the vacant belt and steps out of the ten."""
+    (ratings, _months, _rbm, _rec,
+     champ_of, all_champ_names, deposed, _la) = load_ranking_context()
+    called = [c for c in callups
+              if c.get('org') == org and c.get('division') == division]
+    called_names = {c['name'] for c in called}
+    gone = {d['name'] for d in deposed.get((org, division), [])} - called_names
+    pool = [r for r in rows
+            if r['org'] == org and r['division'] == division
+            and r.get('slot') != 'C' and r.get('is_champ') != 'TRUE']
+    pool += [{'name': c['name'], 'slug': c['slug'],
+              'country': c.get('country') or 'un', 'org': org,
+              'division': division, 'slot': 'R', 'is_champ': 'FALSE'}
+             for c in called]
+    seen, field = set(), []
+    for m in pool:
+        if m['name'] in all_champ_names or m['name'] in gone or m['name'] in seen:
+            continue
+        seen.add(m['name'])
+        field.append(m)
+    field.sort(key=lambda m: (-(ratings.get(m['name']) or -1e9), m['name']))
+    return field[:SLOTS_PER_ORG]
 
 
 def render_org_rankings(org, rows, champ_of, ratings, months, rating_by_month,
-                        record_by_name, backfill, all_champ_names):
+                        record_by_name, backfill, all_champ_names,
+                        callups, deposed):
     """Per-division ranking tables for one org, styled exactly like the P4P
     tables (Rank | Wrestler | Record | Rating | Movement) with the champion
     pinned atop in a gold C cell; the field below is ranked by live Elo.
@@ -590,8 +743,9 @@ def render_org_rankings(org, rows, champ_of, ratings, months, rating_by_month,
             continue
         champ_row = champ_of.get((org, division))
         champ_name = champ_row['name'] if champ_row else None
-        real = _real_field(org, division, rows, all_champ_names, ratings)
-        reserves = backfill.get((org, division), []) if len(real) < 10 else []
+        real = division_field(org, division, rows, callups)
+        reserves = (backfill.get((org, division), [])
+                    if len(real) < SLOTS_PER_ORG else [])
         reserve_names = {m['name'] for m in reserves}
         field = real + reserves          # already ≤ 10 total
         mv = _field_movement(real, months, rating_by_month)
@@ -655,16 +809,20 @@ def inject_org_rankings():
         return
     roster = load_roster()
     (ratings, months, rating_by_month, record_by_name,
-     champ_of, all_champ_names) = load_ranking_context()
+     champ_of, all_champ_names, deposed, _idle) = load_ranking_context()
+    callups = load_callups(year)
 
-    # champ_of and all_champ_names now come from the LIVE reprocessed DB (see
-    # load_ranking_context): a title change swaps the new champion atop the
-    # division on the very next update, and every belt holder is kept out of the
-    # contender fields (a champ is never a mere contender, even in another org).
+    # champ_of, all_champ_names and deposed all come from the LIVE reprocessed DB
+    # (see load_ranking_context): a title change swaps the new champion atop the
+    # division on the very next update, every belt holder is kept out of the
+    # contender fields (a champ is never a mere contender, even in another org),
+    # and the champion they took the belt from is off the division until
+    # resolve_short_divisions() is told what to do with him.
 
     # Reserve pools: that year's UNDRAFTED wrestlers per division (not retired,
-    # not a champion), best Elo first. Used to top a short field back up to 10.
-    drafted_names = {r['name'] for r in rows}
+    # not a champion), best Elo first. A safety net only — resolve_short_divisions
+    # normally fills every gap by hand before this runs, so nothing is left short.
+    drafted_names = {r['name'] for r in rows} | {c['name'] for c in callups}
     reserve_pool = defaultdict(list)
     for row in roster:
         div = (row.get('division') or '').strip().lower()
@@ -680,7 +838,7 @@ def inject_org_rankings():
     backfill = {}
     for org in ORG_PAGES:
         for div in WEIGHT_ORDER:
-            need = 10 - len(_real_field(org, div, rows, all_champ_names, ratings))
+            need = SLOTS_PER_ORG - len(division_field(org, div, rows, callups))
             if need > 0:
                 take = reserve_pool[div][ptr[div]:ptr[div] + need]
                 ptr[div] += len(take)
@@ -693,7 +851,7 @@ def inject_org_rankings():
             html = f.read()
         block = render_org_rankings(org, rows, champ_of, ratings, months,
                                     rating_by_month, record_by_name,
-                                    backfill, all_champ_names)
+                                    backfill, all_champ_names, callups, deposed)
         if RANK_START in html and RANK_END in html:
             pre = html[:html.index(RANK_START)]
             post = html[html.index(RANK_END) + len(RANK_END):]
@@ -711,13 +869,143 @@ def inject_org_rankings():
         print(f"  ✓ Rankings injected into {os.path.basename(path)}")
 
 
+# ─── The forced mini-draft: refill a division that lost its champion ─────────
+
+def _callup_candidates(division, rows, callups, all_champ_names, ratings, roster):
+    """Undrafted, unretired, beltless wrestlers in this division — the pool a
+    call-up is picked from — best live Elo first."""
+    taken = {r['name'] for r in rows} | {c['name'] for c in callups}
+    out = [r for r in roster
+           if (r.get('division') or '').strip().lower() == division
+           and not truthy(r.get('retired'))
+           and r['name'] not in taken
+           and r['name'] not in all_champ_names]
+    out.sort(key=lambda r: (-(ratings.get(r['name']) or -1e9), r['name']))
+    return out
+
+
+def resolve_short_divisions(quiet=False):
+    """FORCED mini-draft — runs from update.py before anything is booked.
+
+    Ten contenders per division, always. A belt changing hands costs one: the
+    new champion steps out of the field, and the man he beat leaves the division
+    entirely. That slot is yours to fill, every time — re-sign the departed
+    champion as a contender, or call up someone the draft passed over.
+
+    A VACANCY does not fire this. The champion was never one of the ten, so
+    vacating just empties the C row and leaves the field intact — the vacant
+    belt is then contested by Elo (see book_vacant_titles). Only when somebody
+    WINS it does the field drop to nine and the prompt come round, which is the
+    right moment to decide whether the man who walked away gets back in.
+
+    The pick is a call-up, not a draft pick: it is written to
+    drafts/<year>-callups.csv and never shows on the draft board. Returns the
+    number of slots filled."""
+    year, rows = latest_draft_rows()
+    if not rows:
+        return 0
+    (ratings, _months, _rbm, _rec,
+     champ_of, all_champ_names, deposed, _idle) = load_ranking_context()
+    callups = load_callups(year)
+    roster = load_roster()
+
+    short = []
+    for org in ORGS:
+        for div in WEIGHT_ORDER:
+            if not any(r['org'] == org and r['division'] == div for r in rows):
+                continue
+            # Ten contenders, always. A belt changing hands costs one (the
+            # new champion steps out, the man he beat leaves the division). A
+            # VACANCY costs none — the champion was never one of the ten — so
+            # nothing fires until the vacant belt is won.
+            need = SLOTS_PER_ORG - len(division_field(org, div, rows, callups))
+            if need > 0:
+                short.append((org, div, need))
+    if not short:
+        if not quiet:
+            print("  Every division is at full strength — no call-ups needed.")
+        return 0
+
+    if not sys.stdin.isatty():
+        print("\n  !! CALL-UPS PENDING — these divisions are a contender short:")
+        for org, div, need in short:
+            print(f"       {ORG_NAMES[org]} {div.capitalize()}: {need} slot(s)")
+        print("     Run `python3 wrestling/draft.py --callups` from a terminal "
+              "to fill them.\n")
+        return 0
+
+    filled = 0
+    print("\n" + "=" * 66)
+    print("  MID-SEASON CALL-UPS — a division lost its champion, refill it")
+    print("=" * 66)
+    for org, div, need in short:
+        for _ in range(need):
+            gap = deposed.get((org, div), [])
+            called_names = {c['name'] for c in callups}
+            free = [d for d in gap if d['name'] not in called_names]
+            held = len(division_field(org, div, rows, callups))
+            print(f"\n  {ORG_NAMES[org]} {div.capitalize()} — {held} contenders "
+                  f"under contract, {SLOTS_PER_ORG - held} slot(s) open.")
+            for d in free:
+                how = (f"vacated the belt on {d['lost_on']}" if not d['lost_to']
+                       else f"lost the belt to {d['lost_to']} on {d['lost_on']}")
+                print(f"    Off the division: {d['name']} — {how}")
+            pool = _callup_candidates(div, rows, callups, all_champ_names,
+                                      ratings, roster)
+            menu = ([{'name': d['name'], 'slug': slugify(d['name']),
+                      'country': d['country'],
+                      'tag': 'vacated' if not d['lost_to'] else 'deposed champion'}
+                     for d in free]
+                    + [{'name': r['name'], 'slug': r.get('slug') or slugify(r['name']),
+                        'country': r.get('country') or 'un', 'tag': 'undrafted'}
+                       for r in pool[:12]])
+            if not menu:
+                print("    (nobody available — leaving the slot open)")
+                break
+            print()
+            for i, m in enumerate(menu, 1):
+                el = ratings.get(m['name'])
+                el = f"{el:4.0f}" if el is not None else "  — "
+                print(f"    {i:2}. {m['name']:<28} {el}   ({m['tag']})")
+            pick = None
+            while pick is None:
+                raw = input("    Call up # (or a name): ").strip()
+                if raw.isdigit() and 1 <= int(raw) <= len(menu):
+                    pick = menu[int(raw) - 1]
+                else:
+                    hits = [m for m in menu if raw.lower() in m['name'].lower()]
+                    if len(hits) == 1:
+                        pick = hits[0]
+                    elif len(hits) > 1:
+                        print("      Ambiguous: "
+                              + ", ".join(h['name'] for h in hits))
+                    else:
+                        print("      No match — pick a number from the list.")
+            replaced = free[0]['name'] if free else ''
+            row = {'org': org, 'division': div, 'slug': pick['slug'],
+                   'name': pick['name'], 'country': pick['country'],
+                   'replaces': replaced,
+                   'date': datetime.now().strftime('%Y-%m-%d')}
+            append_callup(year, row)
+            callups.append(row)
+            filled += 1
+            print(f"    → {pick['name']} joins the {ORG_NAMES[org]} "
+                  f"{div.capitalize()} rankings.")
+    print(f"\n  ✓ {filled} call-up(s) recorded in "
+          f"{os.path.basename(callups_path(year))} (not a draft pick — "
+          f"they never appear on the draft board).\n")
+    return filled
+
+
 # ─── Book the SINGLES contender slots of the newest WTS from the draft ────────
 #
 # Battle-royal contender rows are left as 'xx vs xx' on purpose: a battle royal
 # has ~8 entrants and only its final two are ever written, by hand in-game. But
 # the SINGLES contender eliminators are booked automatically as top-5 vs bottom-5
-# of that org's division (per the draft) so the card stays properly matched up.
-# Runs during update.py, only once a draft for the season exists.
+# of that org's division so the card stays properly matched up. The field comes
+# from division_field() — the LIVE rankings, not the frozen draft sheet — so a
+# wrestler who has since won the belt can never be booked to earn a shot at his
+# own title. Runs during update.py, only once a draft for the season exists.
 
 def book_singles_contenders(quiet=False):
     import re as _re
@@ -728,13 +1016,33 @@ def book_singles_contenders(quiet=False):
                   "(run a draft first).")
         return 0
 
+    (ratings, _months, _rbm, _rec,
+     _champ_of, all_champ_names, deposed, last_active) = load_ranking_context()
+    callups = load_callups(year)
+
+    # Seeds come from the LIVE field, in the exact order the org page ranks it —
+    # so #1-#5 vs #6-#10 always matches what the site publishes, and nobody
+    # holding a belt is anywhere near a contender slot.
     top5, bot5 = defaultdict(list), defaultdict(list)   # (org,div) -> [(country,name)]
-    for r in rows:
-        if r['slot'] == 'C':
-            continue
-        seed = int(r['slot'])
-        bucket = top5 if seed <= 5 else bot5
-        bucket[(r['org'], r['division'])].append((r['country'], r['name']))
+    ranked = {}                                        # (org,div) -> Elo order
+    for org in ORGS:
+        for div in WEIGHT_ORDER:
+            field = division_field(org, div, rows, callups)
+            half = SLOTS_PER_ORG // 2
+            ranked[(org, div)] = [(m['country'], m['name']) for m in field]
+            top5[(org, div)] = [(m['country'], m['name']) for m in field[:half]]
+            bot5[(org, div)] = [(m['country'], m['name']) for m in field[half:]]
+
+    def idlest(bucket, used):
+        """Whoever in this bucket has gone longest without a match — the shot is
+        an OPPORTUNITY, so it goes to the man who hasn't had one, not to the
+        highest rating in the bucket every single card. Never-wrestled first;
+        name breaks ties so the same card always books the same way."""
+        cands = [m for m in bucket if m[1] not in used]
+        if not cands:
+            return None
+        return min(cands, key=lambda m: (last_active.get(m[1]) or datetime.min,
+                                         m[1]))
 
     ppv = os.path.join(SCRIPT_DIR, 'ppv', 'list.html')
     with open(ppv, encoding='utf-8') as f:
@@ -750,48 +1058,127 @@ def book_singles_contenders(quiet=False):
     end = raw.index('</details>', m.start()) + len('</details>')
     block = raw[start:end]
 
-    ptr = defaultdict(int)
-    stats = [0]
+    stats = [0, 0]                                   # [names booked, champs evicted]
+    BLANK_TD = '<td><span class="fi fi-xx"></span> </td>'
+    ROW = r'<tr>.*?</tr>'
     blank = _re.compile(r'<td><span class="fi fi-xx"></span>\s*</td>')
+    fighter_td = _re.compile(r'<td><span class="fi fi-[a-z]{2}"></span>.*?</td>',
+                             _re.DOTALL)
 
-    def fix_row(row):
+    def bookable(row):
+        """(org, weight, kind) if this row is an UNWRESTLED singles match we may
+        book, else None. kind is 'contender' (an eliminator — top-5 vs bottom-5,
+        picked on inactivity) or 'vacant' (a vacant belt — contested straight by
+        Elo). History is never rewritten."""
         cells = _re.findall(r'<t[dh][^>]*>(.*?)</t[dh]>', row, _re.DOTALL)
         if len(cells) < 9:
-            return row
-        mtype = _re.sub('<[^>]+>', '', cells[1]).strip().lower()
-        if mtype != 'singles':                       # skip battle royals etc.
-            return row
+            return None
+        if _re.sub('<[^>]+>', '', cells[1]).strip().lower() != 'singles':
+            return None                              # battle royals stay blank
         note = _re.sub('<[^>]+>', '', cells[8]).strip().lower()
-        if 'contender' not in note:
-            return row
+        kind = ('vacant' if 'vacant' in note else
+                'contender' if 'contender' in note else None)
+        if not kind:
+            return None
         org = next((o for o in ORGS if o in note), None)
         weight = _re.sub('<[^>]+>', '', cells[2]).strip().lower()
         if not org or weight not in WEIGHT_ORDER:
+            return None
+        if (_re.sub('<[^>]+>', '', cells[4]).strip().lower().startswith('def')
+                or _re.sub('<[^>]+>', '', cells[6]).strip() != ''):
+            return None                              # already wrestled
+        return org, weight, kind
+
+    def names_in(row):
+        out = set()
+        for c in fighter_td.findall(row):
+            who = _re.sub('<[^>]+>', '', c).strip()
+            if who:
+                out.add(who)
+        return out
+
+    # Pass 1 — evict anyone standing in a contender slot who has since won a
+    # belt. A champion cannot wrestle to become the challenger to his own title.
+    def evict_row(mm):
+        row = mm.group(0)
+        meta = bookable(row)
+        if not meta or meta[2] != 'contender':
+            return row                               # a vacant belt has no champ
+
+        def evict(cell):
+            who = _re.sub('<[^>]+>', '', cell.group(0)).strip()
+            if who and who in all_champ_names:
+                stats[1] += 1
+                return BLANK_TD
+            return cell.group(0)
+        return fighter_td.sub(evict, row)
+
+    block = _re.sub(ROW, evict_row, block, flags=_re.DOTALL)
+
+    # Nobody wrestles twice on one card, so everyone already booked anywhere on
+    # it — title matches included — is off the table for the slots still open.
+    used = set()
+    for rm in _re.finditer(ROW, block, _re.DOTALL):
+        used |= names_in(rm.group(0))
+
+    # Pass 2 — fill the empty slots.
+    def fill_row(mm):
+        row = mm.group(0)
+        meta = bookable(row)
+        if not meta or not blank.search(row):
             return row
-        tp, bt = top5.get((org, weight), []), bot5.get((org, weight), [])
-        if not tp or not bt:
+        key = (meta[0], meta[1])
+        here = names_in(row)
+        slots = len(blank.findall(row))
+        queue = []
+
+        if meta[2] == 'vacant':
+            # Nobody holds it, so nobody has earned a defence: the vacant belt
+            # goes to the best in the division. If a contender was already
+            # crowned for it he keeps his place and faces the next best who
+            # isn't him — which, when he IS the top rating, means the runner-up.
+            for cand in ranked.get(key, []):
+                if len(queue) >= slots:
+                    break
+                if cand[1] in used or cand[1] in here:
+                    continue
+                queue.append(cand)
+        else:
+            tp, bt = top5.get(key, []), bot5.get(key, [])
+            if not tp or not bt:
+                return row
+            # A part-filled row still comes out top-5 vs bottom-5: take from the
+            # half that isn't represented yet. Last resort, anyone in the division.
+            order = [bt, tp] if here & {x[1] for x in tp} else [tp, bt]
+            for bucket in order + [tp + bt]:
+                if len(queue) >= slots:
+                    break
+                pick = idlest(bucket, used | here | {q[1] for q in queue})
+                if pick:
+                    queue.append(pick)
+        if not queue:
             return row
-        k = ptr[(org, weight)]
-        ptr[(org, weight)] += 1
-        pair = [tp[k % len(tp)], bt[k % len(bt)]]    # a top-5 vs a bottom-5 seed
+        used.update(q[1] for q in queue)
         i = [0]
 
         def repl(_match):
-            if i[0] >= 2:
+            if i[0] >= len(queue):
                 return _match.group(0)
-            country, name = pair[i[0]]
+            country, name = queue[i[0]]
             i[0] += 1
             stats[0] += 1
             return f'<td><span class="fi fi-{country}"></span> {name} </td>'
         return blank.sub(repl, row)
 
-    new_block = _re.sub(r'<tr>.*?</tr>', lambda mm: fix_row(mm.group(0)),
-                        block, flags=_re.DOTALL)
-    if stats[0]:
+    new_block = _re.sub(ROW, fill_row, block, flags=_re.DOTALL)
+    if stats[1] and not quiet:
+        print(f"  ! Removed {stats[1]} champion(s) from contender slots in "
+              f"WTS {n} — they hold the belt they were booked to challenge for.")
+    if stats[0] or stats[1]:
         raw = raw[:start] + new_block + raw[end:]
         with open(ppv, 'w', encoding='utf-8') as f:
             f.write(raw)
-        if not quiet:
+        if stats[0] and not quiet:
             print(f"  ✓ Booked {stats[0]} singles-contender name(s) into WTS {n} "
                   f"(battle royals left blank)")
     elif not quiet:
@@ -866,6 +1253,7 @@ USAGE = """draft.py — annual wrestling draft
   python3 draft.py [--year N] [--auto]   run the draft (interactive unless --auto)
   python3 draft.py --render              rebuild org/draft.html from drafts/*.csv
   python3 draft.py --rankings            inject divisional rankings into org pages
+  python3 draft.py --callups             refill divisions that lost their champion
   python3 draft.py --jobber-sweep [N]    list undrafted wrestlers idle N months (default 3)
 """
 
@@ -880,6 +1268,11 @@ def main():
         return
     if '--rankings' in args:
         inject_org_rankings()
+        return
+    if '--callups' in args:
+        if resolve_short_divisions():
+            book_singles_contenders()
+            inject_org_rankings()
         return
     if '--jobber-sweep' in args:
         i = args.index('--jobber-sweep')

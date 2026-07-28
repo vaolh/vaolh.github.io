@@ -748,6 +748,8 @@ def main():
         db.parse_events(weekly, is_weekly=True)
     db.events.sort(key=lambda e: elo._parse_date(e.get('date')) or datetime.min)
     db.reprocess_championships_chronologically()
+    db.process_vacancies()      # reprocess rebuilds the reigns from scratch, so
+                                # the vacancies must be re-applied on top of it
     print(f"Site date: {format_site_date(site_date) or '(none)'}")
     run(db)
     print("✓ The Ring awards updated!")

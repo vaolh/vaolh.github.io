@@ -1325,9 +1325,25 @@ class WrestlingDatabase:
         for org, wkey, wdisp, ccountry, cname in feeder:
             champ = self._current_champion(org, wkey)
             if not champ:
-                dropped.append(f"{wdisp} {org.upper()} (title vacant)")
+                # Belt vacant: it is contested, not defended. The contender who
+                # earned this slot keeps it and faces the best-rated man in the
+                # division who isn't him; with no contender crowned it is the
+                # top two by Elo. draft.py fills the blank side from the live
+                # rankings (see book_vacant_titles) — the card size never
+                # changes, the defence just becomes a vacant-title match.
+                title_rows.append(('Singles', wdisp,
+                                   f"vacant {org.upper()} championship",
+                                   (ccountry, cname), ('xx', '')))
+                dropped.append(f"{wdisp} {org.upper()} (vacant — contested by Elo)")
                 continue
             note = self._title_note_for_champion(champ[0], wkey) or f"{org.upper()} championship"
+            if cname == champ[0]:
+                # The contender won the belt between earning the shot and
+                # cashing it in — nobody defends against himself. Keep the
+                # defence on the card with the challenger blank to fill in.
+                dropped.append(f"{wdisp} {org.upper()} ({cname} won the title "
+                               f"before cashing in — challenger left blank)")
+                ccountry, cname = 'xx', ''
             title_rows.append(('Singles', wdisp, note,
                                (champ[1], champ[0]), (ccountry, cname)))
 
@@ -4906,6 +4922,11 @@ def main():
     # acts once a draft for the season has been run.
     try:
         import draft as _draft
+        # A belt that changed hands leaves its division a contender short: the
+        # new champion is out of the field and the man he beat is off the
+        # division. Fill those slots FIRST — by hand, every time — so the
+        # rankings and the card are booked off a complete division.
+        _draft.resolve_short_divisions(quiet=False)
         _draft.book_singles_contenders(quiet=False)
         # Refresh the org divisional rankings (Elo order + current champion, so a
         # title change swaps the champ back into the field) on every update.

@@ -948,6 +948,69 @@ _NOTE_FOR = {'M': '{org} multi-man contender',
 _TYPE_FOR = {'M': 'Battle Royal', 'C': 'Singles', 'D': 'Singles'}
 
 
+SPLIT_GAP_DAYS = 2      # a show split over consecutive nights is ONE slot
+
+
+def group_slots(events):
+    """[(date, location, payload)] in date order -> [[payload, ...]], one inner
+    list per calendar slot.
+
+    A card split over consecutive nights in the same city is ONE calendar slot,
+    not two: WrestleMania and LibreMania run two nights, the Open Tournament
+    runs qualifiers then finals, and WTS 21/22 was a single Tokyo Dome show
+    split across the Friday and the Saturday. Counting a split as two slots is
+    what threw the back half of the calendar out by one and put the Open
+    Tournament on slot 31 when wiki.html declares it on 30. Grouped on city
+    rather than venue because venue strings carry typos ('Heydar Aliyev Sports'
+    vs '...Sportsa' across the two Open nights)."""
+    groups = []
+    for ev in events:
+        date, location, _ = ev
+        if (groups and location == groups[-1][-1][1]
+                and (date - groups[-1][-1][0]).days <= SPLIT_GAP_DAYS):
+            groups[-1].append(ev)
+        else:
+            groups.append([ev])
+    return [[p for _, _, p in g] for g in groups]
+
+
+def _dated_events(soup):
+    """[(date, location, wts_number_or_None)] for every event, in date order."""
+    out = []
+    for det in soup.find_all("details"):
+        summ = det.find("summary")
+        tbl = det.find("table", class_="match-card")
+        if not summ or not tbl:
+            continue
+        cells = [c.get_text(" ", strip=True)
+                 for c in tbl.find_all("tr")[-1].find_all(["th", "td"])]
+        m = re.search(r"([A-Z][a-z]+ \d{1,2}, \d{4})", " ".join(cells))
+        if not m:
+            continue
+        num = re.match(r"World Title Series (\d+):", summ.get_text(strip=True))
+        out.append((datetime.strptime(m.group(1), "%B %d, %Y").date(),
+                    cells[1] if len(cells) > 1 else "",
+                    int(num.group(1)) if num else None))
+    out.sort(key=lambda t: t[0])
+    return out
+
+
+def wts_slots(soup):
+    """(slot_by_wts, sharers_by_wts) — which of the 32 calendar slots each WTS
+    sits on, and every WTS sharing that same slot on that same night (a split
+    show, so usually just itself). Positional, counted from the first event on
+    record: deterministic, where matching a card against the rotation is only
+    ever a guess."""
+    slot_by_wts, sharers = {}, {}
+    for i, group in enumerate(group_slots(_dated_events(soup))):
+        slot = (i % TOTAL_SHOWS) + 1
+        nums = [n for n in group if n is not None]
+        for n in nums:
+            slot_by_wts[n] = slot
+            sharers[n] = nums
+    return slot_by_wts, sharers
+
+
 def _row_belt(note, weight):
     """((weight, org), 'M'|'C'|'D') for a card row, or None if it books no belt."""
     text = re.sub(r'<[^>]+>', ' ', note).lower()
@@ -987,15 +1050,22 @@ def canonical_schedule_rows(soup, template_num):
     template_num occupies. Last year's row ORDER is kept so the card still looks
     the way you lay it out, but every bout comes from the rotation, so bouts you
     moved off that card last year come back and bouts you added don't stick."""
-    rows = wts_schedule_rows(soup, template_num)
+    slot_by_wts, sharers = wts_slots(soup)
+    slot = slot_by_wts.get(template_num)
+    # Row order comes from every card that shared the slot — a show split over
+    # two nights is one slot, so both nights' rows lay out the single new card.
+    rows = []
+    for n in sharers.get(template_num, [template_num]):
+        rows += wts_schedule_rows(soup, n) or []
     if not rows:
         return None
-    slot, margin = canonical_slot(rows)
-    if slot is None:
-        return None
-    if margin < 2:
-        print(f"  ! WTS {template_num} does not sit cleanly on one calendar slot "
-              f"(best guess {slot}, margin {margin}) — check the booking by hand.")
+    if slot is None:                       # undated event: fall back to best fit
+        slot, margin = canonical_slot(rows)
+        if slot is None:
+            return None
+        if margin < 2:
+            print(f"  ! WTS {template_num} has no date and does not match one "
+                  f"calendar slot cleanly (guess {slot}) — check it by hand.")
     want = CANONICAL_CALENDAR[slot]
     out, seen = [], set()
     for _, weight, note in rows:

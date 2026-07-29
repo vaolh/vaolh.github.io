@@ -1217,19 +1217,28 @@ class WrestlingDatabase:
 
         lookahead=n walks n further down last year's chain, i.e. the slot the
         card AFTER next will inherit — needed to see whether a run of events
-        still fits the month it occupied last year."""
+        still fits the month it occupied last year.
+
+        Walks CALENDAR SLOTS, not events. A show split over consecutive nights
+        in one city is a single slot (WrestleMania, LibreMania, the Open
+        Tournament, and the WTS 21/22 Tokyo Dome doubleheader), so counting
+        events would make the cycle a slot too long and would reproduce a split
+        as two separate shows a year later instead of the one show it was."""
+        import open as opmod
         dated = sorted(((self.parse_date(e['date']), e) for e in self.events
                         if e.get('date') and self.parse_date(e['date'])),
                        key=lambda t: t[0])
         if not dated:
             return None
+        slots = opmod.group_slots([(d, e.get('location') or '', (d, e))
+                                   for d, e in dated])
         last_date = dated[-1][0]
-        # How many events make up the trailing year (the annual cycle length).
-        cycle = sum(1 for d, _ in dated if (last_date - d).days < 364)
-        prev_idx = len(dated) - cycle + lookahead   # counterpart of the new event
-        if not 0 <= prev_idx < len(dated):
+        # How many slots make up the trailing year (the annual cycle length).
+        cycle = sum(1 for g in slots if (last_date - g[0][0]).days < 364)
+        prev_idx = len(slots) - cycle + lookahead   # counterpart of the new event
+        if not 0 <= prev_idx < len(slots):
             return None
-        return dated[prev_idx]
+        return slots[prev_idx][0]     # first night of that slot
 
     @staticmethod
     def _anniversary(prev_date):

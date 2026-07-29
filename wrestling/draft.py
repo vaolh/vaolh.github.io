@@ -1047,16 +1047,38 @@ def book_singles_contenders(quiet=False):
     ppv = os.path.join(SCRIPT_DIR, 'ppv', 'list.html')
     with open(ppv, encoding='utf-8') as f:
         raw = f.read()
-    nums = [int(n) for n in _re.findall(r"World Title Series\s+(\d+)", raw)]
-    if not nums:
+
+    # The trailing run of not-yet-wrestled events, not just the newest WTS: a
+    # WrestleMania or a LibreMania is two <details> blocks for the one night's
+    # slot, and both need filling. Walking back stops at the first event that
+    # has already happened, so history is never rewritten.
+    spans = []
+    pos = 0
+    while True:
+        s = raw.find('<details', pos)
+        if s < 0:
+            break
+        e = raw.index('</details>', s) + len('</details>')
+        spans.append((s, e))
+        pos = e
+    tail = []
+    for s, e in reversed(spans):
+        seg = raw[s:e]
+        if 'match-card' not in seg:
+            continue
+        methods = [_re.findall(r'<t[dh][^>]*>(.*?)</t[dh]>', r, _re.DOTALL)
+                   for r in _re.findall(r'<tr>.*?</tr>', seg, _re.DOTALL)]
+        cells = [c for c in methods if len(c) >= 9]
+        if cells and all(_re.sub('<[^>]+>', '', c[6]).strip() for c in cells):
+            break                                    # already wrestled: stop
+        tail.append((s, e))
+    if not tail:
         return 0
-    n = max(nums)
-    m = _re.search(rf"World Title Series {n}:", raw)
-    if not m:
-        return 0
-    start = raw.rfind('<details', 0, m.start())
-    end = raw.index('</details>', m.start()) + len('</details>')
+    tail.reverse()
+    start, end = tail[0][0], tail[-1][1]
     block = raw[start:end]
+    nums = [int(x) for x in _re.findall(r"World Title Series\s+(\d+)", block)]
+    n = max(nums) if nums else None
 
     stats = [0, 0]                                   # [names booked, champs evicted]
     BLANK_TD = '<td><span class="fi fi-xx"></span> </td>'
@@ -1076,8 +1098,15 @@ def book_singles_contenders(quiet=False):
         if _re.sub('<[^>]+>', '', cells[1]).strip().lower() != 'singles':
             return None                              # battle royals stay blank
         note = _re.sub('<[^>]+>', '', cells[8]).strip().lower()
+        # A defence with nobody opposite is the flagship case: WrestleMania and
+        # LibreMania put every belt of the host promotion on the line, far more
+        # than the rotation crowns contenders for, so most of those champions
+        # have no earned challenger. Those go to the best in the division on
+        # rating — same treatment as a vacant belt.
+        title = any(k in note for k in ('championship', 'title'))
         kind = ('vacant' if 'vacant' in note else
-                'contender' if 'contender' in note else None)
+                'contender' if 'contender' in note else
+                'challenger' if title else None)
         if not kind:
             return None
         org = next((o for o in ORGS if o in note), None)
@@ -1132,11 +1161,14 @@ def book_singles_contenders(quiet=False):
         slots = len(blank.findall(row))
         queue = []
 
-        if meta[2] == 'vacant':
+        if meta[2] in ('vacant', 'challenger'):
             # Nobody holds it, so nobody has earned a defence: the vacant belt
             # goes to the best in the division. If a contender was already
             # crowned for it he keeps his place and faces the next best who
             # isn't him — which, when he IS the top rating, means the runner-up.
+            # A flagship defence with no contender crowned resolves the same
+            # way: the champion faces the No. 1 rating in the division who is
+            # not already booked on the card.
             for cand in ranked.get(key, []):
                 if len(queue) >= slots:
                     break
@@ -1171,18 +1203,19 @@ def book_singles_contenders(quiet=False):
         return blank.sub(repl, row)
 
     new_block = _re.sub(ROW, fill_row, block, flags=_re.DOTALL)
+    where = f"WTS {n}" if n else "the next event"
     if stats[1] and not quiet:
         print(f"  ! Removed {stats[1]} champion(s) from contender slots in "
-              f"WTS {n} — they hold the belt they were booked to challenge for.")
+              f"{where} — they hold the belt they were booked to challenge for.")
     if stats[0] or stats[1]:
         raw = raw[:start] + new_block + raw[end:]
         with open(ppv, 'w', encoding='utf-8') as f:
             f.write(raw)
         if stats[0] and not quiet:
-            print(f"  ✓ Booked {stats[0]} singles-contender name(s) into WTS {n} "
+            print(f"  ✓ Booked {stats[0]} singles name(s) into {where} "
                   f"(battle royals left blank)")
     elif not quiet:
-        print("  No blank singles-contender slots to fill in the newest WTS.")
+        print(f"  No blank singles slots to fill in {where}.")
     return stats[0]
 
 

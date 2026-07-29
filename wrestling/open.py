@@ -929,6 +929,12 @@ _PAIR_TYPE   = ['M', 'C', 'C', 'M', 'C', 'C']
 _OFFSET_SWAP = {2: 14, 14: 2, 8: 10, 10: 8, 9: 12, 12: 9}
 
 
+WRESTLEMANIA = 8        # every WWF belt is defended here
+LIBREMANIA   = 23       # every WWO belt is defended here
+TRIOS_SLOT   = 16
+OPEN_SLOT    = 30
+
+
 def _build_calendar():
     belts = [(wc, org) for wc in WC_LIST for org in CAL_ORGS]
     cal = {s: {} for s in range(1, TOTAL_SHOWS + 1)}
@@ -937,6 +943,12 @@ def _build_calendar():
         for p in range(6):
             cal[_ACTIVE[(off + p * 5) % _N]][belt] = _PAIR_TYPE[p]
             cal[_ACTIVE[(off + p * 5 + 2) % _N]][belt] = 'D'
+    # The two flagship events put a whole promotion's belts on the line,
+    # overriding whatever the rotation had them doing that night — the same
+    # override the schedule table in ppv/wiki.html applies when it renders.
+    for wc in WC_LIST:
+        cal[WRESTLEMANIA][(wc, 'WWF')] = 'D'
+        cal[LIBREMANIA][(wc, 'WWO')] = 'D'
     return cal
 
 
@@ -1012,8 +1024,14 @@ def wts_slots(soup):
 
 
 def _row_belt(note, weight):
-    """((weight, org), 'M'|'C'|'D') for a card row, or None if it books no belt."""
+    """((weight, org), 'M'|'C'|'D') for a card row, or None if it books no belt.
+
+    Stipulation bouts name a promotion without putting a belt on the line — the
+    ladder match for a title-shot contract, and LibreMania's lucha de apuestas —
+    so they are not calendar rows and must not be read as defences."""
     text = re.sub(r'<[^>]+>', ' ', note).lower()
+    if 'contract' in text or 'apuesta' in text or weight.lower() == 'openweight':
+        return None
     org = next((o for o in CAL_ORGS if o.lower() in text), None)
     if not org:
         return None
@@ -1082,6 +1100,101 @@ def canonical_schedule_rows(soup, template_num):
         out.append((_TYPE_FOR[want[key]], key[0],
                     _NOTE_FOR[want[key]].format(org=key[1])))
     return out
+
+
+# Weight classes lightest -> heaviest, so the heaviest title headlines a card.
+_WEIGHT_ASC = ['Featherweight', 'Lightweight', 'Welterweight',
+               'Middleweight', 'Bridgerweight', 'Heavyweight']
+
+
+def next_slot(soup):
+    """The calendar slot the next event falls on."""
+    return (len(group_slots(_dated_events(soup))) % TOTAL_SHOWS) + 1
+
+
+def slot_event_kind(slot):
+    """What the calendar calls for on this slot. Every slot produces an event —
+    the year is a fixed 32-show calendar, so WrestleMania, LibreMania and the two
+    tournaments are generated the same way a World Title Series is, rather than
+    being the one thing left to book by hand."""
+    if slot == WRESTLEMANIA:
+        return 'wrestlemania'
+    if slot == LIBREMANIA:
+        return 'libremania'
+    if slot == TRIOS_SLOT:
+        return 'trios'
+    if slot == OPEN_SLOT:
+        return 'open'
+    return 'wts'
+
+
+def flagship_rows(slot):
+    """The card WrestleMania or LibreMania calls for on its slot.
+
+    The host promotion defends every belt it holds (the calendar's own override),
+    the other bodies' bouts for the slot ride along, and each night carries the
+    fixtures the event is known for: a ladder match for a title-shot contract,
+    plus a lucha de apuestas at LibreMania, the only event allowed to sanction
+    one. Contender bouts open, defences follow lightest to heaviest.
+
+    Returns (fixtures, body): fixtures is (night 1, night 2) of the stipulation
+    bouts; body is the calendar's own bouts in card order. They come back
+    separately so the caller can collapse unified defences — a champion holding
+    two of the host's belts defends them in a single match — before the body is
+    dealt across the nights."""
+    host = 'WWF' if slot == WRESTLEMANIA else 'WWO'
+    cal = CANONICAL_CALENDAR[slot]
+    setup = sorted((k for k, v in cal.items() if v in ('M', 'C')),
+                   key=lambda k: _WEIGHT_ASC.index(k[0]))
+    defences = sorted((k for k, v in cal.items() if v == 'D'),
+                      key=lambda k: _WEIGHT_ASC.index(k[0]))
+    body = [(_TYPE_FOR[cal[k]], k[0], _NOTE_FOR[cal[k]].format(org=k[1]))
+            for k in setup + defences]
+    fixtures = ([('Ladder', 'Openweight', f'{host} contract')],
+                [('Ladder', 'Openweight', f'{host} contract')])
+    if slot == LIBREMANIA:
+        fixtures[0].append(('Singles', 'Openweight',
+                            '<i>Lucha de Apuestas</i>. Hair vs. Hair'))
+        fixtures[1].append(('Singles', 'Openweight',
+                            '<i>Lucha de Apuestas</i>. Mask vs. Mask'))
+    return fixtures, body
+
+
+def deal_nights(fixtures, body):
+    """Split a flagship across its two nights: fixtures stay put, the rest deal
+    alternately so the heaviest title closes night two."""
+    nights = ([r for r in fixtures[0]], [r for r in fixtures[1]])
+    for i, row in enumerate(body):
+        nights[i % 2].append(row)
+    return nights
+
+
+def trios_rows():
+    """A blank Trios Tournament bracket: four quarter-finals, two semi-finals
+    and a final, all entrants left to the draw."""
+    return ([('Trios', 'Openweight', 'Trios Tournament quarterfinals')] * 4
+            + [('Trios', 'Openweight', 'Trios Tournament semifinals')] * 2
+            + [('Trios', 'Openweight', 'Trios Tournament finals')])
+
+
+def last_event_is_complete(soup):
+    """True when every bout on the LAST event in the file has a Method filled in.
+
+    The WTS-only version of this gate could not see a WrestleMania or a
+    tournament sitting unwrestled at the end of the file, so generation has to
+    ask about the last event of any kind."""
+    dets = [d for d in soup.find_all("details") if d.find("table", class_="match-card")]
+    if not dets:
+        return False
+    saw = False
+    for r in dets[-1].find("table", class_="match-card").find_all("tr")[1:-1]:
+        cols = r.find_all(["td", "th"])
+        if len(cols) < 9:
+            continue
+        saw = True
+        if not cols[6].get_text(strip=True):
+            return False
+    return saw
 
 
 def wts_is_complete(soup, number):

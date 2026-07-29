@@ -1208,12 +1208,16 @@ class WrestlingDatabase:
             out.append((org, weight_disp.lower(), weight_disp, country, name))
         return out
 
-    def _yearly_counterpart(self):
+    def _yearly_counterpart(self, lookahead=0):
         """(date, event) of the slot one annual cycle before the next card — the
         single event the new WTS inherits its date, venue AND match schedule
         from. The cycle length is however many events fell in the trailing 364
         days, so it self-adjusts as the calendar grows. None until a full prior
-        year of events exists."""
+        year of events exists.
+
+        lookahead=n walks n further down last year's chain, i.e. the slot the
+        card AFTER next will inherit — needed to see whether a run of events
+        still fits the month it occupied last year."""
         dated = sorted(((self.parse_date(e['date']), e) for e in self.events
                         if e.get('date') and self.parse_date(e['date'])),
                        key=lambda t: t[0])
@@ -1222,30 +1226,55 @@ class WrestlingDatabase:
         last_date = dated[-1][0]
         # How many events make up the trailing year (the annual cycle length).
         cycle = sum(1 for d, _ in dated if (last_date - d).days < 364)
-        prev_idx = len(dated) - cycle          # counterpart of the new event
-        if prev_idx < 0:
+        prev_idx = len(dated) - cycle + lookahead   # counterpart of the new event
+        if not 0 <= prev_idx < len(dated):
             return None
         return dated[prev_idx]
+
+    @staticmethod
+    def _anniversary(prev_date):
+        """Same calendar date one year on (Feb 29 -> Feb 28 off a leap year)."""
+        try:
+            return prev_date.replace(year=prev_date.year + 1)
+        except ValueError:
+            return prev_date.replace(year=prev_date.year + 1, day=28)
+
+    @classmethod
+    def _snap_to_run_day(cls, prev_date, back=False):
+        """The anniversary of prev_date moved onto the weekday the promotion
+        runs on — forward by default, onto the previous such weekday if back."""
+        from datetime import timedelta
+        base = cls._anniversary(prev_date)
+        fwd = (prev_date.weekday() - base.weekday()) % 7
+        return base + timedelta(days=(fwd - 7) if (back and fwd) else fwd)
 
     def _next_event_info(self):
         """Date + venue/location/network for a newly generated card, inherited
         from the same event one year earlier (the calendar repeats annually).
-        Its date is that event's date + 364 days — same weekday (Saturday),
-        same week of the year. Returns None until a full prior year exists, in
-        which case the caller keeps the blank placeholders."""
-        from datetime import timedelta
+
+        The date is the counterpart's anniversary moved onto the promotion's
+        running weekday. Snapping forward is the default, but a forward snap
+        adds up to six days, and repeated across a run that is enough to shove
+        the run's last event into the following month — March 2019 ran WTS 5/6
+        on the 16th and 30th, and snapping forward put them on March 21 and
+        April 4 because March 2020 has only four Saturdays. So look one event
+        down last year's chain: if a forward snap would carry this card or the
+        next one past the month its counterpart fell in, snap back to the
+        preceding weekday instead and keep the run where it belongs (March 14
+        and 28). Returns None until a full prior year exists, in which case the
+        caller keeps the blank placeholders."""
         cp = self._yearly_counterpart()
         if not cp:
             return None
         prev_date, prev = cp
-        # Calendar lookup: same calendar date one year on, snapped forward to the
-        # weekday the promotion runs on (Saturday) — an actual date lookup, not
-        # fixed-day arithmetic.
-        try:
-            base = prev_date.replace(year=prev_date.year + 1)
-        except ValueError:                     # Feb 29 in a non-leap year
-            base = prev_date.replace(year=prev_date.year + 1, day=28)
-        new_date = base + timedelta(days=(prev_date.weekday() - base.weekday()) % 7)
+        # This card plus the one after it: a forward snap must leave both in the
+        # month their counterparts occupied.
+        run = [prev_date]
+        nxt = self._yearly_counterpart(lookahead=1)
+        if nxt:
+            run.append(nxt[0])
+        overflows = any(self._snap_to_run_day(d).month != d.month for d in run)
+        new_date = self._snap_to_run_day(prev_date, back=overflows)
         return {
             'date': new_date.strftime('%B %-d, %Y'),
             'btype': prev.get('broadcast_type') or 'PPV',
@@ -1291,22 +1320,28 @@ class WrestlingDatabase:
         if not opmod.wts_is_complete(soup, highest):
             return
         number = highest + 1
-        # The schedule (match types / weights / notes) comes from the SAME event
-        # one year earlier that supplies the date — the yearly counterpart — so a
-        # card that runs two multi-man bouts once a year keeps both. Only fall
-        # back to the fixed N-15 slot, then a blank card, if that isn't available.
+        # The schedule (match types / weights / notes) comes from the CALENDAR
+        # slot this card falls on, not from the card that ran on that slot a year
+        # ago. The event a year earlier is used only to identify the slot: read
+        # as a card it would carry that night's one-off decisions forward
+        # forever, so a defence pulled once because the champion was worn out
+        # would go missing every year after. canonical_schedule_rows() resolves
+        # the slot and returns what the rotation prescribes for it.
         cp = self._yearly_counterpart()
         sched_num = None
         if cp:
-            # Only a WTS counterpart carries a card schedule; if the slot a year
-            # ago was WrestleMania/LibreMania/a tournament, sched_num stays None
-            # and we fall back below.
+            # Only a WTS counterpart identifies a slot; if the slot a year ago
+            # was WrestleMania/LibreMania/a tournament, sched_num stays None and
+            # we fall back below.
             m = re.search(r'WTS\s+(\d+)', cp[1].get('name', ''))
             if m:
                 sched_num = int(m.group(1))
-        template = opmod.wts_schedule_rows(soup, sched_num) if sched_num else None
-        if template is None:
+        if not sched_num:
             sched_num = number - opmod.SCHEDULE_PERIOD
+        template = opmod.canonical_schedule_rows(soup, sched_num)
+        if template is None:
+            # Slot unidentifiable (too little history) — copy the old card
+            # rather than book nothing.
             template = opmod.wts_schedule_rows(soup, sched_num)
         if not template:
             opmod.generate_wts(path)   # no schedule yet -> plain blank card

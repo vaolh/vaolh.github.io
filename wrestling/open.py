@@ -906,6 +906,114 @@ def wts_schedule_rows(soup, template_num):
     return out
 
 
+# ---------------------------------------------------------------------------
+# Canonical booking calendar — the source of truth for what a card SHOULD be
+# ---------------------------------------------------------------------------
+# A straight port of the rotation that renders the schedule table in
+# ppv/wiki.html: 32 shows a year, tournaments on 16 and 30, every belt taking a
+# contender bout and then defending two shows later, six times a cycle.
+#
+# This exists because inheriting a card from the previous year's card as it was
+# actually wrestled is wrong: a bout dropped once for storyline reasons (a tired
+# champion skipping a defence) would vanish from that slot every year after.
+# The calendar says what the slot calls for; the wrestled card only says what
+# happened. Generation reads this, not the HTML.
+TOTAL_SHOWS  = 32
+TOURNAMENT   = {16, 30}
+_ACTIVE      = [s for s in range(1, TOTAL_SHOWS + 1) if s not in TOURNAMENT]
+_N           = len(_ACTIVE)
+WC_LIST      = ['Heavyweight', 'Bridgerweight', 'Middleweight',
+                'Welterweight', 'Lightweight', 'Featherweight']
+CAL_ORGS     = ['WWF', 'WWO', 'IWB']
+_PAIR_TYPE   = ['M', 'C', 'C', 'M', 'C', 'C']
+_OFFSET_SWAP = {2: 14, 14: 2, 8: 10, 10: 8, 9: 12, 12: 9}
+
+
+def _build_calendar():
+    belts = [(wc, org) for wc in WC_LIST for org in CAL_ORGS]
+    cal = {s: {} for s in range(1, TOTAL_SHOWS + 1)}
+    for b, belt in enumerate(belts):
+        off = _OFFSET_SWAP.get(b, b)
+        for p in range(6):
+            cal[_ACTIVE[(off + p * 5) % _N]][belt] = _PAIR_TYPE[p]
+            cal[_ACTIVE[(off + p * 5 + 2) % _N]][belt] = 'D'
+    return cal
+
+
+CANONICAL_CALENDAR = _build_calendar()
+
+_NOTE_FOR = {'M': '{org} multi-man contender',
+             'C': '{org} contender',
+             'D': '{org} championship'}
+_TYPE_FOR = {'M': 'Battle Royal', 'C': 'Singles', 'D': 'Singles'}
+
+
+def _row_belt(note, weight):
+    """((weight, org), 'M'|'C'|'D') for a card row, or None if it books no belt."""
+    text = re.sub(r'<[^>]+>', ' ', note).lower()
+    org = next((o for o in CAL_ORGS if o.lower() in text), None)
+    if not org:
+        return None
+    kind = 'M' if 'multi' in text else ('C' if 'contender' in text else 'D')
+    return (weight, org), kind
+
+
+def canonical_slot(rows):
+    """(slot, margin) for a parsed card, by best fit against the rotation.
+
+    Best fit rather than an exact match on purpose: a card that had a bout moved
+    still identifies its slot (six of seven rows is decisive), which is what
+    lets generation recover the bout that was dropped. The rotation repeats
+    every 16 shows, so slots tie in pairs — harmless, both members of a pair
+    prescribe the identical card, so margin is measured against the best slot
+    prescribing a DIFFERENT card. A margin under 2 means the card is too short
+    or too heavily edited to place confidently; callers warn rather than book a
+    guess."""
+    sig = dict(filter(None, (_row_belt(n, w) for _, w, n in rows)))
+    if not sig:
+        return None, 0
+    scored = sorted(((sum(1 for k, v in sig.items() if CANONICAL_CALENDAR[s].get(k) == v), s)
+                     for s in CANONICAL_CALENDAR if s not in TOURNAMENT), reverse=True)
+    best_hits, best = scored[0]
+    if not best_hits:
+        return None, 0
+    runner_up = next((h for h, s in scored
+                      if CANONICAL_CALENDAR[s] != CANONICAL_CALENDAR[best]), 0)
+    return best, best_hits - runner_up
+
+
+def canonical_schedule_rows(soup, template_num):
+    """(match_type, weight_class, note) the calendar prescribes for the slot WTS
+    template_num occupies. Last year's row ORDER is kept so the card still looks
+    the way you lay it out, but every bout comes from the rotation, so bouts you
+    moved off that card last year come back and bouts you added don't stick."""
+    rows = wts_schedule_rows(soup, template_num)
+    if not rows:
+        return None
+    slot, margin = canonical_slot(rows)
+    if slot is None:
+        return None
+    if margin < 2:
+        print(f"  ! WTS {template_num} does not sit cleanly on one calendar slot "
+              f"(best guess {slot}, margin {margin}) — check the booking by hand.")
+    want = CANONICAL_CALENDAR[slot]
+    out, seen = [], set()
+    for _, weight, note in rows:
+        hit = _row_belt(note, weight)
+        key = hit[0] if hit else None
+        if key is None or key not in want or key in seen:
+            continue
+        seen.add(key)
+        out.append((_TYPE_FOR[want[key]], key[0],
+                    _NOTE_FOR[want[key]].format(org=key[1])))
+    for key in sorted(set(want) - seen,
+                      key=lambda k: ('MCD'.index(want[k]),
+                                     WC_LIST.index(k[0]), CAL_ORGS.index(k[1]))):
+        out.append((_TYPE_FOR[want[key]], key[0],
+                    _NOTE_FOR[want[key]].format(org=key[1])))
+    return out
+
+
 def wts_is_complete(soup, number):
     """True when every bout of WTS {number} has a Method filled in (i.e. the
     card has actually happened, not just been booked)."""
@@ -939,14 +1047,20 @@ def generate_wts(path, date_str=None, rows=8):
     else:
         date_disp = "MONTH DAY, YEAR"
 
-    # Pull the booking (types / weights / notes) from the same slot one cycle
-    # ago; fall back to generic blank rows if that event isn't in the file yet.
+    # What the calendar prescribes for this slot. The event one cycle ago is
+    # only used to identify the slot (and to keep its row order) — the bouts
+    # themselves come from the rotation, never from how that card was wrestled.
+    # Fall back to generic blank rows if that event isn't in the file yet.
     soup = BeautifulSoup(raw, "html.parser")
-    template = wts_schedule_rows(soup, number - SCHEDULE_PERIOD)
+    prev_num = number - SCHEDULE_PERIOD
+    template = canonical_schedule_rows(soup, prev_num)
+    origin = f" (calendar slot of WTS {prev_num})"
+    if not template:
+        template = wts_schedule_rows(soup, prev_num)
+        origin = f" (schedule copied from WTS {prev_num}; slot unidentified)"
     if template:
         body = "".join(wts_row(i + 1, mt, wt, nt)
                        for i, (mt, wt, nt) in enumerate(template))
-        origin = f" (schedule inherited from WTS {number - SCHEDULE_PERIOD})"
     else:
         body = "".join(wts_row(i + 1) for i in range(rows))
         origin = ""

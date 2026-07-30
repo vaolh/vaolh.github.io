@@ -967,9 +967,20 @@ def resolve_short_divisions(quiet=False):
                 el = ratings.get(m['name'])
                 el = f"{el:4.0f}" if el is not None else "  — "
                 print(f"    {i:2}. {m['name']:<28} {el}   ({m['tag']})")
+            # Blank line or EOF walks away from the prompt: the slot stays open
+            # and everything downstream (the card booking above all) still runs.
             pick = None
             while pick is None:
-                raw = input("    Call up # (or a name): ").strip()
+                try:
+                    raw = input("    Call up # (or a name, "
+                                "blank to leave open): ").strip()
+                except EOFError:
+                    raw = ''
+                    print()
+                if not raw:
+                    print("      (left open — "
+                          "`python3 wrestling/draft.py --callups` to fill it)")
+                    break
                 if raw.isdigit() and 1 <= int(raw) <= len(menu):
                     pick = menu[int(raw) - 1]
                 else:
@@ -981,6 +992,8 @@ def resolve_short_divisions(quiet=False):
                               + ", ".join(h['name'] for h in hits))
                     else:
                         print("      No match — pick a number from the list.")
+            if pick is None:
+                break
             replaced = free[0]['name'] if free else ''
             row = {'org': org, 'division': div, 'slug': pick['slug'],
                    'name': pick['name'], 'country': pick['country'],

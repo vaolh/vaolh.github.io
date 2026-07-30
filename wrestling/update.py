@@ -5261,19 +5261,35 @@ def main():
     # Book the SINGLES contender eliminators of the newest WTS from the current
     # draft (top-5 vs bottom-5 per division). Battle-royal rows stay blank. Only
     # acts once a draft for the season has been run.
+    # Each step gets its own try: the call-up prompt is interactive and can be
+    # abandoned (Ctrl-D, a stray EOF), and when all three shared one try that
+    # abandonment silently took the card booking down with it — the newest WTS
+    # came out with empty contender slots and one skipped line to explain it.
     try:
         import draft as _draft
+    except Exception as _e:
+        _draft = None
+        print(f"  (Contender booking skipped: {_e})")
+    if _draft is not None:
         # A belt that changed hands leaves its division a contender short: the
         # new champion is out of the field and the man he beat is off the
         # division. Fill those slots FIRST — by hand, every time — so the
         # rankings and the card are booked off a complete division.
-        _draft.resolve_short_divisions(quiet=False)
-        _draft.book_singles_contenders(quiet=False)
+        try:
+            _draft.resolve_short_divisions(quiet=False)
+        except Exception as _e:
+            print(f"  (Call-ups skipped: {_e} — divisions left short; "
+                  f"run `python3 wrestling/draft.py --callups`)")
+        try:
+            _draft.book_singles_contenders(quiet=False)
+        except Exception as _e:
+            print(f"  (Singles contender booking skipped: {_e})")
         # Refresh the org divisional rankings (Elo order + current champion, so a
         # title change swaps the champ back into the field) on every update.
-        _draft.inject_org_rankings()
-    except Exception as _e:
-        print(f"  (Contender booking skipped: {_e})")
+        try:
+            _draft.inject_org_rankings()
+        except Exception as _e:
+            print(f"  (Org rankings refresh skipped: {_e})")
 
     # Abbreviate month names in dates across all generated pages (except the
     # NOABBR-protected current-champions summary).

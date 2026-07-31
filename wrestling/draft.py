@@ -555,8 +555,7 @@ def render_year(year, rows):
             continue
         rounds.add(rn)
         cell[(rn, r['org'])] = r
-    open_attr = ' open' if year == max_year_on_disk() else ''
-    html = [f'    <details class="draft-year"{open_attr}>',
+    html = ['    <details class="draft-year">',
             f'      <summary>{year} Draft &mdash; '
             f'{draft_date(year).strftime("%B %-d, %Y")}</summary>',
             '      <p class="sub">Snake draft across the whole pool — the pick '

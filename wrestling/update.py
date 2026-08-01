@@ -1242,6 +1242,35 @@ class WrestlingDatabase:
     # and with no floor they would all pile onto the next card at once.
     CARRY_FORWARD_FROM = 32
 
+    @staticmethod
+    def _cell_country(cell):
+        for cls in (cell.find('span', class_='fi') or {}).get('class', []):
+            if cls.startswith('fi-') and cls != 'fi':
+                return cls[3:]
+        return 'xx'
+
+    @classmethod
+    def _card_rows(cls, tbl):
+        """[row dicts] for one match-card table. 'method' is empty until the
+        bout has actually been wrestled, which is what separates a booked card
+        from a played one."""
+        rows = []
+        for r in tbl.find_all('tr')[1:-1]:
+            c = r.find_all(['td', 'th'])
+            if len(c) < 9:
+                continue
+            rows.append({'type': c[1].get_text(strip=True),
+                         'weight': c[2].get_text(strip=True),
+                         'a': c[3].get_text(strip=True),
+                         'a_country': cls._cell_country(c[3]),
+                         'result': c[4].get_text(strip=True).lower(),
+                         'b': c[5].get_text(strip=True),
+                         'b_country': cls._cell_country(c[5]),
+                         'method': c[6].get_text(strip=True),
+                         'note_raw': c[8].decode_contents().strip(),
+                         'note': c[8].get_text(' ', strip=True).lower()})
+        return rows
+
     def _wts_cards(self, soup):
         """{wts number: [row dicts]} for every World Title Series in the file."""
         cards = {}
@@ -1253,24 +1282,57 @@ class WrestlingDatabase:
             m = re.match(r'World Title Series (\d+):', s.get_text(strip=True))
             if not m:
                 continue
-            rows = []
-            for r in tbl.find_all('tr')[1:-1]:
-                c = r.find_all(['td', 'th'])
-                if len(c) < 9:
-                    continue
-                country = 'xx'
-                span = c[3].find('span', class_='fi')
-                if span:
-                    for cls in span.get('class', []):
-                        if cls.startswith('fi-') and cls != 'fi':
-                            country = cls[3:]
-                rows.append({'weight': c[2].get_text(strip=True),
-                             'a': c[3].get_text(strip=True), 'a_country': country,
-                             'result': c[4].get_text(strip=True).lower(),
-                             'b': c[5].get_text(strip=True),
-                             'note': c[8].get_text(' ', strip=True).lower()})
-            cards[int(m.group(1))] = rows
+            cards[int(m.group(1))] = self._card_rows(tbl)
         return cards
+
+    def _event_cards(self, soup):
+        """[[row dicts]] for every event in the file, in card order — flagships
+        and tournaments included, not just the World Title Series."""
+        return [self._card_rows(t)
+                for d in soup.find_all('details')
+                for t in [d.find('table', class_='match-card')] if t]
+
+    def _drawn_contenders(self, soup):
+        """Contender bouts that ended with no winner and have not been re-run.
+
+        A contendership is decided by a fall; a draw decides nothing, so the
+        bout is simply run again at the first opportunity rather than leaving
+        the belt without a challenger for a whole cycle. Only the LATEST
+        contender bout per belt is examined: once one is wrestled to a finish
+        the division has its man, and if a rematch draws in its turn it becomes
+        the pending one.
+
+        Returns [(org, mtype, weight_display, note, f1, f2)] lightest first,
+        each f a (country, name) pair.
+        """
+        latest = {}
+        for rows in self._event_cards(soup):
+            for r in rows:
+                if 'contender' not in r['note'] or not r['method']:
+                    continue                       # unbooked or not yet wrestled
+                org = next((o for o in ('wwf', 'wwo', 'iwb') if o in r['note']), None)
+                if org:
+                    latest[(org, r['weight'].lower())] = r
+        out = []
+        for (org, wkey), r in latest.items():
+            if r['result'].startswith('def') or not (r['a'] and r['b']):
+                continue
+            # A battle royal's row names only the last two standing, never the
+            # field, so a drawn one is re-run the way the schedule books it —
+            # blank, for the draw. A singles rematch is the same two men.
+            same = r['type'].lower() == 'singles'
+            out.append((org, r['type'], r['weight'], r['note_raw'],
+                        (r['a_country'], r['a']) if same else ('xx', ''),
+                        (r['b_country'], r['b']) if same else ('xx', '')))
+        out.sort(key=lambda t: self._WEIGHT_ORDER.index(t[2].lower())
+                 if t[2].lower() in self._WEIGHT_ORDER else 99)
+        return out
+
+    @staticmethod
+    def _rematch_label(rematch):
+        org, _mt, wdisp, _nt, f1, f2 = rematch
+        who = f"{f1[1]} vs. {f2[1]}" if f1[1] and f2[1] else "field redrawn"
+        return f"{wdisp} {org.upper()} ({who})"
 
     @staticmethod
     def _contendership_cashed(cards, won_at, org, wkey, name):
@@ -1430,13 +1492,21 @@ class WrestlingDatabase:
         to be cashed. A defence row settles a debt on ANY belt its champion is
         putting up, which is how Andrade's WWO middleweight shot is paid at
         WrestleMania — the night Santo's WWF middleweight belt is on the line,
-        and he defends the WWO one in the same match."""
+        and he defends the WWO one in the same match.
+
+        A row may carry its own two entrants (a contender rematch does), in
+        which case it is emitted as given."""
         from datetime import timedelta
         # Deliberately NOT copied: the two nights share one ledger, so a debt
         # settled on night one is gone by night two.
         owed = {} if owed is None else owed
         built = []
-        for i, (mtype, weight, note) in enumerate(rows, 1):
+        for i, row in enumerate(rows, 1):
+            (mtype, weight, note), preset = row[:3], row[3:]
+            if preset:
+                built.append(opmod.wts_row(i, mtype, weight, note,
+                                           f1=preset[0], f2=preset[1]))
+                continue
             hit = opmod._row_belt(note, weight)
             f1 = f2 = ('xx', '')
             if hit and hit[1] == 'D':
@@ -1494,6 +1564,14 @@ class WrestlingDatabase:
             for org, wkey, _wd, cc, cname in self._feeder_contenders(soup, feeder_num):
                 owed.setdefault((wkey, org), (cc, cname))
 
+        # A contendership that ended in a draw is re-run on the very next card
+        # that can hold a singles bout. The Open and the Trios are brackets and
+        # nothing else, so there it waits one more event.
+        rematches = self._drawn_contenders(soup)
+        if rematches and kind in ('open', 'trios'):
+            print("  Contender rematches held over (bracket card): "
+                  + "; ".join(self._rematch_label(r) for r in rematches))
+
         if kind == 'open':
             opmod.generate_template(path, year,
                                     d.strftime('%Y-%m-%d') if d else None)
@@ -1506,7 +1584,18 @@ class WrestlingDatabase:
             label = f"{year} Trios Tournament"
         else:
             fixtures, body = opmod.flagship_rows(slot)
+            # The rematch replaces the slot's own contender bout for that belt —
+            # two men are already mid-argument over who the challenger is.
+            frozen = {(wd, org.upper()) for org, _mt, wd, _nt, _f1, _f2 in rematches}
+
+            def superseded(mtype, weight, note):
+                hit = opmod._row_belt(note, weight)
+                return bool(hit) and hit[1] in ('C', 'M') and hit[0] in frozen
+            body = [r for r in body if not superseded(*r)]
             n1, n2 = opmod.deal_nights(fixtures, self._collapse_unified(opmod, body))
+            # Ahead of the whole body, so they sit before the title section.
+            n1[len(fixtures[0]):len(fixtures[0])] = [
+                (mt, wd, nt, f1, f2) for _o, mt, wd, nt, f1, f2 in rematches]
             if kind == 'wrestlemania':
                 nums = [int(n) for n in re.findall(r"WrestleMania\s+(\d+)", raw)]
                 name = f"WrestleMania {max(nums) + 1 if nums else 1}"
@@ -1519,6 +1608,9 @@ class WrestlingDatabase:
                      + self._slot_event_block(opmod, f"{name} - Night 2: TBD", n2,
                                               info, day_offset=1, owed=owed) + "\n")
             label = f"{name} (2 nights)"
+            if rematches:
+                print("  Contender rematches (last one drawn): "
+                      + "; ".join(self._rematch_label(r) for r in rematches))
 
         anchor = '<div id="bottom"></div>'
         raw = (raw.replace(anchor, block + anchor, 1) if anchor in raw
@@ -1626,8 +1718,20 @@ class WrestlingDatabase:
                 frozen |= {(wdisp, o.upper())
                            for o in self._champion_orgs(champ[0], wkey)}
 
+        # A drawn contendership settles nothing, so it is run again here and
+        # now — and the belt it hangs over is frozen exactly as an owed shot
+        # freezes one, so the rotation cannot crown a rival contender for it on
+        # the same night the rematch is deciding who the contender is.
+        rematches = self._drawn_contenders(soup)
+        for org, _mt, wdisp, _nt, _f1, _f2 in rematches:
+            frozen.add((wdisp, org.upper()))
+
         # Setup matches (this week's contenderships / battle royals) — blank.
-        setup_rows, froze_note = [], []
+        # The rematches open the card: they are last event's unfinished
+        # business, and everything here sits ahead of the title section.
+        froze_note = []
+        setup_rows = [(mt, wd, nt, f1, f2)
+                      for _o, mt, wd, nt, f1, f2 in rematches]
         for mtype, weight, note in template:
             if self.is_title_match(note)[0]:
                 continue
@@ -1715,13 +1819,16 @@ class WrestlingDatabase:
               f"contenders from WTS {number - self.CONTENDER_LEAD}).")
         if carried_note:
             print("  Contenders carried forward: " + "; ".join(carried_note))
+        if rematches:
+            print("  Contender rematches (last one drawn): "
+                  + "; ".join(self._rematch_label(r) for r in rematches))
         if deferred:
             print("  Shots still owed (no defence scheduled this slot): "
                   + "; ".join(f"{n} — {wd} {o.upper()}, since WTS {w}"
                               for o, _k, wd, _c, n, w in deferred))
         if froze_note:
-            print("  Contender spots frozen while a shot is owed: "
-                  + "; ".join(sorted(set(froze_note))))
+            print("  Contender spots frozen (shot owed or contendership "
+                  "undecided): " + "; ".join(sorted(set(froze_note))))
         if dropped:
             print("  Vacant titles skipped: " + "; ".join(dropped))
 

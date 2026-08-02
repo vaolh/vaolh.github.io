@@ -1162,10 +1162,16 @@ def flagship_rows(slot):
 
 def deal_nights(fixtures, body):
     """Split a flagship across its two nights: fixtures stay put, the rest deal
-    alternately so the heaviest title closes night two."""
+    alternately so the heaviest title closes night two.
+
+    The body arrives lightest to heaviest, so night two is the one that must
+    receive its last row. Dealing from the front would hand that row to night
+    one whenever the body is an odd length — and a unified champion collapsing
+    two defences into one match is enough to flip that parity — so the deal is
+    anchored to the end of the body instead."""
     nights = ([r for r in fixtures[0]], [r for r in fixtures[1]])
     for i, row in enumerate(body):
-        nights[i % 2].append(row)
+        nights[(i + len(body)) % 2].append(row)
     return nights
 
 

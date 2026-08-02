@@ -1,0 +1,19 @@
+{
+  // Duplicate of vaolh.github.io/.vscode/settings.json. VS Code only reads the
+  // .vscode folder of the folder actually opened, so the copy at the repo root
+  // does nothing when wrestling/ is opened on its own. Both copies must match.
+
+  // Auto-fold (bobmagicii.autofoldyeah): HTML opens collapsed so the newest
+  // event is a keystroke away instead of 4,700 lines down. 0 = leave every
+  // other filetype alone, so .py files still open fully expanded.
+  "autofold.default": 0,
+  "autofold.types": [
+    { "ext": "html", "level": 3 }
+  ],
+  // pack=false folds ONLY level 3. With pack on it would also fold level 2,
+  // which is <body> — that collapses the entire file to two lines.
+  "autofold.pack": false,
+  "autofold.unfold": true,
+  "editor.folding": true,
+  "editor.showFoldingControls": "always"
+}

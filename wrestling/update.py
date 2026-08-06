@@ -1188,52 +1188,34 @@ class WrestlingDatabase:
                 return True
         return False
 
-    # Contenders are earned two editions before they cash in (a WTS N winner
-    # challenges in WTS N+2 — verified across the card history).
+    # Contenders are earned two CALENDAR SLOTS before they cash in, which is
+    # what the rotation in ppv/wiki.html lays out: every belt takes a contender
+    # bout and then defends two active shows later. Counting in World Title
+    # Series numbers instead is wrong whenever a flagship or a tournament falls
+    # between the two — WTS 37 is two slots after WTS 36, not after WTS 35,
+    # because WrestleMania 36 sits in between and takes no WTS number. Reading
+    # WTS 35 there handed WTS 37 WrestleMania's contenders and re-booked shots
+    # that had already been cashed (Rock vs. Cena, Sareee vs. Nikki Bella).
     CONTENDER_LEAD = 2
 
     # Weight classes lightest -> heaviest (so the heaviest title headlines).
     _WEIGHT_ORDER = ['featherweight', 'lightweight', 'welterweight',
                      'middleweight', 'bridgerweight', 'heavyweight']
 
-    def _feeder_contenders(self, soup, feeder_number):
-        """Every contendership won in exactly WTS feeder_number, as a list of
-        (org, weight_key, weight_display, country, name). Each earns its winner
-        one title shot; only this single event counts (no stale, already-cashed
-        names)."""
+    @staticmethod
+    def _feeder_contenders(rows):
+        """Every contendership decided on one calendar slot's card(s), as a list
+        of (org, weight_key, weight_display, country, name). Each earns its
+        winner one title shot."""
         out = []
-        det = None
-        for d in soup.find_all('details'):
-            s = d.find('summary')
-            if s and s.get_text(strip=True).startswith(f"World Title Series {feeder_number}:"):
-                det = d
-                break
-        if not det:
-            return out
-        tbl = det.find('table', class_='match-card')
-        if not tbl:
-            return out
-        for r in tbl.find_all('tr')[1:-1]:
-            c = r.find_all(['td', 'th'])
-            if len(c) < 9:
-                continue
-            note = c[8].get_text(strip=True).lower()
-            if 'contender' not in note:
-                continue
-            org = next((o for o in ('wwf', 'wwo', 'iwb') if o in note), None)
+        for r in rows:
+            if 'contender' not in r['note'] or not r['result'].startswith('def'):
+                continue          # unbooked, unwrestled, or not decided by a fall
+            org = next((o for o in ('wwf', 'wwo', 'iwb') if o in r['note']), None)
             if not org:
                 continue
-            if not c[4].get_text(strip=True).lower().startswith('def'):
-                continue  # contendership not decided
-            weight_disp = c[2].get_text(strip=True)
-            name = c[3].get_text(strip=True)
-            country = 'xx'
-            span = c[3].find('span', class_='fi')
-            if span:
-                for cls in span.get('class', []):
-                    if cls.startswith('fi-') and cls != 'fi':
-                        country = cls[3:]
-            out.append((org, weight_disp.lower(), weight_disp, country, name))
+            out.append((org, r['weight'].lower(), r['weight'],
+                        r['a_country'], r['a']))
         return out
 
     # Contenderships won from this edition on are carried forward when the title
@@ -1271,19 +1253,34 @@ class WrestlingDatabase:
                          'note': c[8].get_text(' ', strip=True).lower()})
         return rows
 
-    def _wts_cards(self, soup):
-        """{wts number: [row dicts]} for every World Title Series in the file."""
-        cards = {}
-        for d in soup.find_all('details'):
-            s = d.find('summary')
-            tbl = d.find('table', class_='match-card')
-            if not s or not tbl:
-                continue
-            m = re.match(r'World Title Series (\d+):', s.get_text(strip=True))
-            if not m:
-                continue
-            cards[int(m.group(1))] = self._card_rows(tbl)
-        return cards
+    def _slot_cards(self, opmod, soup):
+        """[{'rows', 'label', 'wts'}] one entry per calendar slot, date order.
+
+        The list index is the slot's position on the calendar, which is the unit
+        the contender rotation counts in. A show split over two nights is one
+        entry holding both cards' rows, and flagships and tournaments are
+        entries like any other — a shot cashed at WrestleMania is cashed."""
+        out = []
+        for group in opmod.slot_groups(soup):
+            rows, label, nums = [], '', []
+            for det in group:
+                num = opmod.wts_number(det)
+                if num is not None:
+                    nums.append(num)
+                if not label:
+                    label = self._slot_label(det.find('summary').get_text(strip=True))
+                tbl = det.find('table', class_='match-card')
+                if tbl:
+                    rows += self._card_rows(tbl)
+            out.append({'rows': rows, 'label': label, 'wts': nums})
+        return out
+
+    @staticmethod
+    def _slot_label(summary):
+        """'World Title Series 36: Punk vs. Hardy' -> 'WTS 36'; a two-night
+        flagship -> 'WrestleMania 36'. For the owed-shot notes only."""
+        head = re.sub(r'\s*-\s*Night\s*\d+\s*$', '', summary.split(':')[0]).strip()
+        return re.sub(r'^World Title Series\b', 'WTS', head)
 
     def _event_cards(self, soup):
         """[[row dicts]] for every event in the file, in card order — flagships
@@ -1336,13 +1333,19 @@ class WrestlingDatabase:
 
     @staticmethod
     def _contendership_cashed(cards, won_at, org, wkey, name):
-        """True once the winner has appeared in a title match at that org and
-        weight on a later card — won, lost or contested vacant. That is the shot
-        being taken; the result is irrelevant."""
-        for n, rows in cards.items():
-            if n <= won_at:
-                continue
-            for r in rows:
+        """True once the winner has had his shot at that org and weight on a
+        later slot — won, lost or contested vacant. The result is irrelevant;
+        taking the shot is what settles the debt.
+
+        Only a SINGLES title match cashes it. What a contendership earns is a
+        one-on-one shot, so a match a contract cash-in turned into a three way
+        is not the shot that was owed and the challenger is still due one —
+        Andrade beaten in the WrestleMania 36 triple threat keeps his WWO
+        middleweight claim."""
+        for slot in cards[won_at + 1:]:
+            for r in slot['rows']:
+                if r['type'].lower() != 'singles':
+                    continue
                 if 'contender' in r['note'] or org not in r['note']:
                     continue
                 if not any(k in r['note'] for k in ('championship', 'title')):
@@ -1351,26 +1354,21 @@ class WrestlingDatabase:
                     return True
         return False
 
-    def _carried_contenders(self, soup, feeder_number):
-        """Contenderships won before the feeder whose title shot never happened.
+    def _carried_contenders(self, cards, feeder_idx):
+        """Contenderships won before the feeder slot whose shot never happened.
 
         A contendership is a debt the promotion owes. Pull a defence off a card
         — a champion too worn out to wrestle, say — and the challenger has still
         earned his shot, so it moves to the next card instead of being quietly
-        voided. Same shape as _feeder_contenders()."""
-        cards = self._wts_cards(soup)
+        voided. Same shape as _feeder_contenders(), plus the slot it was won on."""
+        floor = next((i for i, s in enumerate(cards)
+                      if any(n >= self.CARRY_FORWARD_FROM for n in s['wts'])), 0)
         out = []
-        for e in range(self.CARRY_FORWARD_FROM, feeder_number):
-            for r in cards.get(e, []):
-                if 'contender' not in r['note'] or not r['result'].startswith('def'):
+        for i in range(floor, max(feeder_idx, 0)):
+            for org, wkey, wdisp, cc, name in self._feeder_contenders(cards[i]['rows']):
+                if self._contendership_cashed(cards, i, org, wkey, name):
                     continue
-                org = next((o for o in ('wwf', 'wwo', 'iwb') if o in r['note']), None)
-                if not org:
-                    continue
-                wkey = r['weight'].lower()
-                if self._contendership_cashed(cards, e, org, wkey, r['a']):
-                    continue
-                out.append((org, wkey, r['weight'], r['a_country'], r['a'], e))
+                out.append((org, wkey, wdisp, cc, name, i))
         return out
 
     def _yearly_counterpart(self, lookahead=0):
@@ -1550,18 +1548,19 @@ class WrestlingDatabase:
         d = self.parse_date(info['date']) if info else None
         year = d.year if d else datetime.now().year
 
-        # Every shot still to be cashed: contenders crowned two events back plus
+        # Every shot still to be cashed: contenders crowned two slots back plus
         # anyone owed one from earlier. A flagship defends a whole promotion's
         # belts, so it is where standing debts get settled.
         from bs4 import BeautifulSoup
         soup = BeautifulSoup(raw, 'html.parser')
-        nums = [int(n) for n in re.findall(r"World Title Series\s+(\d+)", raw)]
+        cards = self._slot_cards(opmod, soup)
+        feeder_idx = len(cards) - self.CONTENDER_LEAD
         owed = {}
-        if nums:
-            feeder_num = max(nums) + 1 - self.CONTENDER_LEAD
-            for org, wkey, _wd, cc, cname, _w in self._carried_contenders(soup, feeder_num):
-                owed[(wkey, org)] = (cc, cname)
-            for org, wkey, _wd, cc, cname in self._feeder_contenders(soup, feeder_num):
+        for org, wkey, _wd, cc, cname, _w in self._carried_contenders(cards, feeder_idx):
+            owed[(wkey, org)] = (cc, cname)
+        if 0 <= feeder_idx < len(cards):
+            for org, wkey, _wd, cc, cname in self._feeder_contenders(
+                    cards[feeder_idx]['rows']):
                 owed.setdefault((wkey, org), (cc, cname))
 
         # A contendership that ended in a draw is re-run on the very next card
@@ -1625,9 +1624,10 @@ class WrestlingDatabase:
         - This week's own contendership / battle-royal rows come from the
           schedule of the yearly counterpart (the same event a year earlier that
           sets the date); their entrants are blank (set up FUTURE cards).
-        - Title matches are driven by the contenders crowned in the feeder event
-          (WTS N-2): exactly one defence per contender, champion vs. that
-          contender, defending every belt the champion holds at the weight.
+        - Title matches are driven by the contenders crowned two CALENDAR SLOTS
+          back — whatever event sits there, WTS or flagship: exactly one defence
+          per contender, champion vs. that contender, defending every belt the
+          champion holds at the weight.
 
         Never runs on a truncated timeline. Booking normally is fine — the
         cutoff then sits on the last card in the file and nothing is hidden.
@@ -1689,18 +1689,22 @@ class WrestlingDatabase:
             opmod.generate_wts(path)   # no schedule yet -> plain blank card
             return
 
-        # One title defence per contender crowned two editions ago, plus any
-        # contender still owed a shot from before that.
+        # One title defence per contender crowned two calendar slots ago, plus
+        # any contender still owed a shot from before that.
         title_rows, dropped, carried_note = [], [], []
-        feeder_num = number - self.CONTENDER_LEAD
-        feeder = self._feeder_contenders(soup, feeder_num)
+        cards = self._slot_cards(opmod, soup)
+        feeder_idx = len(cards) - self.CONTENDER_LEAD
+        feeder = (self._feeder_contenders(cards[feeder_idx]['rows'])
+                  if 0 <= feeder_idx < len(cards) else [])
+        feeder_label = (cards[feeder_idx]['label']
+                        if 0 <= feeder_idx < len(cards) else '—')
 
         # A card sits on the same calendar slot as its yearly counterpart, one
         # full cycle back. An owed shot waits for a slot that actually defends
         # one of the champion's belts rather than landing on the next card.
         new_slot = opmod.wts_slots(soup)[0].get(sched_num)
         carried, deferred = [], []
-        for fc in self._carried_contenders(soup, feeder_num):
+        for fc in self._carried_contenders(cards, feeder_idx):
             (carried if self._slot_defends(opmod, new_slot, fc[2], fc[0])
              else deferred).append(fc)
 
@@ -1746,15 +1750,15 @@ class WrestlingDatabase:
         # carried this one. Nobody is booked twice on one card.
         merged, seen_belts, seen_names = [], set(), set()
         for org, wkey, wdisp, ccountry, cname, won_at in (
-                [c for c in carried] + [f + (feeder_num,) for f in feeder]):
+                [c for c in carried] + [f + (feeder_idx,) for f in feeder]):
             if (org, wkey) in seen_belts or cname in seen_names:
                 continue
             seen_belts.add((org, wkey))
             seen_names.add(cname)
             merged.append((org, wkey, wdisp, ccountry, cname))
-            if won_at != feeder_num:
+            if won_at != feeder_idx:
                 carried_note.append(f"{cname} ({wdisp} {org.upper()}, owed since "
-                                    f"WTS {won_at})")
+                                    f"{cards[won_at]['label']})")
         feeder = merged
         feeder.sort(key=lambda fc: self._WEIGHT_ORDER.index(fc[1])
                     if fc[1] in self._WEIGHT_ORDER else 99)
@@ -1816,7 +1820,7 @@ class WrestlingDatabase:
             f.write(raw)
         print(f"Appended World Title Series {number} "
               f"(schedule WTS {sched_num}, "
-              f"contenders from WTS {number - self.CONTENDER_LEAD}).")
+              f"contenders from {feeder_label}).")
         if carried_note:
             print("  Contenders carried forward: " + "; ".join(carried_note))
         if rematches:
@@ -1824,7 +1828,7 @@ class WrestlingDatabase:
                   + "; ".join(self._rematch_label(r) for r in rematches))
         if deferred:
             print("  Shots still owed (no defence scheduled this slot): "
-                  + "; ".join(f"{n} — {wd} {o.upper()}, since WTS {w}"
+                  + "; ".join(f"{n} — {wd} {o.upper()}, since {cards[w]['label']}"
                               for o, _k, wd, _c, n, w in deferred))
         if froze_note:
             print("  Contender spots frozen (shot owed or contendership "
@@ -5175,36 +5179,41 @@ class WrestlingDatabase:
                         content
                     )
                     
-                    # Update or add/remove Titles row — only if infobox exists
-                    has_infobox = '<th>Record</th>' in content or '<th>Career Record</th>' in content
-                    if has_infobox:
+                    # Update or add/remove Titles row — only if infobox exists.
+                    # Titles is the last row of the box, below the ranking rows
+                    # elo.py writes. Both scripts used to splice in after Career
+                    # Record, so whichever ran last ended up on top; scoping to
+                    # the infobox and appending at the end of the table pins the
+                    # order whichever way round they run. The row is stripped
+                    # and re-appended rather than edited in place because a page
+                    # written under the old rule has it in the wrong position
+                    # and that is the only way to move it.
+                    box = re.search(r'<div class="infobox".*?</table>',
+                                    content, re.DOTALL)
+                    if box:
                         current_titles, _ = self.get_wrestler_titles(wrestler_name)
-                        titles_row_exists = '<th>Titles</th>' in content
-                        
+                        block = re.sub(
+                            r'\s*<tr>\s*<th>Titles</th>\s*<td>.*?</td>\s*</tr>',
+                            '',
+                            box.group(0),
+                            flags=re.DOTALL
+                        )
                         if current_titles:
-                            titles_content = ' <br> '.join(current_titles)
-                            if titles_row_exists:
-                                content = re.sub(
-                                    r'(<th>Titles</th>\s*<td>).*?(</td>)',
-                                    r'\g<1>' + titles_content + r'\g<2>',
-                                    content,
-                                    flags=re.DOTALL
-                                )
-                            else:
-                                content = re.sub(
-                                    r'(<th>(?:Career )?Record</th>\s*<td>[^<]*</td>\s*</tr>)',
-                                    r'\g<1>\n                <tr>\n                    <th>Titles</th>\n                    <td>' + titles_content + '</td>\n                </tr>',
-                                    content
-                                )
-                        else:
-                            if titles_row_exists:
-                                content = re.sub(
-                                    r'\s*<tr>\s*<th>Titles</th>\s*<td>.*?</td>\s*</tr>',
-                                    '',
-                                    content,
-                                    flags=re.DOTALL
-                                )
-                    
+                            titles_row = (
+                                '\n                <tr>\n'
+                                '                    <th>Titles</th>\n'
+                                '                    <td>'
+                                + ' <br> '.join(current_titles) + '</td>\n'
+                                '                </tr>'
+                            )
+                            block = re.sub(
+                                r'\s*(?:</tbody>)?\s*</table>',
+                                lambda m: titles_row + m.group(0),
+                                block,
+                                count=1
+                            )
+                        content = content[:box.start()] + block + content[box.end():]
+
                     with open(filepath, 'w', encoding='utf-8') as f:
                         f.write(content)
                     print(f"✓ Updated {filepath}")

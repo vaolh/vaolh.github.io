@@ -86,7 +86,18 @@ METHOD_WEIGHT = {
 
 # A wrestler must have this many bouts before appearing in a ranking.
 MIN_BOUTS = 3
+# TOP_N is what the published monthly tables print. RANK_N is how deep a rank
+# still counts as a rank: the infobox Ranking / Highest Ranking rows read from
+# the full list, so a wrestler in the twenties carries a number without ever
+# appearing on a P4P page.
 TOP_N     = 10
+RANK_N    = 25
+
+# And must still be active: a pound-for-pound ranking is a statement about who
+# would beat whom now, so a wrestler drops out of it once he has gone this many
+# months without a bout. The rating itself is untouched — it is frozen where he
+# left it and he re-enters at that number the night he comes back.
+ACTIVE_MONTHS = 6
 
 # Hall of Fame criteria (ported from p4p.py, scored on peak Elo).
 HOF_MAX_PER_YEAR     = 3
@@ -116,6 +127,14 @@ def _parse_date(s):
 
 def _month_key(d):
     return f"{d.year:04d}-{d.month:02d}"
+
+
+def _months_before(key, n):
+    """The month key n months earlier — the oldest month a wrestler can have
+    last fought in and still count as active in month `key`."""
+    y, m = (int(p) for p in key.split('-'))
+    total = y * 12 + (m - 1) - n
+    return f"{total // 12:04d}-{total % 12 + 1:02d}"
 
 
 def _month_label(key):
@@ -193,6 +212,27 @@ def singles_matches(db):
     return out
 
 
+def appearance_months(db):
+    """month key -> {everyone who wrestled that month}, singles and multi-man
+    alike.
+
+    Elo rates singles bouts only, but activity is about having wrestled at all:
+    Sami Zayn spent WrestleMania 36 in a ladder match and a three way, which
+    rate nothing and still mean he is not an absent wrestler."""
+    out = defaultdict(set)
+    for event in db.events:
+        d = _parse_date(event.get('date'))
+        if not d:
+            continue
+        key = _month_key(d)
+        for m in event.get('matches', []):
+            out[key].update((m.get('fighter1'), m.get('fighter2')))
+        for mm in event.get('multi_man_matches', []):
+            for side in ('winners', 'losers', 'participants'):
+                out[key].update(f.get('name') for f in mm.get(side) or [])
+    return {k: {n for n in v if n} for k, v in out.items()}
+
+
 def classify_genders(db):
     """women = fought at least one bout in a women's division (same rule the
     old p4p.py used); everyone else is men."""
@@ -223,6 +263,12 @@ def build_snapshots(db):
     wins    = defaultdict(int)
     losses  = defaultdict(int)
     draws   = defaultdict(int)
+
+    # Activity, replayed alongside the ratings so each month's ranking reflects
+    # who was active THEN, not who is active now.
+    appear = appearance_months(db)
+    appear_keys = sorted(appear)
+    last_seen, appear_i = {}, 0
     # Divisions fought so far, so a wrestler's division reflects the date of
     # the snapshot rather than where they ended up years later.
     div_counts = defaultdict(lambda: defaultdict(int))
@@ -234,11 +280,14 @@ def build_snapshots(db):
         # Most-fought division; ties break heavier (lower index).
         return WEIGHT_INDEX[min(counts, key=lambda w: (-counts[w], WEIGHT_INDEX[w]))]
 
-    def rank_list(names):
+    def rank_list(names, as_of):
+        cutoff = _months_before(as_of, ACTIVE_MONTHS - 1)
         rows = []
         for name in sorted(names):
             if bouts[name] < MIN_BOUTS or name not in db.ppv_wrestlers:
                 continue
+            if last_seen.get(name, '') < cutoff:
+                continue          # inactive: no match in the last ACTIVE_MONTHS
             rows.append({
                 'name':    name,
                 'rating':  ratings[name],
@@ -292,10 +341,21 @@ def build_snapshots(db):
             bouts[b] += 1
             idx_m += 1
 
+        while appear_i < len(appear_keys) and appear_keys[appear_i] <= key:
+            for n in appear[appear_keys[appear_i]]:
+                last_seen[n] = appear_keys[appear_i]
+            appear_i += 1
+
         months.append(key)
         snapshots[key] = {
-            'men':   rank_list(men),
-            'women': rank_list(women),
+            'men':   rank_list(men, key),
+            'women': rank_list(women, key),
+            # Every rating as it stood that month, nobody filtered out. The
+            # published lists drop the inactive and the barely-debuted; the
+            # org-page movement arrows compare a fixed division field against
+            # last month and need the numbers behind that, or a wrestler back
+            # from a layoff reads as though he climbed from nowhere.
+            'ratings': dict(ratings),
         }
 
     # Early months where nobody has cleared MIN_BOUTS yet produce empty tables.
@@ -506,7 +566,7 @@ def peak_rankings(snapshots, months):
     best = {}
     for key in months:
         for gender in ('men', 'women'):
-            for r in snapshots[key][gender][:TOP_N]:
+            for r in snapshots[key][gender][:RANK_N]:
                 cur = best.get(r['name'])
                 if cur is None or r['rank'] < cur[0]:
                     best[r['name']] = (r['rank'], key)
@@ -850,7 +910,7 @@ def current_rankings(snapshots, months):
         return {}
     out = {}
     for gender in ('men', 'women'):
-        for r in snapshots[months[-1]][gender][:TOP_N]:
+        for r in snapshots[months[-1]][gender][:RANK_N]:
             out[r['name']] = f"No. {r['rank']}"
     return out
 

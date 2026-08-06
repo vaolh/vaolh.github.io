@@ -986,8 +986,8 @@ def group_slots(events):
     return [[p for _, _, p in g] for g in groups]
 
 
-def _dated_events(soup):
-    """[(date, location, wts_number_or_None)] for every event, in date order."""
+def dated_events(soup):
+    """[(date, location, details)] for every dated event, in date order."""
     out = []
     for det in soup.find_all("details"):
         summ = det.find("summary")
@@ -999,12 +999,32 @@ def _dated_events(soup):
         m = re.search(r"([A-Z][a-z]+ \d{1,2}, \d{4})", " ".join(cells))
         if not m:
             continue
-        num = re.match(r"World Title Series (\d+):", summ.get_text(strip=True))
         out.append((datetime.strptime(m.group(1), "%B %d, %Y").date(),
-                    cells[1] if len(cells) > 1 else "",
-                    int(num.group(1)) if num else None))
+                    cells[1] if len(cells) > 1 else "", det))
     out.sort(key=lambda t: t[0])
     return out
+
+
+def wts_number(det):
+    """The World Title Series number of an event, or None for anything else."""
+    summ = det.find("summary")
+    m = summ and re.match(r"World Title Series (\d+):", summ.get_text(strip=True))
+    return int(m.group(1)) if m else None
+
+
+def _dated_events(soup):
+    """[(date, location, wts_number_or_None)] for every event, in date order."""
+    return [(d, loc, wts_number(det)) for d, loc, det in dated_events(soup)]
+
+
+def slot_groups(soup):
+    """[[details, ...]] one inner list per calendar slot, in date order.
+
+    The positional index into this list IS the slot's place on the calendar,
+    which is what the contender rotation counts in — a show split over two
+    nights is one entry, and WrestleMania sits between two World Title Series
+    without taking a WTS number, so WTS numbering and slot counting diverge."""
+    return group_slots(dated_events(soup))
 
 
 def wts_slots(soup):

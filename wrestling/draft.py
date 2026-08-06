@@ -124,13 +124,10 @@ def load_ranking_context(force=False):
                                 # division shows a champion who has given it up
     ratings, _bouts = elo.current_ratings(db)
     months, snaps = elo.build_snapshots(db)
-    rating_by_month = {}
-    for key in months:
-        rm = {}
-        for g in ('men', 'women'):
-            for r in snaps[key][g]:
-                rm[r['name']] = r['rating']
-        rating_by_month[key] = rm
+    # Unfiltered ratings, not the published P4P lists: a division field is fixed
+    # for the season and every member of it needs last month's number, including
+    # the ones the ranking itself leaves out for inactivity or too few bouts.
+    rating_by_month = {key: snaps[key]['ratings'] for key in months}
     # Full W-L-D for everyone who has wrestled a singles match (not just the
     # >= MIN_BOUTS names the P4P snapshot publishes), so the Record column fills.
     wins, losses, draws = defaultdict(int), defaultdict(int), defaultdict(int)

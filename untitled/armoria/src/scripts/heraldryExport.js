@@ -84,6 +84,7 @@ async function renderVariantBlob(coa, shieldType) {
 
   try {
     const svg = container.querySelector("svg.coa");
+    stripBorder(svg);
     const url = await getURL(svg, EXPORT_SIZE, EXPORT_SIZE);
     const response = await fetch(url);
     return await response.blob();
@@ -91,6 +92,14 @@ async function renderVariantBlob(coa, shieldType) {
     instance.$destroy();
     container.remove();
   }
+}
+
+// exported sets shouldn't carry the app's global shield-outline border setting
+function stripBorder(svg) {
+  const gradPath = svg.querySelector("path.grad");
+  if (!gradPath) return;
+  gradPath.setAttribute("stroke", "none");
+  gradPath.removeAttribute("stroke-width");
 }
 
 function triggerDownload(blob, filename) {

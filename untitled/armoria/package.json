@@ -1,0 +1,50 @@
+{
+  "name": "armoria",
+  "description": "Heraldry generator and editor",
+  "version": "1.1.0",
+  "author": "Azgaar <azgaar.fmg@yandex.com>",
+  "scripts": {
+    "dev": "rollup -c -w",
+    "start": "sirv public",
+    "build": "rollup -c",
+    "deploy": "gh-pages -d public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Azgaar/Armoria.git"
+  },
+  "keywords": [
+    "heraldry",
+    "svelte",
+    "procedural-generation"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Azgaar/Armoria/issues"
+  },
+  "main": "./src/main.js",
+  "dependencies": {
+    "path-data-polyfill": "^1.0.10"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^14.0.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^8.0.0",
+    "@rollup/plugin-replace": "^3.0.0",
+    "@rollup/plugin-typescript": "^8.3.0",
+    "@tsconfig/svelte": "^2.0.1",
+    "gh-pages": "^3.1.0",
+    "rollup": "^2.3.4",
+    "rollup-plugin-livereload": "^2.0.0",
+    "rollup-plugin-svelte": "^6.1.1",
+    "rollup-plugin-terser": "^7.0.0",
+    "rollup-plugin-workbox": "^6.1.1",
+    "sirv-cli": "^1.0.0",
+    "svelte": "^3.44.2",
+    "svelte-check": "^2.2.10",
+    "svelte-i18n": "^3.3.13",
+    "svelte-preprocess": "^4.9.8",
+    "tslib": "^2.3.1",
+    "typescript": "^4.5.2"
+  }
+}

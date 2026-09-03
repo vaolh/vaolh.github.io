@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="2.5 0 200 200">
+  <defs>
+    <clipPath id="shield_270927072">
+      <path d="M 10,40 h190 l-65,60 65,60 h-190 v-120 Z"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="mullet6" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <polygon points="100 60 107.64 86.77 134.64 80 115.28 100 134.64 120 107.64 113.23 100 140 92.36 113.23 65.36 120 84.72 100 65.36 80 92.36 86.77"/>
+    </g>
+    <pattern id="barry-argent-gules" width="25" height="100" viewBox="0 0 25 100" patternUnits="userSpaceOnUse">
+      <rect width="25" height="100" fill="#d7374a"/>
+      <rect x="0" y="25" width="25" height="25" fill="#fafafa"/>
+      <rect x="0" y="75" width="25" height="25" fill="#fafafa"/>
+    </pattern>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_270927072)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="url(#barry-argent-gules)"/>
+    <g class="ordinary" i="0" fill="#312d5c" stroke="none" stroke-width="1">
+      <g>
+        <rect x="0" y="87.5" width="200" height="25"/>
+      </g>
+    </g>
+    <g class="charge" i="0" charge="mullet6" fill="#fafafa" stroke="#000" style="--secondary: #fafafa; --tertiary: #fafafa; --stroke: #000; --background: block;">
+      <use xlink:href="#mullet6" transform="translate(20 80) scale(0.2)"/>
+      <use xlink:href="#mullet6" transform="translate(80 80) scale(0.2)"/>
+    </g>
+  </g>
+  <path class="grad" d="M 10,40 h190 l-65,60 65,60 h-190 v-120 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

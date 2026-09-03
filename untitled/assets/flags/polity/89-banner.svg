@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 10 200 200">
+  <defs>
+    <clipPath id="shield_90312505">
+      <path d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <pattern id="chequy-argent-gules-big" width="80" height="80" viewBox="0 0 50 50" patternUnits="userSpaceOnUse" fill="#d7374a">
+      <rect width="50" height="50"/>
+      <rect width="25" height="25" fill="#fafafa"/>
+      <rect x="25" y="25" width="25" height="25" fill="#fafafa"/>
+    </pattern>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_90312505)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="url(#chequy-argent-gules-big)"/>
+    <g class="ordinary" i="0" fill="#312d5c" stroke="none" stroke-width="33.3">
+      <path d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z" fill="none" stroke="#312d5c"/>
+    </g>
+  </g>
+  <path class="grad" d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

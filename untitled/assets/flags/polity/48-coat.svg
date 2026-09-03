@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 10 200 200">
+  <defs>
+    <clipPath id="shield_859512890">
+      <path d="m25,25 h150 v75 a100,100,0,0,1,-75,100 a100,100,0,0,1,-75,-100 v-75 z"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="crossFourchy" stroke-width=".5" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <path d="M95 105h-19c-1 0-3 0-4 1l-8 5-3-5 9-6-9-6 3-5 8 5c1 1 3 1 4 1h19v-19c0-1 0-3-1-4l-5-8 5-3 6 9 6-9 5 3-5 8c-1 1-1 3-1 4v19h19c1 0 3 0 4-1l8-5 3 5-9 6 9 6-3 5-8-5c-1-1-3-1-4-1h-19v19c0 1 0 3 1 4l5 8-5 3-6-9-6 9-5-3 5-8c1-1 1-3 1-4z"/>
+    </g>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_859512890)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#141414"/>
+    <g class="charge" i="0" charge="crossFourchy" fill="#ffe066" stroke="#000" style="--secondary: #ffe066; --tertiary: #ffe066; --stroke: #000; --background: block;">
+      <use xlink:href="#crossFourchy" transform="translate(-7.5 -7.5) scale(0.7)"/>
+      <use xlink:href="#crossFourchy" transform="translate(67.5 -7.5) scale(0.7)"/>
+      <use xlink:href="#crossFourchy" transform="translate(30 75) scale(0.7)"/>
+    </g>
+  </g>
+  <path class="grad" d="m25,25 h150 v75 a100,100,0,0,1,-75,100 a100,100,0,0,1,-75,-100 v-75 z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

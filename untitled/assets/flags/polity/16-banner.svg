@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 10 200 200">
+  <defs>
+    <clipPath id="shield_389063885">
+      <path d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="mullet7" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <polygon points="100 60 106.63 86.23 131.27 75.06 114.9 96.6 139 108.9 111.95 109.53 117.36 136.04 100 115.28 82.64 136.04 88.05 109.53 61 108.9 85.1 96.6 68.73 75.06 93.37 86.23"/>
+    </g>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_389063885)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#d7374a"/>
+    <g class="ordinary" i="0" fill="#fafafa" stroke="none" stroke-width="1">
+      <g>
+        <rect x="0" y="145" width="200" height="55"/>
+      </g>
+    </g>
+    <g class="charge" i="0" charge="mullet7" fill="#ffe066" stroke="#000" style="--secondary: #ffe066; --tertiary: #ffe066; --stroke: #000; --background: block;">
+      <use xlink:href="#mullet7" transform="translate(60 10) scale(0.4)"/>
+      <use xlink:href="#mullet7" transform="translate(10 60) scale(0.4)"/>
+      <use xlink:href="#mullet7" transform="translate(110 60) scale(0.4)"/>
+    </g>
+  </g>
+  <path class="grad" d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

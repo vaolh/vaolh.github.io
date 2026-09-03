@@ -168,10 +168,20 @@ def load_ranking_context(force=False):
 
 
 def _last_active(db):
-    """name -> date of their most recent appearance, singles OR multi-man. Live
-    from the parsed cards, not rosters.csv's last_active (which is only rebuilt
-    when roster.py runs and goes stale between drafts). Drives the "spread the
-    opportunities" pick: the longest-idle wrestler in a bucket gets the shot."""
+    """name -> date of their most recent SINGLES appearance. Live from the
+    parsed cards, not rosters.csv's last_active (which is only rebuilt when
+    roster.py runs and goes stale between drafts). Drives the "spread the
+    opportunities" pick: the longest-idle wrestler in a bucket gets the shot.
+
+    Multi-man matches don't count. A battle royal appearance isn't a singles
+    push — Jamie Hayter's most recent card appearance was a multi-woman
+    contender battle royal (WTS 28, Dec 14 2019, eliminated by Zeuxis), but
+    her last SINGLES match was months earlier; counting the battle royal as
+    "recently active" would have skipped her for a shot she'd actually earned
+    by being idle. elo.appearance_months() is the one place multi-man DOES
+    count (see wrestling-p4p-active-only) — that's the published P4P ranking's
+    "is this person still relevant" filter, a different question from this
+    one's "who has gone longest without a singles opportunity"."""
     seen = {}
 
     def mark(name, when):
@@ -183,10 +193,6 @@ def _last_active(db):
         for m in event.get('matches', []):
             mark(m.get('fighter1'), when)
             mark(m.get('fighter2'), when)
-        for mm in event.get('multi_man_matches', []):
-            for side in ('winners', 'losers', 'participants'):
-                for f in mm.get(side) or []:
-                    mark(f.get('name'), when)
     return seen
 
 

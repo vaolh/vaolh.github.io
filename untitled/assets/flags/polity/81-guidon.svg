@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="2.5 0 200 200">
+  <defs>
+    <clipPath id="shield_22301841">
+      <path d="M 10,40 h190 l-65,60 65,60 h-190 v-120 Z"/>
+    </clipPath>
+    <clipPath id="division_22301841">
+      <rect x="100" y="0" width="100" height="100"/>
+      <rect x="0" y="100" width="100" height="100"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="crossPotent" stroke-width=".5" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <path d="M83 60v10h12v25H70V83H60v34h10v-12h25v25H83v10h34v-10h-12v-25h25v12h10V83h-10v12h-25V70h12V60z"/>
+    </g>
+    <pattern id="semy_of_crossCercelee-sable-argent" width="25" height="25" viewBox="0 0 200 200" patternUnits="userSpaceOnUse" stroke="#000">
+      <rect width="200" height="200" fill="#141414" stroke="none"/>
+      <g fill="#fafafa">
+        <use transform="translate(-100 -50)" href="#crossCercelee"/>
+        <use transform="translate(100 -50)" href="#crossCercelee"/>
+        <use transform="translate(0 50)" href="#crossCercelee"/>
+      </g>
+    </pattern>
+    <g id="crossCercelee" stroke-width=".5" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <path d="M133 100c3.59-.26 6.43-4.77 6.43-10.24 0-5.65-3.02-10.24-6.73-10.24h-5.73c2.36 0 4.28 3.24 4.28 7.26 0 4.03-1.92 7.26-4.28 7.26h-21.01v-21.01c0-2.36 3.24-4.28 7.26-4.28s7.26 1.92 7.26 4.28v-5.73c0-3.72-4.59-6.74-10.24-6.73-5.47 0-9.95 2.84-10.24 6.43-.26-3.59-4.77-6.43-10.24-6.43-5.64 0-10.23 3.02-10.24 6.73v5.73c0-2.36 3.24-4.29 7.26-4.29s7.26 1.93 7.26 4.29v21.01h-21.01c-2.36 0-4.28-3.28-4.28-7.26s1.92-7.26 4.28-7.26h-5.73c-3.72 0-6.73 4.59-6.73 10.24 0 5.47 2.84 9.98 6.43 10.24-3.59.26-6.43 4.77-6.43 10.24 0 5.65 3.02 10.24 6.73 10.24h5.73c-2.36 0-4.28-3.24-4.28-7.26 0-4.03 1.92-7.26 4.28-7.26h21.01v21.01c0 2.36-3.28 4.29-7.26 4.28s-7.26-1.93-7.26-4.28v5.73c0 3.72 4.59 6.74 10.24 6.73 5.47 0 9.95-2.84 10.24-6.43.26 3.59 4.77 6.43 10.24 6.43 5.64 0 10.23-3.02 10.24-6.73v-5.73c0 2.36-3.24 4.29-7.26 4.29s-7.26-1.93-7.26-4.29v-21.01 h21.01c2.36 0 4.28 3.28 4.28 7.26s-1.92 7.26-4.28 7.26h5.73c3.72 0 6.73-4.59 6.73-10.24 0-5.47-2.84-9.98-6.43-10.24z"/>
+    </g>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_22301841)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#312d5c"/>
+    <g class="division" clip-path="url(#division_22301841)">
+      <rect x="0" y="0" width="200" height="200" fill="url(#semy_of_crossCercelee-sable-argent)"/>
+    </g>
+    <g class="charge" i="0" charge="crossPotent" fill="#ffe066" stroke="#000" style="--secondary: #ffe066; --tertiary: #ffe066; --stroke: #000; --background: block;">
+      <use xlink:href="#crossPotent" transform="translate(10 25) scale(0.45)"/>
+      <use xlink:href="#crossPotent" transform="translate(100 85) scale(0.45)"/>
+    </g>
+  </g>
+  <path class="grad" d="M 10,40 h190 l-65,60 65,60 h-190 v-120 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

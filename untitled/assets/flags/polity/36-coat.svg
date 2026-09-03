@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 10 200 200">
+  <defs>
+    <clipPath id="shield_142666642">
+      <path d="m25,25 h150 v75 a100,100,0,0,1,-75,100 a100,100,0,0,1,-75,-100 v-75 z"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="crossPommy" stroke-width=".5" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <path d="M95.75 104.25h-19.89a8.5 8.5 0 110-8.5h19.89v-19.89a8.5 8.5 0 118.5 0v19.89h19.89a8.5 8.5 0 110 8.5h-19.89v19.89a8.5 8.5 0 11-8.5 0z"/>
+    </g>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_142666642)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#fafafa"/>
+    <g class="ordinary" i="0" fill="#377cd7" stroke="none" stroke-width="1">
+      <g>
+        <polygon points="0,75 100,140 200,75 200,35 100,100 0,35"/>
+      </g>
+    </g>
+    <g class="charge" i="0" charge="crossPommy" fill="#377cd7" stroke="#000" style="--secondary: #377cd7; --tertiary: #377cd7; --stroke: #000; --background: block;">
+      <use xlink:href="#crossPommy" transform="translate(50 0) scale(0.5)"/>
+    </g>
+  </g>
+  <path class="grad" d="m25,25 h150 v75 a100,100,0,0,1,-75,100 a100,100,0,0,1,-75,-100 v-75 z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

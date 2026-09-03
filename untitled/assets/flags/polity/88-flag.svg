@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 0 200 200">
+  <defs>
+    <clipPath id="shield_800628577">
+      <path d="M 10,40 h180 v120 h-180 v-120 Z"/>
+    </clipPath>
+    <clipPath id="division_800628577">
+      <path d="m 0,115 v -15 c 8.9,-3.5 16,-3.1 25,0 8.9,3.5 16,3.1 25,0 8.9,-3.5 16,-3.2 25,0 8.9,3.5 16,3.2 25,0c 8.9,-3.5 16,-3.1 25,0 8.9,3.5 16,3.1 25,0 8.9,-3.5 16,-3.2 25,0 8.9,3.5 16,3.2 25,0 v 15 V200 H0 Z" transform="rotate(-90 100 100)"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_800628577)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#312d5c"/>
+    <g class="division" clip-path="url(#division_800628577)">
+      <rect x="0" y="0" width="200" height="200" fill="#fafafa"/>
+    </g>
+    <g class="ordinary" i="0" fill="#ffe066" stroke="none" stroke-width="1">
+      <g>
+        <polygon points="85,0 85,85 0,85 0,115 85,115 85,200 115,200 115,115 200,115 200,85 115,85 115,0"/>
+      </g>
+    </g>
+  </g>
+  <path class="grad" d="M 10,40 h180 v120 h-180 v-120 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

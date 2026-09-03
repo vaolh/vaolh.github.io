@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="2.5 0 200 200">
+  <defs>
+    <clipPath id="shield_456581409">
+      <path d="M 10,40 h190 l-65,60 65,60 h-190 v-120 Z"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="crossJerusalem" stroke-width=".5" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <path d="m 118,72 v 5 h -5 v 5 h 5 v 5 h 5 v -5 h 5 v -5 h -5 v -5 z m 0,41 v 5 h -5 v 5 h 5 v 5 h 5 v -5 h 5 v -5 h -5 v -5 z m -41,0 v 5 h -5 v 5 h 5 v 5 h 5 v -5 h 5 v -5 h -5 v -5 z m 0,-41 v 5 h -5 v 5 h 5 v 5 h 5 v -5 h 5 v -5 h -5 v -5 z M 89,60 h 22 v 7 h -6 v 28 h 28 v -6 h 7 v 22 h -7 v -6 h -28 v 28 h 6 v 7 h -22 v -7 h 6 v -28 h -28 v 6 h -7 v -22 h 7 v 6 h 28 v -28 h -6 z"/>
+    </g>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_456581409)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#3a37d7"/>
+    <g class="charge" i="0" charge="crossJerusalem" fill="#ffe066" stroke="#000" style="--secondary: #ffe066; --tertiary: #ffe066; --stroke: #000; --background: block;">
+      <use xlink:href="#crossJerusalem" transform="translate(67 27) scale(0.33)"/>
+      <use xlink:href="#crossJerusalem" transform="translate(67 67) scale(0.33)"/>
+      <use xlink:href="#crossJerusalem" transform="translate(67 107) scale(0.33)"/>
+    </g>
+  </g>
+  <path class="grad" d="M 10,40 h190 l-65,60 65,60 h-190 v-120 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

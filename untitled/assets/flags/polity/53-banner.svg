@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 10 200 200">
+  <defs>
+    <clipPath id="shield_157582415">
+      <path d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z"/>
+    </clipPath>
+    <clipPath id="division_157582415">
+      <rect x="100" y="0" width="100" height="100"/>
+      <rect x="0" y="100" width="100" height="100"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <pattern id="chequy-sable-or" width="50" height="50" viewBox="0 0 50 50" patternUnits="userSpaceOnUse" fill="#ffe066">
+      <rect width="50" height="50"/>
+      <rect width="25" height="25" fill="#141414"/>
+      <rect x="25" y="25" width="25" height="25" fill="#141414"/>
+    </pattern>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_157582415)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="url(#chequy-sable-or)"/>
+    <g class="division" clip-path="url(#division_157582415)">
+      <rect x="0" y="0" width="200" height="200" fill="#fafafa"/>
+    </g>
+  </g>
+  <path class="grad" d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

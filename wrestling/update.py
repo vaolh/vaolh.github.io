@@ -1224,6 +1224,11 @@ class WrestlingDatabase:
     # and with no floor they would all pile onto the next card at once.
     CARRY_FORWARD_FROM = 32
 
+    # A card holds at most this many matches (2026-09-02, at the user's
+    # request — a card had grown to 9 off accumulated owed shots). See where
+    # this is enforced, in generate_next_wts_if_ready's WTS branch.
+    MAX_CARD_SIZE = 8
+
     @staticmethod
     def _cell_country(cell):
         for cls in (cell.find('span', class_='fi') or {}).get('class', []):
@@ -1403,50 +1408,98 @@ class WrestlingDatabase:
             return None
         return slots[prev_idx][0]     # first night of that slot
 
+    # A new card's date is a fixed month/week template — a hard-coded number
+    # of events per month, repeating every year — not a lookback at any prior
+    # year's file. The old approach walked back "however many slots fell in
+    # the trailing 364 days" to find last year's counterpart, but real show
+    # spacing never averages the clean 364/32 days a 32-slot year needs, so
+    # that trailing window kept coming up short and the counterpart drifted
+    # later every year — by WTS 40 it had drifted a full month, May into June.
+    # {month: [nth Saturday of that month hosts a show]}. January-April come
+    # from 2019 (the first, undrifted year — nth-Saturday of each WTS/
+    # WrestleMania date; March's real second date was a 5th Saturday, which
+    # doesn't exist in 2020's March, so it's pinned to the 1st instead of the
+    # 5th, matching the 1st/3rd shape January and April already use). May-
+    # December were dictated directly by the user (2026-09-02): May carries
+    # 3 shows (weeks 2/3/4 — WTS 38 already correctly sits on week 2).
+    FIXED_CALENDAR = {
+        1: [1, 3],
+        2: [2, 4],
+        3: [1, 3],
+        4: [1, 3],       # 3rd Saturday is WrestleMania, both 2019 and 2020
+        5: [2, 3, 4],
+        6: [1, 2, 4],
+        7: [1, 2, 3, 4],
+        8: [1, 2, 3],
+        9: [2, 4],       # 2nd Saturday is LibreMania
+        10: [1, 2, 3],
+        11: [1, 2, 4],   # 4th Saturday is the Open Tournament
+        12: [2, 4],
+    }
+    # The one link between this template and history: WTS 39 IS May's 3rd
+    # Saturday (FIXED_CALENDAR_FLAT index 9, below) — every other date is
+    # counted forward or back from there, found by name so nothing breaks if
+    # older cards are ever edited.
+    FIXED_CALENDAR_ANCHOR_NAME = 'WTS 39'
+    FIXED_CALENDAR_ANCHOR_INDEX = 9
+    FIXED_CALENDAR_ANCHOR_YEAR = 2020
+
     @staticmethod
-    def _anniversary(prev_date):
-        """Same calendar date one year on (Feb 29 -> Feb 28 off a leap year)."""
-        try:
-            return prev_date.replace(year=prev_date.year + 1)
-        except ValueError:
-            return prev_date.replace(year=prev_date.year + 1, day=28)
+    def _nth_saturday(year, month, n):
+        from datetime import timedelta
+        first = datetime(year, month, 1)
+        first_sat = first + timedelta(days=(5 - first.weekday()) % 7)
+        return first_sat + timedelta(weeks=n - 1)
 
     @classmethod
-    def _snap_to_run_day(cls, prev_date, back=False):
-        """The anniversary of prev_date moved onto the weekday the promotion
-        runs on — forward by default, onto the previous such weekday if back."""
-        from datetime import timedelta
-        base = cls._anniversary(prev_date)
-        fwd = (prev_date.weekday() - base.weekday()) % 7
-        return base + timedelta(days=(fwd - 7) if (back and fwd) else fwd)
+    def _fixed_calendar_flat(cls):
+        return [(m, n) for m in sorted(cls.FIXED_CALENDAR)
+                for n in cls.FIXED_CALENDAR[m]]
+
+    def _fixed_calendar_date(self, ahead=1):
+        """The FIXED_CALENDAR entry `ahead` calendar slots after the anchor
+        event (WTS 39 by default: ahead=1 is the very next card, ahead=2 the
+        one after that, ...). Slots are counted with group_slots() so a
+        flagship or tournament — any multi-night show — advances the count
+        exactly once, the same as a plain WTS does. None if the anchor event
+        isn't in the file yet."""
+        import open as opmod
+        dated = sorted(((self.parse_date(e['date']), e) for e in self.events
+                        if e.get('date') and self.parse_date(e['date'])),
+                       key=lambda t: t[0])
+        groups = opmod.group_slots([(d, e.get('location') or '', e)
+                                    for d, e in dated])
+        anchor_pos = next((i for i, g in enumerate(groups) if any(
+            ev.get('name') == self.FIXED_CALENDAR_ANCHOR_NAME for ev in g)),
+            None)
+        if anchor_pos is None:
+            return None
+        # How many slots exist after the anchor right now, plus how far past
+        # that this card sits — 0 slots-after and ahead=1 is the anchor's
+        # immediate successor.
+        slots_after_anchor = len(groups) - anchor_pos - 1
+        flat = self._fixed_calendar_flat()
+        raw_index = self.FIXED_CALENDAR_ANCHOR_INDEX + slots_after_anchor + ahead
+        index = raw_index % len(flat)
+        year = self.FIXED_CALENDAR_ANCHOR_YEAR + raw_index // len(flat)
+        month, n = flat[index]
+        return self._nth_saturday(year, month, n)
 
     def _next_event_info(self):
-        """Date + venue/location/network for a newly generated card, inherited
-        from the same event one year earlier (the calendar repeats annually).
-
-        The date is the counterpart's anniversary moved onto the promotion's
-        running weekday. Snapping forward is the default, but a forward snap
-        adds up to six days, and repeated across a run that is enough to shove
-        the run's last event into the following month — March 2019 ran WTS 5/6
-        on the 16th and 30th, and snapping forward put them on March 21 and
-        April 4 because March 2020 has only four Saturdays. So look one event
-        down last year's chain: if a forward snap would carry this card or the
-        next one past the month its counterpart fell in, snap back to the
-        preceding weekday instead and keep the run where it belongs (March 14
-        and 28). Returns None until a full prior year exists, in which case the
-        caller keeps the blank placeholders."""
+        """Date + venue/location/network for a newly generated card. The date
+        is the next FIXED_CALENDAR entry after the anchor (see
+        _fixed_calendar_date) — never inherited from a prior year's file.
+        Venue/network/broadcast still come from the yearly counterpart (see
+        _yearly_counterpart); only the date was drifting, so only the date
+        changed. Returns None until a full prior year exists, in which case
+        the caller keeps the blank placeholders."""
         cp = self._yearly_counterpart()
         if not cp:
             return None
-        prev_date, prev = cp
-        # This card plus the one after it: a forward snap must leave both in the
-        # month their counterparts occupied.
-        run = [prev_date]
-        nxt = self._yearly_counterpart(lookahead=1)
-        if nxt:
-            run.append(nxt[0])
-        overflows = any(self._snap_to_run_day(d).month != d.month for d in run)
-        new_date = self._snap_to_run_day(prev_date, back=overflows)
+        _prev_date, prev = cp
+        new_date = self._fixed_calendar_date()
+        if not new_date:
+            return None
         return {
             'date': new_date.strftime('%B %-d, %Y'),
             'btype': prev.get('broadcast_type') or 'PPV',
@@ -1755,14 +1808,19 @@ class WrestlingDatabase:
                 continue
             seen_belts.add((org, wkey))
             seen_names.add(cname)
-            merged.append((org, wkey, wdisp, ccountry, cname))
+            merged.append((org, wkey, wdisp, ccountry, cname, won_at))
             if won_at != feeder_idx:
                 carried_note.append(f"{cname} ({wdisp} {org.upper()}, owed since "
                                     f"{cards[won_at]['label']})")
         feeder = merged
         feeder.sort(key=lambda fc: self._WEIGHT_ORDER.index(fc[1])
                     if fc[1] in self._WEIGHT_ORDER else 99)
-        for org, wkey, wdisp, ccountry, cname in feeder:
+        # Parallel to title_rows: was this an owed/carried shot, and its org
+        # (org isn't otherwise recoverable from a vacant-title row's note).
+        title_carried, title_org = [], []
+        for org, wkey, wdisp, ccountry, cname, won_at in feeder:
+            title_carried.append(won_at != feeder_idx)
+            title_org.append(org.upper())
             champ = self._current_champion(org, wkey)
             if not champ:
                 # Belt vacant: it is contested, not defended. The contender who
@@ -1786,6 +1844,26 @@ class WrestlingDatabase:
                 ccountry, cname = 'xx', ''
             title_rows.append(('Singles', wdisp, note,
                                (champ[1], champ[0]), (ccountry, cname)))
+
+        # A card holds at most MAX_CARD_SIZE matches. Owed shots are the only
+        # thing that grows a card past its base schedule (rule 4: "the card
+        # grows by one; that is the accepted cost"), so when there are too
+        # many, the lightest-weight owed match is the one held back — not
+        # marked cashed, just left off — so _carried_contenders() picks it up
+        # again next time exactly like any other still-owed shot.
+        held_back = []
+        while len(setup_rows) + len(title_rows) > self.MAX_CARD_SIZE:
+            carried_idx = [i for i, c in enumerate(title_carried) if c]
+            if not carried_idx:
+                break
+            drop = min(carried_idx, key=lambda i: (
+                self._WEIGHT_ORDER.index(title_rows[i][1].lower())
+                if title_rows[i][1].lower() in self._WEIGHT_ORDER else 99))
+            held_back.append(f"{title_rows[drop][4][1]} "
+                             f"({title_rows[drop][1]} {title_org[drop]})")
+            del title_rows[drop]
+            del title_carried[drop]
+            del title_org[drop]
 
         kept = setup_rows + title_rows
         rows = [opmod.wts_row(i, mt, wt, nt, f1=f1, f2=f2)
@@ -1823,6 +1901,9 @@ class WrestlingDatabase:
               f"contenders from {feeder_label}).")
         if carried_note:
             print("  Contenders carried forward: " + "; ".join(carried_note))
+        if held_back:
+            print(f"  Card capped at {self.MAX_CARD_SIZE} — held back for next "
+                  "time: " + "; ".join(held_back))
         if rematches:
             print("  Contender rematches (last one drawn): "
                   + "; ".join(self._rematch_label(r) for r in rematches))

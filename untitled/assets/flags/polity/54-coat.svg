@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 10 200 200">
+  <defs>
+    <clipPath id="shield_71634484">
+      <path d="m25,25 h150 v75 a100,100,0,0,1,-75,100 a100,100,0,0,1,-75,-100 v-75 z"/>
+    </clipPath>
+    <clipPath id="division_71634484">
+      <rect x="100" y="0" width="100" height="200"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_71634484)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#d7374a"/>
+    <g class="ordinary" i="0" fill="#fafafa" stroke="none" stroke-width="1">
+      <g>
+        <rect x="0" y="60" width="200" height="7.5"/>
+        <rect x="0" y="72.5" width="200" height="7.5"/>
+        <rect x="0" y="85" width="200" height="30"/>
+        <rect x="0" y="120" width="200" height="7.5"/>
+        <rect x="0" y="132.5" width="200" height="7.5"/>
+      </g>
+    </g>
+    <g class="division" clip-path="url(#division_71634484)">
+      <rect x="0" y="0" width="200" height="200" fill="#fafafa"/>
+      <g class="ordinary" i="0" fill="#d7374a" stroke="none" stroke-width="1">
+        <g>
+          <rect x="0" y="60" width="200" height="7.5"/>
+          <rect x="0" y="72.5" width="200" height="7.5"/>
+          <rect x="0" y="85" width="200" height="30"/>
+          <rect x="0" y="120" width="200" height="7.5"/>
+          <rect x="0" y="132.5" width="200" height="7.5"/>
+        </g>
+      </g>
+    </g>
+  </g>
+  <path class="grad" d="m25,25 h150 v75 a100,100,0,0,1,-75,100 a100,100,0,0,1,-75,-100 v-75 z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

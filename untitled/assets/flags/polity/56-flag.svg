@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 0 200 200">
+  <defs>
+    <clipPath id="shield_400164049">
+      <path d="M 10,40 h180 v120 h-180 v-120 Z"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="roundel" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <circle cx="100" cy="100" r="30"/>
+    </g>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_400164049)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#fafafa"/>
+    <g class="ordinary" i="0" fill="#d7374a" stroke="none" stroke-width="1">
+      <g>
+        <path d="m 0,115 v -20 l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10 v 20" transform="translate(0,-22.5)"/>
+        <path d="m 0,115 v -20 l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10l 5,10 5,-10 v 20" transform="translate(0,22.5) rotate(180.00001 100 100)"/>
+      </g>
+    </g>
+    <g class="charge" i="0" charge="roundel" fill="#d7374a" stroke="#000" style="--secondary: #d7374a; --tertiary: #d7374a; --stroke: #000; --background: block;">
+      <use xlink:href="#roundel" transform="translate(5 25) scale(0.35)"/>
+      <use xlink:href="#roundel" transform="translate(65 25) scale(0.35)"/>
+      <use xlink:href="#roundel" transform="translate(125 25) scale(0.35)"/>
+    </g>
+  </g>
+  <path class="grad" d="M 10,40 h180 v120 h-180 v-120 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

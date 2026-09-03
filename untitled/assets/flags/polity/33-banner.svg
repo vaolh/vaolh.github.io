@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 10 200 200">
+  <defs>
+    <clipPath id="shield_741565010">
+      <path d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="crossHummetty" stroke-width=".5" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <path d="M90 60h20v30h30v20h-30v30H90v-30H60V90h30z"/>
+    </g>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_741565010)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#141414"/>
+    <g class="charge" i="0" charge="crossHummetty" fill="#ffe066" stroke="#000" style="--secondary: #ffe066; --tertiary: #ffe066; --stroke: #000; --background: block;">
+      <use xlink:href="#crossHummetty" transform="translate(10 10) scale(0.4)"/>
+      <use xlink:href="#crossHummetty" transform="translate(60 10) scale(0.4)"/>
+      <use xlink:href="#crossHummetty" transform="translate(110 10) scale(0.4)"/>
+      <use xlink:href="#crossHummetty" transform="translate(22.5 60) scale(0.4)"/>
+      <use xlink:href="#crossHummetty" transform="translate(97.5 60) scale(0.4)"/>
+      <use xlink:href="#crossHummetty" transform="translate(60 100) scale(0.4)"/>
+    </g>
+  </g>
+  <path class="grad" d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

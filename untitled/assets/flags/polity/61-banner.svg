@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 10 200 200">
+  <defs>
+    <clipPath id="shield_793803235">
+      <path d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z"/>
+    </clipPath>
+    <clipPath id="division_793803235">
+      <rect x="0" y="100" width="200" height="100"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <pattern id="honeycombed-sable-or" width="28.6" height="49.028" viewBox="0 0 70 120" patternUnits="userSpaceOnUse">
+      <rect width="70" height="120" fill="#141414"/>
+      <path d="M 70,0 V 20 L 35,40 m 35,80 V 100 L 35,80 M 0,120 V 100 L 35,80 V 40 L 0,20 V 0" stroke="#ffe066" fill="none" stroke-width="3"/>
+    </pattern>
+    <pattern id="lozengy-azure-argent" width="25" height="25" viewBox="0 0 50 50" patternUnits="userSpaceOnUse">
+      <rect width="50" height="50" fill="#3a37d7"/>
+      <polygon points="25,0 50,25 25,50 0,25" fill="#fafafa"/>
+    </pattern>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_793803235)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="url(#honeycombed-sable-or)"/>
+    <g class="division" clip-path="url(#division_793803235)">
+      <rect x="0" y="0" width="200" height="200" fill="url(#lozengy-azure-argent)"/>
+    </g>
+  </g>
+  <path class="grad" d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

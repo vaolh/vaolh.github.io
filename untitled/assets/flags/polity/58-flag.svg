@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 0 200 200">
+  <defs>
+    <clipPath id="shield_22193968">
+      <path d="M 10,40 h180 v120 h-180 v-120 Z"/>
+    </clipPath>
+    <clipPath id="division_22193968">
+      <rect x="0" y="100" width="200" height="100"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <pattern id="lozengy-or-vert" width="25" height="25" viewBox="0 0 50 50" patternUnits="userSpaceOnUse">
+      <rect width="50" height="50" fill="#ffe066"/>
+      <polygon points="25,0 50,25 25,50 0,25" fill="#008f51"/>
+    </pattern>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_22193968)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="url(#lozengy-or-vert)"/>
+    <g class="division" clip-path="url(#division_22193968)">
+      <rect x="0" y="0" width="200" height="200" fill="#d7374a"/>
+    </g>
+  </g>
+  <path class="grad" d="M 10,40 h180 v120 h-180 v-120 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

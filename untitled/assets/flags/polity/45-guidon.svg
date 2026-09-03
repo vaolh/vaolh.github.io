@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="2.5 0 200 200">
+  <defs>
+    <clipPath id="shield_41006312">
+      <path d="M 10,40 h190 l-65,60 65,60 h-190 v-120 Z"/>
+    </clipPath>
+    <clipPath id="division_41006312">
+      <polygon points="0,0 200,200 0,200"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <pattern id="bendySinister-argent-sable" width="100" height="100" viewBox="0 0 100 100" patternUnits="userSpaceOnUse">
+      <rect width="100" height="100" fill="#141414"/>
+      <polygon points="0,25 25,0 75,0 0,75" fill="#fafafa"/>
+      <polygon points="25,100 100,25 100,75 75,100" fill="#fafafa"/>
+    </pattern>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_41006312)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="url(#bendySinister-argent-sable)"/>
+    <g class="division" clip-path="url(#division_41006312)">
+      <rect x="0" y="0" width="200" height="200" fill="#d7374a"/>
+    </g>
+  </g>
+  <path class="grad" d="M 10,40 h190 l-65,60 65,60 h-190 v-120 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="2.5 0 200 200">
+  <defs>
+    <clipPath id="shield_604481510">
+      <path d="M 10,40 l190,60 -190,60 v-120 Z"/>
+    </clipPath>
+    <clipPath id="division_604481510">
+      <rect x="0" y="100" width="200" height="100"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="mullet6" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <polygon points="100 60 107.64 86.77 134.64 80 115.28 100 134.64 120 107.64 113.23 100 140 92.36 113.23 65.36 120 84.72 100 65.36 80 92.36 86.77"/>
+    </g>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_604481510)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#fafafa"/>
+    <g class="charge" i="0" charge="mullet6" fill="#141414" stroke="#000" style="--secondary: #141414; --tertiary: #141414; --stroke: #000; --background: block;">
+      <use xlink:href="#mullet6" transform="translate(10 43) scale(0.09)"/>
+      <use xlink:href="#mullet6" transform="translate(48 55) scale(0.09)"/>
+      <use xlink:href="#mullet6" transform="translate(86.5 67) scale(0.09)"/>
+      <use xlink:href="#mullet6" transform="translate(124 79) scale(0.09)"/>
+      <use xlink:href="#mullet6" transform="translate(163 91) scale(0.09)"/>
+      <use xlink:href="#mullet6" transform="translate(124 103) scale(0.09)"/>
+      <use xlink:href="#mullet6" transform="translate(86.5 115) scale(0.09)"/>
+      <use xlink:href="#mullet6" transform="translate(48 127) scale(0.09)"/>
+      <use xlink:href="#mullet6" transform="translate(10 139) scale(0.09)"/>
+      <use xlink:href="#mullet6" transform="translate(10 108) scale(0.09)"/>
+      <use xlink:href="#mullet6" transform="translate(10 74) scale(0.09)"/>
+    </g>
+    <g class="division" clip-path="url(#division_604481510)">
+      <rect x="0" y="0" width="200" height="200" fill="#141414"/>
+      <g class="charge" i="0" charge="mullet6" fill="#fafafa" stroke="#000" style="--secondary: #fafafa; --tertiary: #fafafa; --stroke: #000; --background: block;">
+        <use xlink:href="#mullet6" transform="translate(10 43) scale(0.09)"/>
+        <use xlink:href="#mullet6" transform="translate(48 55) scale(0.09)"/>
+        <use xlink:href="#mullet6" transform="translate(86.5 67) scale(0.09)"/>
+        <use xlink:href="#mullet6" transform="translate(124 79) scale(0.09)"/>
+        <use xlink:href="#mullet6" transform="translate(163 91) scale(0.09)"/>
+        <use xlink:href="#mullet6" transform="translate(124 103) scale(0.09)"/>
+        <use xlink:href="#mullet6" transform="translate(86.5 115) scale(0.09)"/>
+        <use xlink:href="#mullet6" transform="translate(48 127) scale(0.09)"/>
+        <use xlink:href="#mullet6" transform="translate(10 139) scale(0.09)"/>
+        <use xlink:href="#mullet6" transform="translate(10 108) scale(0.09)"/>
+        <use xlink:href="#mullet6" transform="translate(10 74) scale(0.09)"/>
+      </g>
+    </g>
+  </g>
+  <path class="grad" d="M 10,40 l190,60 -190,60 v-120 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

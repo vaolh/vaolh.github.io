@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 0 200 200">
+  <defs>
+    <clipPath id="shield_222375546">
+      <path d="M 10,40 h180 v120 h-180 v-120 Z"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="crossHummetty" stroke-width=".5" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <path d="M90 60h20v30h30v20h-30v30H90v-30H60V90h30z"/>
+    </g>
+    <pattern id="pally-or-vert" width="100" height="25" viewBox="0 0 100 25" patternUnits="userSpaceOnUse">
+      <rect width="100" height="25" fill="#008f51"/>
+      <rect x="25" y="0" width="25" height="25" fill="#ffe066"/>
+      <rect x="75" y="0" width="25" height="25" fill="#ffe066"/>
+    </pattern>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_222375546)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="url(#pally-or-vert)"/>
+    <g class="ordinary" i="0" fill="#d7374a" stroke="none" stroke-width="1">
+      <g>
+        <rect x="75" y="0" width="50" height="200"/>
+      </g>
+    </g>
+    <g class="charge" i="0" charge="crossHummetty" fill="#fafafa" stroke="#000" style="--secondary: #fafafa; --tertiary: #fafafa; --stroke: #000; --background: block;">
+      <use xlink:href="#crossHummetty" transform="translate(65 25) scale(0.35)"/>
+      <use xlink:href="#crossHummetty" transform="translate(65 65) scale(0.35)"/>
+      <use xlink:href="#crossHummetty" transform="translate(65 105) scale(0.35)"/>
+    </g>
+  </g>
+  <path class="grad" d="M 10,40 h180 v120 h-180 v-120 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

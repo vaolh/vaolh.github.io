@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 10 200 200">
+  <defs>
+    <clipPath id="shield_672559481">
+      <path d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z"/>
+    </clipPath>
+    <clipPath id="division_672559481">
+      <rect x="0" y="100" width="200" height="100"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="crossCeltic2" stroke-width=".5" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <path d="M100 60a39.37 39.37 0 00-14.2 2.7l2.1 7.8a32 32 0 00-17.4 17.4l-7.8-2.1a39.37 39.37 0 00-2.7 14.2 39.37 39.37 0 002.7 14.2l7.8-2.1a32 32 0 0017.4 17.4l-2.1 7.8a39.37 39.37 0 0014.2 2.7 39.37 39.37 0 0014.2-2.7l-2.1-7.8a32 32 0 0017.4-17.4l7.8 2.1a39.37 39.37 0 002.7-14.2 39.37 39.37 0 00-2.7-14.2l-7.8 2.1a32 32 0 00-17.4-17.4l2.1-7.8a39.37 39.37 0 00-14.2-2.7zM110 78.2c5.2 2.4 9.2 6.4 11.75 11.75l-11.35 2.9a4 4 0 11-3.3-3.3l2.9 -11.35zm-20 0l2.9 11.35a4 4 0 11-3.3 3.3l-11.35-2.9c2.4-5.2 6.4-9.2 11.75-11.75zm0 43.6c-5.2-2.4-9.2-6.4-11.75-11.75l11.35-2.9a4 4 0 11 3.3 3.3l-2.9 11.35zm20 0l-2.9-11.35a4 4 0 113.3-3.3l11.35 2.9c-2.4 5.2-6.4 9.2-11.75 11.75z"/>
+    </g>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_672559481)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#ffe066"/>
+    <g class="charge" i="0" charge="crossCeltic2" fill="#377cd7" stroke="#000" style="--secondary: #377cd7; --tertiary: #377cd7; --stroke: #000; --background: block;">
+      <use xlink:href="#crossCeltic2" transform="translate(18 108) scale(0.32)"/>
+      <use xlink:href="#crossCeltic2" transform="translate(118 108) scale(0.32)"/>
+      <use xlink:href="#crossCeltic2" transform="translate(68 108) scale(0.32)"/>
+    </g>
+    <g class="division" clip-path="url(#division_672559481)">
+      <rect x="0" y="0" width="200" height="200" fill="#377cd7"/>
+      <g class="charge" i="0" charge="crossCeltic2" fill="#ffe066" stroke="#000" style="--secondary: #ffe066; --tertiary: #ffe066; --stroke: #000; --background: block;">
+        <use xlink:href="#crossCeltic2" transform="translate(18 108) scale(0.32)"/>
+        <use xlink:href="#crossCeltic2" transform="translate(118 108) scale(0.32)"/>
+        <use xlink:href="#crossCeltic2" transform="translate(68 108) scale(0.32)"/>
+      </g>
+    </g>
+  </g>
+  <path class="grad" d="m 25,25 v 170 l 25,-40 25,40 25,-40 25,40 25,-40 25,40 V 25 H 25 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="0 10 200 200">
+  <defs>
+    <clipPath id="shield_470852797">
+      <path d="m25,25 h150 v75 a100,100,0,0,1,-75,100 a100,100,0,0,1,-75,-100 v-75 z"/>
+    </clipPath>
+    <clipPath id="division_470852797">
+      <polygon points="0,0 100,100 200,0"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="mullet" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <polygon points="100 60 108.98 87.64 138.04 87.64 114.53 104.72 123.51 132.36 100 115.28 76.49 132.36 85.47 104.72 61.96 87.64 91.02 87.64"/>
+    </g>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_470852797)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#ff7538"/>
+    <g class="charge" i="0" charge="mullet" fill="#fafafa" stroke="#000" style="--secondary: #fafafa; --tertiary: #fafafa; --stroke: #000; --background: block;">
+      <use xlink:href="#mullet" transform="translate(12.5 87.5) scale(0.5)"/>
+      <use xlink:href="#mullet" transform="translate(87.5 87.5) scale(0.5)"/>
+      <use xlink:href="#mullet" transform="translate(50 12.5) scale(0.5)"/>
+    </g>
+    <g class="division" clip-path="url(#division_470852797)">
+      <rect x="0" y="0" width="200" height="200" fill="#fafafa"/>
+      <g class="charge" i="0" charge="mullet" fill="#ff7538" stroke="#000" style="--secondary: #ff7538; --tertiary: #ff7538; --stroke: #000; --background: block;">
+        <use xlink:href="#mullet" transform="translate(12.5 87.5) scale(0.5)"/>
+        <use xlink:href="#mullet" transform="translate(87.5 87.5) scale(0.5)"/>
+        <use xlink:href="#mullet" transform="translate(50 12.5) scale(0.5)"/>
+      </g>
+    </g>
+  </g>
+  <path class="grad" d="m25,25 h150 v75 a100,100,0,0,1,-75,100 a100,100,0,0,1,-75,-100 v-75 z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

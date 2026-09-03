@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" width="1000" height="1000" viewBox="2.5 0 200 200">
+  <defs>
+    <clipPath id="shield_703942128">
+      <path d="M 10,40 h190 l-65,60 65,60 h-190 v-120 Z"/>
+    </clipPath>
+    <clipPath id="division_703942128">
+      <polygon points="100,0 100,200 27.3,200 172.7,0 200,0 200,67.5 0,132.5 0,67.5 200,132.5 200,200 172.7,200 27.3,0"/>
+    </clipPath>
+    <style>.secondary {
+      fill: var(--secondary);
+    }
+    .tertiary {
+      fill: var(--tertiary);
+    }
+    .pseudostroke {
+      fill: var(--stroke);
+    }
+    .background {
+      display: var(--background);
+    }</style>
+    <g id="crossPatteeAlisee" stroke-width=".5" author="Azgaar" license="https://creativecommons.org/publicdomain/zero/1.0">
+      <path d="m 76,67 c 10,-11 38,-11 48,0 -15,5 -20,23 -19,28 5,1 23,-4 28,-19 11,10 11,38 0,48 -5,-15 -23,-20 -28,-19 -1,5 4,23 19,28 -10,11 -38,11 -48,0 15,-5 20,-23 19,-28 -5,-1 -23,4 -28,19 -11,-10 -11,-38 0,-48 5,15 23,20 28,19 1,-5 -4,-23 -19,-28 z"/>
+    </g>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css"></style>
+  </defs>
+  <g clip-path="url(#shield_703942128)">
+    <rect class="field" x="0" y="0" width="200" height="200" fill="#d7374a"/>
+    <g class="division" clip-path="url(#division_703942128)">
+      <rect x="0" y="0" width="200" height="200" fill="#fafafa"/>
+    </g>
+    <g class="ordinary" i="0" fill="#ffe066" stroke="none" stroke-width="33.3">
+      <path d="M 10,40 h190 l-65,60 65,60 h-190 v-120 Z" fill="none" stroke="#ffe066"/>
+    </g>
+    <g class="charge" i="0" charge="crossPatteeAlisee" fill="#d7374a" stroke="#000" style="--secondary: #d7374a; --tertiary: #d7374a; --stroke: #000; --background: block;">
+      <use xlink:href="#crossPatteeAlisee" transform="translate(7 37) scale(0.12)"/>
+      <use xlink:href="#crossPatteeAlisee" transform="translate(61 37) scale(0.12)"/>
+      <use xlink:href="#crossPatteeAlisee" transform="translate(115 37) scale(0.12)"/>
+      <use xlink:href="#crossPatteeAlisee" transform="translate(166 37) scale(0.12)"/>
+      <use xlink:href="#crossPatteeAlisee" transform="translate(128.5 71) scale(0.12)"/>
+      <use xlink:href="#crossPatteeAlisee" transform="translate(128.5 105) scale(0.12)"/>
+      <use xlink:href="#crossPatteeAlisee" transform="translate(166 139) scale(0.12)"/>
+      <use xlink:href="#crossPatteeAlisee" transform="translate(61 139) scale(0.12)"/>
+      <use xlink:href="#crossPatteeAlisee" transform="translate(7 139) scale(0.12)"/>
+      <use xlink:href="#crossPatteeAlisee" transform="translate(7 105) scale(0.12)"/>
+      <use xlink:href="#crossPatteeAlisee" transform="translate(7 71) scale(0.12)"/>
+      <use xlink:href="#crossPatteeAlisee" transform="translate(115 139) scale(0.12)"/>
+    </g>
+  </g>
+  <path class="grad" d="M 10,40 h190 l-65,60 65,60 h-190 v-120 Z" fill="none" stroke="none" style="pointer-events: none;"/>
+</svg>

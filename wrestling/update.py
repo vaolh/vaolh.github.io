@@ -1167,36 +1167,39 @@ class WrestlingDatabase:
         return {org for org in ('wwf', 'wwo', 'iwb')
                 if (self._current_champion(org, weight) or (None,))[0] == champ}
 
-    def _slot_defends(self, opmod, slot, wdisp, org):
-        """Does this calendar slot put a belt of this champion's on the line?
+    def _due_index(self, opmod, won_at, wdisp, org):
+        """(index, owed): the index in the slot list of the card on which a
+        contendership won on card won_at is cashed, and whether that is an owed
+        shot (its scheduled defence already passed) rather than one on time.
 
-        A unified champion defends everything he holds in the one match, so a
-        contendership for any of his belts can only be cashed on a night the
-        rotation actually schedules one of them. That is what pushes Andrade's
-        WWO middleweight shot past WTS 35/36 to the WWF defence on slot 9."""
-        if slot is None:
-            return True                    # slot unknown: book rather than lose
-        champ = self._current_champion(org, wdisp.lower())
-        orgs = ({org} | self._champion_orgs(champ[0], wdisp.lower())) if champ else {org}
-        cal = opmod.CANONICAL_CALENDAR.get(slot, {})
-        for o in orgs:
-            if cal.get((wdisp, o.upper())) == 'D':
-                return True
-            if slot == 8 and o == 'wwf':       # WrestleMania: all WWF belts
-                return True
-            if slot == 23 and o == 'wwo':      # LibreMania: all WWO belts
-                return True
-        return False
-
-    # Contenders are earned two CALENDAR SLOTS before they cash in, which is
-    # what the rotation in ppv/wiki.html lays out: every belt takes a contender
-    # bout and then defends two active shows later. Counting in World Title
-    # Series numbers instead is wrong whenever a flagship or a tournament falls
-    # between the two — WTS 37 is two slots after WTS 36, not after WTS 35,
-    # because WrestleMania 36 sits in between and takes no WTS number. Reading
-    # WTS 35 there handed WTS 37 WrestleMania's contenders and re-booked shots
-    # that had already been cashed (Rock vs. Cena, Sareee vs. Nikki Bella).
-    CONTENDER_LEAD = 2
+        Every contender bout belongs to a C/M cell of the calendar, and that
+        cell is paired with the belt's D two booking slots later (the
+        tournaments, 16 and 30, are skipped: a slot-15 contender defends on 18).
+        The bout normally runs on its own slot, so the shot is two slots on. A
+        bout run off its slot still belongs to the nearest C/M cell for that
+        belt, and pays out on that cell's D: WTS 39 ran slot 12's bouts on slot
+        11, so they defend on slot 14. If that D is already past — a skipped
+        contendership made up late — the shot is owed and goes on the very
+        next card."""
+        T, act = opmod.TOTAL_SHOWS, opmod._ACTIVE
+        w = (won_at % T) + 1
+        if w not in act:
+            return won_at + 1, True
+        wi, cal = act.index(w), opmod.CANONICAL_CALENDAR
+        for d in (0, -1, 1, -2, 2):
+            if cal[act[(wi + d) % len(act)]].get((wdisp, org.upper())) in ('C', 'M'):
+                break
+        else:
+            d = 0                        # off-calendar bout: normal two-slot lead
+        steps = d + 2
+        if steps <= 0:
+            return won_at + 1, True
+        i = won_at
+        while steps:
+            i += 1
+            if (i % T) + 1 not in opmod.TOURNAMENT:
+                steps -= 1
+        return i, False
 
     # Weight classes lightest -> heaviest (so the heaviest title headlines).
     _WEIGHT_ORDER = ['featherweight', 'lightweight', 'welterweight',
@@ -1359,52 +1362,38 @@ class WrestlingDatabase:
                     return True
         return False
 
-    def _carried_contenders(self, cards, feeder_idx):
-        """Contenderships won before the feeder slot whose shot never happened.
-
-        A contendership is a debt the promotion owes. Pull a defence off a card
-        — a champion too worn out to wrestle, say — and the challenger has still
-        earned his shot, so it moves to the next card instead of being quietly
-        voided. Same shape as _feeder_contenders(), plus the slot it was won on."""
+    def _pending_contenders(self, opmod, cards):
+        """Every contendership won and not yet cashed, as (org, weight_key,
+        weight_display, country, name, won_at, due_at, owed) — won_at is the
+        slot index it was won on, due_at the index of the card that owes the
+        shot, owed whether that card is past the scheduled one (_due_index). A contendership is a debt: pull a defence off a card
+        and the challenger has still earned his shot, so it stays pending until
+        he gets it."""
         floor = next((i for i, s in enumerate(cards)
                       if any(n >= self.CARRY_FORWARD_FROM for n in s['wts'])), 0)
         out = []
-        for i in range(floor, max(feeder_idx, 0)):
+        for i in range(floor, len(cards)):
             for org, wkey, wdisp, cc, name in self._feeder_contenders(cards[i]['rows']):
                 if self._contendership_cashed(cards, i, org, wkey, name):
                     continue
-                out.append((org, wkey, wdisp, cc, name, i))
+                due_at, owed = self._due_index(opmod, i, wdisp, org)
+                out.append((org, wkey, wdisp, cc, name, i, due_at, owed))
         return out
 
-    def _yearly_counterpart(self, lookahead=0):
-        """(date, event) of the slot one annual cycle before the next card — the
-        single event the new WTS inherits its date, venue AND match schedule
-        from. The cycle length is however many events fell in the trailing 364
-        days, so it self-adjusts as the calendar grows. None until a full prior
-        year of events exists.
-
-        lookahead=n walks n further down last year's chain, i.e. the slot the
-        card AFTER next will inherit — needed to see whether a run of events
-        still fits the month it occupied last year.
-
-        Walks CALENDAR SLOTS, not events. A show split over consecutive nights
-        in one city is a single slot (WrestleMania, LibreMania, the Open
-        Tournament, and the WTS 21/22 Tokyo Dome doubleheader), so counting
-        events would make the cycle a slot too long and would reproduce a split
-        as two separate shows a year later instead of the one show it was."""
+    def _same_slot_last_cycle(self):
+        """(date, event) that sat on the next card's calendar slot one full
+        32-slot cycle ago — only for the venue, city and network the new card
+        opens with. Positional, like the calendar itself: slot N of last year
+        is the N-th slot group, never whatever a date window happens to catch.
+        None until a full cycle exists."""
         import open as opmod
         dated = sorted(((self.parse_date(e['date']), e) for e in self.events
                         if e.get('date') and self.parse_date(e['date'])),
                        key=lambda t: t[0])
-        if not dated:
-            return None
         slots = opmod.group_slots([(d, e.get('location') or '', (d, e))
                                    for d, e in dated])
-        last_date = dated[-1][0]
-        # How many slots make up the trailing year (the annual cycle length).
-        cycle = sum(1 for g in slots if (last_date - g[0][0]).days < 364)
-        prev_idx = len(slots) - cycle + lookahead   # counterpart of the new event
-        if not 0 <= prev_idx < len(slots):
+        prev_idx = len(slots) - opmod.TOTAL_SHOWS
+        if prev_idx < 0:
             return None
         return slots[prev_idx][0]     # first night of that slot
 
@@ -1489,11 +1478,10 @@ class WrestlingDatabase:
         """Date + venue/location/network for a newly generated card. The date
         is the next FIXED_CALENDAR entry after the anchor (see
         _fixed_calendar_date) — never inherited from a prior year's file.
-        Venue/network/broadcast still come from the yearly counterpart (see
-        _yearly_counterpart); only the date was drifting, so only the date
-        changed. Returns None until a full prior year exists, in which case
+        Venue/network/broadcast come from the same calendar slot one cycle ago
+        (_same_slot_last_cycle) — venue only, never the bouts. Returns None until a full prior year exists, in which case
         the caller keeps the blank placeholders."""
-        cp = self._yearly_counterpart()
+        cp = self._same_slot_last_cycle()
         if not cp:
             return None
         _prev_date, prev = cp
@@ -1601,19 +1589,15 @@ class WrestlingDatabase:
         d = self.parse_date(info['date']) if info else None
         year = d.year if d else datetime.now().year
 
-        # Every shot still to be cashed: contenders crowned two slots back plus
-        # anyone owed one from earlier. A flagship defends a whole promotion's
+        # Every shot due by tonight, on schedule or owed from earlier. A flagship defends a whole promotion's
         # belts, so it is where standing debts get settled.
         from bs4 import BeautifulSoup
         soup = BeautifulSoup(raw, 'html.parser')
         cards = self._slot_cards(opmod, soup)
-        feeder_idx = len(cards) - self.CONTENDER_LEAD
         owed = {}
-        for org, wkey, _wd, cc, cname, _w in self._carried_contenders(cards, feeder_idx):
-            owed[(wkey, org)] = (cc, cname)
-        if 0 <= feeder_idx < len(cards):
-            for org, wkey, _wd, cc, cname in self._feeder_contenders(
-                    cards[feeder_idx]['rows']):
+        for org, wkey, _wd, cc, cname, _w, due_at, _o in sorted(
+                self._pending_contenders(opmod, cards), key=lambda p: p[5]):
+            if due_at <= len(cards):
                 owed.setdefault((wkey, org), (cc, cname))
 
         # A contendership that ended in a draw is re-run on the very next card
@@ -1674,13 +1658,12 @@ class WrestlingDatabase:
     def generate_next_wts_if_ready(self, path, opmod):
         """If the newest WTS is fully wrestled, append the next one.
 
-        - This week's own contendership / battle-royal rows come from the
-          schedule of the yearly counterpart (the same event a year earlier that
-          sets the date); their entrants are blank (set up FUTURE cards).
-        - Title matches are driven by the contenders crowned two CALENDAR SLOTS
-          back — whatever event sits there, WTS or flagship: exactly one defence
-          per contender, champion vs. that contender, defending every belt the
-          champion holds at the weight.
+        - This slot's own contendership / battle-royal rows come straight from
+          the calendar column (open.calendar_setup_rows); entrants are blank.
+        - Title matches are every contender whose shot is due (_due_index):
+          on schedule two booking slots after his contender cell, or owed from
+          a card that should have paid it. One defence per champion per card,
+          defending every belt he holds at the weight.
 
         Never runs on a truncated timeline. Booking normally is fine — the
         cutoff then sits on the last card in the file and nothing is hidden.
@@ -1715,65 +1698,52 @@ class WrestlingDatabase:
         if kind != 'wts':
             return self._generate_slot_event(path, opmod, raw, kind, slot)
         number = highest + 1
-        # The schedule (match types / weights / notes) comes from the CALENDAR
-        # slot this card falls on, not from the card that ran on that slot a year
-        # ago. The event a year earlier is used only to identify the slot: read
-        # as a card it would carry that night's one-off decisions forward
-        # forever, so a defence pulled once because the champion was worn out
-        # would go missing every year after. canonical_schedule_rows() resolves
-        # the slot and returns what the rotation prescribes for it.
-        cp = self._yearly_counterpart()
-        sched_num = None
-        if cp:
-            # Only a WTS counterpart identifies a slot; if the slot a year ago
-            # was WrestleMania/LibreMania/a tournament, sched_num stays None and
-            # we fall back below.
-            m = re.search(r'WTS\s+(\d+)', cp[1].get('name', ''))
-            if m:
-                sched_num = int(m.group(1))
-        if not sched_num:
-            sched_num = number - opmod.SCHEDULE_PERIOD
-        template = opmod.canonical_schedule_rows(soup, sched_num)
-        if template is None:
-            # Slot unidentifiable (too little history) — copy the old card
-            # rather than book nothing.
-            template = opmod.wts_schedule_rows(soup, sched_num)
-        if not template:
-            opmod.generate_wts(path)   # no schedule yet -> plain blank card
-            return
-
-        # One title defence per contender crowned two calendar slots ago, plus
-        # any contender still owed a shot from before that.
-        title_rows, dropped, carried_note = [], [], []
+        # Contender bouts come from the calendar column for this slot and from
+        # nothing else. No earlier card, last year's included, is ever read as
+        # a template: the schedule is fixed, so the calendar is the schedule.
         cards = self._slot_cards(opmod, soup)
-        feeder_idx = len(cards) - self.CONTENDER_LEAD
-        feeder = (self._feeder_contenders(cards[feeder_idx]['rows'])
-                  if 0 <= feeder_idx < len(cards) else [])
-        feeder_label = (cards[feeder_idx]['label']
-                        if 0 <= feeder_idx < len(cards) else '—')
+        here = len(cards)                       # this card's index in cards
+        pending = self._pending_contenders(opmod, cards)
+        due = [p for p in pending if p[6] <= here]
+        waiting = [p for p in pending if p[6] > here]
 
-        # A card sits on the same calendar slot as its yearly counterpart, one
-        # full cycle back. An owed shot waits for a slot that actually defends
-        # one of the champion's belts rather than landing on the next card.
-        new_slot = opmod.wts_slots(soup)[0].get(sched_num)
-        carried, deferred = [], []
-        for fc in self._carried_contenders(cards, feeder_idx):
-            (carried if self._slot_defends(opmod, new_slot, fc[2], fc[0])
-             else deferred).append(fc)
-
-        # Every belt an owed shot still hangs over. A contendership is exclusive:
-        # no second challenger is crowned for a belt while one is already owed
-        # it, and because a unified champion defends his belts as one match, the
-        # freeze covers EVERY belt he holds at that weight. The orgs have to
-        # agree before they can each start their own contender — the cost of
-        # unifying. It lifts as soon as he defends, loses or vacates.
-        frozen = set()
-        for org, wkey, wdisp, _c, _n, _w in deferred:
-            frozen.add((wdisp, org.upper()))
+        # Title matches: every contender whose shot is due. A champion defends
+        # once a night, so when two contenders are due on the same champion
+        # (one per org he holds) the one who has waited longer goes first and
+        # the other is owed the next card. Nobody is booked twice on one card.
+        title_rows, dropped, carried_note = [], [], []
+        booked, seen_champs, seen_names = [], set(), set()
+        for p in sorted(due, key=lambda p: p[5]):
+            org, wkey, wdisp, ccountry, cname, won_at, due_at, owed = p
+            champ = self._current_champion(org, wkey)
+            champ_key = (wkey, champ[0]) if champ else (wkey, org)
+            if champ_key in seen_champs or cname in seen_names:
+                continue
+            seen_champs.add(champ_key)
+            seen_names.add(cname)
+            booked.append(p)
+            if owed or due_at < here:
+                carried_note.append(f"{cname} ({wdisp} {org.upper()}, owed since "
+                                    f"{cards[won_at]['label']})")
+        # A contendership is exclusive: no second challenger is crowned for a
+        # belt while one is still waiting on his shot, and because a unified
+        # champion defends his belts as one match, the freeze covers EVERY belt
+        # he holds at that weight — one org's contender, then the other's. It
+        # lifts as soon as he defends, loses or vacates — so a shot cashed on
+        # this very card freezes nothing here: tonight's contender bout crowns
+        # the challenger for after tonight's defence.
+        def belts_of(p):
+            org, wkey, wdisp = p[0], p[1], p[2]
+            out = {(wdisp, org.upper())}
             champ = self._current_champion(org, wkey)
             if champ:
-                frozen |= {(wdisp, o.upper())
-                           for o in self._champion_orgs(champ[0], wkey)}
+                out |= {(wdisp, o.upper())
+                        for o in self._champion_orgs(champ[0], wkey)}
+            return out
+        frozen = set()
+        for p in pending:
+            if p not in booked:
+                frozen |= belts_of(p)
 
         # A drawn contendership settles nothing, so it is run again here and
         # now — and the belt it hangs over is frozen exactly as an owed shot
@@ -1783,52 +1753,32 @@ class WrestlingDatabase:
         for org, _mt, wdisp, _nt, _f1, _f2 in rematches:
             frozen.add((wdisp, org.upper()))
 
-        # Setup matches (this week's contenderships / battle royals) — blank.
+        # Setup matches (this slot's contenderships / battle royals) — blank.
         # The rematches open the card: they are last event's unfinished
         # business, and everything here sits ahead of the title section.
         froze_note = []
         setup_rows = [(mt, wd, nt, f1, f2)
                       for _o, mt, wd, nt, f1, f2 in rematches]
-        for mtype, weight, note in template:
-            if self.is_title_match(note)[0]:
-                continue
-            hit = opmod._row_belt(note, weight)
-            if hit and hit[0] in frozen:
-                froze_note.append(f"{weight} {hit[0][1]}")
+        for mtype, weight, note in opmod.calendar_setup_rows(slot):
+            if (weight, opmod._row_belt(note, weight)[0][1]) in frozen:
+                froze_note.append(f"{weight} {opmod._row_belt(note, weight)[0][1]}")
                 continue
             setup_rows.append((mtype, weight, note, ('xx', ''), ('xx', '')))
-        # Owed shots are settled first. A belt is defended at most once a night,
-        # so a contender denied earlier outranks one crowned since — and the
-        # fresh contendership is then itself carried, by the same rule that
-        # carried this one. Nobody is booked twice on one card.
-        merged, seen_belts, seen_names = [], set(), set()
-        for org, wkey, wdisp, ccountry, cname, won_at in (
-                [c for c in carried] + [f + (feeder_idx,) for f in feeder]):
-            if (org, wkey) in seen_belts or cname in seen_names:
-                continue
-            seen_belts.add((org, wkey))
-            seen_names.add(cname)
-            merged.append((org, wkey, wdisp, ccountry, cname, won_at))
-            if won_at != feeder_idx:
-                carried_note.append(f"{cname} ({wdisp} {org.upper()}, owed since "
-                                    f"{cards[won_at]['label']})")
-        feeder = merged
-        feeder.sort(key=lambda fc: self._WEIGHT_ORDER.index(fc[1])
-                    if fc[1] in self._WEIGHT_ORDER else 99)
-        # Parallel to title_rows: was this an owed/carried shot, and its org
-        # (org isn't otherwise recoverable from a vacant-title row's note).
+
+        booked.sort(key=lambda p: self._WEIGHT_ORDER.index(p[1])
+                    if p[1] in self._WEIGHT_ORDER else 99)
+        # Parallel to title_rows: was this an owed shot, and its org (org isn't
+        # otherwise recoverable from a vacant-title row's note).
         title_carried, title_org = [], []
-        for org, wkey, wdisp, ccountry, cname, won_at in feeder:
-            title_carried.append(won_at != feeder_idx)
+        for org, wkey, wdisp, ccountry, cname, won_at, due_at, owed in booked:
+            title_carried.append(owed or due_at < here)
             title_org.append(org.upper())
             champ = self._current_champion(org, wkey)
             if not champ:
                 # Belt vacant: it is contested, not defended. The contender who
                 # earned this slot keeps it and faces the best-rated man in the
-                # division who isn't him; with no contender crowned it is the
-                # top two by Elo. draft.py fills the blank side from the live
-                # rankings (see book_vacant_titles) — the card size never
-                # changes, the defence just becomes a vacant-title match.
+                # division who isn't him. draft.py fills the blank side from the
+                # live rankings (see book_vacant_titles).
                 title_rows.append(('Singles', wdisp,
                                    f"vacant {org.upper()} championship",
                                    (ccountry, cname), ('xx', '')))
@@ -1846,11 +1796,9 @@ class WrestlingDatabase:
                                (champ[1], champ[0]), (ccountry, cname)))
 
         # A card holds at most MAX_CARD_SIZE matches. Owed shots are the only
-        # thing that grows a card past its base schedule (rule 4: "the card
-        # grows by one; that is the accepted cost"), so when there are too
+        # thing that grows a card past its base schedule, so when there are too
         # many, the lightest-weight owed match is the one held back — not
-        # marked cashed, just left off — so _carried_contenders() picks it up
-        # again next time exactly like any other still-owed shot.
+        # marked cashed, just left off — so it is due again on the next card.
         held_back = []
         while len(setup_rows) + len(title_rows) > self.MAX_CARD_SIZE:
             carried_idx = [i for i, c in enumerate(title_carried) if c]
@@ -1864,13 +1812,24 @@ class WrestlingDatabase:
             del title_rows[drop]
             del title_carried[drop]
             del title_org[drop]
+            held = booked.pop(drop)
+            # Still owed, so its belts are frozen after all.
+            hb = belts_of(held)
+            keep = []
+            for r in setup_rows:
+                hit = opmod._row_belt(r[2], r[1])
+                if hit and hit[0] in hb and hit[1] in ('C', 'M'):
+                    froze_note.append(f"{r[1]} {hit[0][1]}")
+                    continue
+                keep.append(r)
+            setup_rows = keep
 
         kept = setup_rows + title_rows
         rows = [opmod.wts_row(i, mt, wt, nt, f1=f1, f2=f2)
                 for i, (mt, wt, nt, f1, f2) in enumerate(kept, 1)]
 
-        # Inherit date/venue/location/network from the same event a year ago;
-        # fall back to blank placeholders in the first year.
+        # Date from FIXED_CALENDAR; venue/location/network from this slot one
+        # cycle ago; blank placeholders in the first year.
         try:
             info = self._next_event_info()
         except Exception:
@@ -1896,21 +1855,20 @@ class WrestlingDatabase:
             raw = raw.rstrip() + "\n" + block
         with open(path, 'w', encoding='utf-8') as f:
             f.write(raw)
-        print(f"Appended World Title Series {number} "
-              f"(schedule WTS {sched_num}, "
-              f"contenders from {feeder_label}).")
+        print(f"Appended World Title Series {number} (calendar slot {slot}).")
         if carried_note:
-            print("  Contenders carried forward: " + "; ".join(carried_note))
+            print("  Owed shots booked: " + "; ".join(carried_note))
         if held_back:
             print(f"  Card capped at {self.MAX_CARD_SIZE} — held back for next "
                   "time: " + "; ".join(held_back))
         if rematches:
             print("  Contender rematches (last one drawn): "
                   + "; ".join(self._rematch_label(r) for r in rematches))
-        if deferred:
-            print("  Shots still owed (no defence scheduled this slot): "
-                  + "; ".join(f"{n} — {wd} {o.upper()}, since {cards[w]['label']}"
-                              for o, _k, wd, _c, n, w in deferred))
+        if waiting:
+            print("  Shots scheduled later: "
+                  + "; ".join(f"{n} — {wd} {o.upper()}, {cards[w]['label']} "
+                              f"-> slot {(d % opmod.TOTAL_SHOWS) + 1}"
+                              for o, _k, wd, _c, n, w, d, _ow in waiting))
         if froze_note:
             print("  Contender spots frozen (shot owed or contendership "
                   "undecided): " + "; ".join(sorted(set(froze_note))))
@@ -5415,7 +5373,7 @@ def main():
     db.calculate_undisputed_champions()
 
     # Once the newest World Title Series is fully wrestled, append the next one:
-    # notes/weights come from the booking schedule (WTS N-15), and each title
+    # contender bouts come from the calendar column for its slot, and each title
     # match is pre-filled with the reigning champion vs. their earned contender.
     if _mod is not None:
         try:

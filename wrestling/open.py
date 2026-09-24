@@ -842,13 +842,6 @@ def generate_template(path, year, date_str=None):
 # Blank World Title Series (regular event) template, auto-numbered
 # ---------------------------------------------------------------------------
 
-# The booking schedule repeats every SCHEDULE_PERIOD events: a new WTS card
-# reuses the match types / weight classes / title-and-contender notes of the
-# event this many editions earlier (WTS 28 mirrors WTS 13, 27 mirrors 12, ...).
-# Roughly 95% of cards follow it exactly; the rest add the odd cash-in.
-SCHEDULE_PERIOD = 15
-
-
 def wts_row(no, mtype="Singles", weight="Weight", note="",
             f1=("xx", ""), result="vs.", f2=("xx", "")):
     # A freshly-booked bout shows "vs." (undecided); it becomes "def." once the
@@ -883,27 +876,6 @@ def _find_wts_details(soup, number):
         if summ and summ.get_text(strip=True).startswith(prefix):
             return det
     return None
-
-
-def wts_schedule_rows(soup, template_num):
-    """(match_type, weight_class, note_html) for each bout of WTS template_num,
-    so a new card can inherit the schedule. None if that event isn't present."""
-    det = _find_wts_details(soup, template_num)
-    if not det:
-        return None
-    tbl = det.find("table", class_="match-card")
-    if not tbl:
-        return None
-    out = []
-    for r in tbl.find_all("tr")[1:-1]:      # skip header row and broadcast row
-        cols = r.find_all(["td", "th"])
-        if len(cols) < 9:
-            continue
-        mtype = cols[1].get_text(strip=True)
-        weight = cols[2].get_text(strip=True)
-        note = cols[8].decode_contents().strip()   # keep <i>The Ring</i> etc.
-        out.append((mtype, weight, note))
-    return out
 
 
 # ---------------------------------------------------------------------------
@@ -1027,22 +999,6 @@ def slot_groups(soup):
     return group_slots(dated_events(soup))
 
 
-def wts_slots(soup):
-    """(slot_by_wts, sharers_by_wts) — which of the 32 calendar slots each WTS
-    sits on, and every WTS sharing that same slot on that same night (a split
-    show, so usually just itself). Positional, counted from the first event on
-    record: deterministic, where matching a card against the rotation is only
-    ever a guess."""
-    slot_by_wts, sharers = {}, {}
-    for i, group in enumerate(group_slots(_dated_events(soup))):
-        slot = (i % TOTAL_SHOWS) + 1
-        nums = [n for n in group if n is not None]
-        for n in nums:
-            slot_by_wts[n] = slot
-            sharers[n] = nums
-    return slot_by_wts, sharers
-
-
 def _row_belt(note, weight):
     """((weight, org), 'M'|'C'|'D') for a card row, or None if it books no belt.
 
@@ -1059,72 +1015,32 @@ def _row_belt(note, weight):
     return (weight, org), kind
 
 
-def canonical_slot(rows):
-    """(slot, margin) for a parsed card, by best fit against the rotation.
-
-    Best fit rather than an exact match on purpose: a card that had a bout moved
-    still identifies its slot (six of seven rows is decisive), which is what
-    lets generation recover the bout that was dropped. The rotation repeats
-    every 16 shows, so slots tie in pairs — harmless, both members of a pair
-    prescribe the identical card, so margin is measured against the best slot
-    prescribing a DIFFERENT card. A margin under 2 means the card is too short
-    or too heavily edited to place confidently; callers warn rather than book a
-    guess."""
-    sig = dict(filter(None, (_row_belt(n, w) for _, w, n in rows)))
-    if not sig:
-        return None, 0
-    scored = sorted(((sum(1 for k, v in sig.items() if CANONICAL_CALENDAR[s].get(k) == v), s)
-                     for s in CANONICAL_CALENDAR if s not in TOURNAMENT), reverse=True)
-    best_hits, best = scored[0]
-    if not best_hits:
-        return None, 0
-    runner_up = next((h for h, s in scored
-                      if CANONICAL_CALENDAR[s] != CANONICAL_CALENDAR[best]), 0)
-    return best, best_hits - runner_up
-
-
-def canonical_schedule_rows(soup, template_num):
-    """(match_type, weight_class, note) the calendar prescribes for the slot WTS
-    template_num occupies. Last year's row ORDER is kept so the card still looks
-    the way you lay it out, but every bout comes from the rotation, so bouts you
-    moved off that card last year come back and bouts you added don't stick."""
-    slot_by_wts, sharers = wts_slots(soup)
-    slot = slot_by_wts.get(template_num)
-    # Row order comes from every card that shared the slot — a show split over
-    # two nights is one slot, so both nights' rows lay out the single new card.
-    rows = []
-    for n in sharers.get(template_num, [template_num]):
-        rows += wts_schedule_rows(soup, n) or []
-    if not rows:
-        return None
-    if slot is None:                       # undated event: fall back to best fit
-        slot, margin = canonical_slot(rows)
-        if slot is None:
-            return None
-        if margin < 2:
-            print(f"  ! WTS {template_num} has no date and does not match one "
-                  f"calendar slot cleanly (guess {slot}) — check it by hand.")
-    want = CANONICAL_CALENDAR[slot]
-    out, seen = [], set()
-    for _, weight, note in rows:
-        hit = _row_belt(note, weight)
-        key = hit[0] if hit else None
-        if key is None or key not in want or key in seen:
-            continue
-        seen.add(key)
-        out.append((_TYPE_FOR[want[key]], key[0],
-                    _NOTE_FOR[want[key]].format(org=key[1])))
-    for key in sorted(set(want) - seen,
-                      key=lambda k: ('MCD'.index(want[k]),
-                                     WC_LIST.index(k[0]), CAL_ORGS.index(k[1]))):
-        out.append((_TYPE_FOR[want[key]], key[0],
-                    _NOTE_FOR[want[key]].format(org=key[1])))
-    return out
-
-
 # Weight classes lightest -> heaviest, so the heaviest title headlines a card.
 _WEIGHT_ASC = ['Featherweight', 'Lightweight', 'Welterweight',
                'Middleweight', 'Bridgerweight', 'Heavyweight']
+
+
+def calendar_setup_rows(slot):
+    """(match_type, weight_class, note) for every contender bout the calendar
+    books on this slot — battle royals first, then singles eliminators,
+    lightest to heaviest. The calendar column is the whole schedule; no
+    earlier card is consulted."""
+    cal = CANONICAL_CALENDAR[slot]
+    keys = sorted((k for k, v in cal.items() if v in ('M', 'C')),
+                  key=lambda k: ('MC'.index(cal[k]), _WEIGHT_ASC.index(k[0]),
+                                 CAL_ORGS.index(k[1])))
+    return [(_TYPE_FOR[cal[k]], k[0], _NOTE_FOR[cal[k]].format(org=k[1]))
+            for k in keys]
+
+
+def calendar_title_rows(slot):
+    """(match_type, weight_class, note) for every defence the calendar puts on
+    this slot, lightest to heaviest. Only the standalone `open.py wts` blank
+    card uses these; update.py books defences from the contenders owed."""
+    cal = CANONICAL_CALENDAR[slot]
+    keys = sorted((k for k, v in cal.items() if v == 'D'),
+                  key=lambda k: (_WEIGHT_ASC.index(k[0]), CAL_ORGS.index(k[1])))
+    return [(_TYPE_FOR['D'], k[0], _NOTE_FOR['D'].format(org=k[1])) for k in keys]
 
 
 def next_slot(soup):
@@ -1243,7 +1159,7 @@ def wts_is_complete(soup, number):
     return saw
 
 
-def generate_wts(path, date_str=None, rows=8):
+def generate_wts(path, date_str=None):
     with open(path, "r", encoding="utf-8") as f:
         raw = f.read()
 
@@ -1256,23 +1172,15 @@ def generate_wts(path, date_str=None, rows=8):
     else:
         date_disp = "MONTH DAY, YEAR"
 
-    # What the calendar prescribes for this slot. The event one cycle ago is
-    # only used to identify the slot (and to keep its row order) — the bouts
-    # themselves come from the rotation, never from how that card was wrestled.
-    # Fall back to generic blank rows if that event isn't in the file yet.
+    # What the calendar prescribes for this slot: its contender bouts, then
+    # its defences with both sides blank. The calendar is the schedule; no
+    # earlier card is read.
     soup = BeautifulSoup(raw, "html.parser")
-    prev_num = number - SCHEDULE_PERIOD
-    template = canonical_schedule_rows(soup, prev_num)
-    origin = f" (calendar slot of WTS {prev_num})"
-    if not template:
-        template = wts_schedule_rows(soup, prev_num)
-        origin = f" (schedule copied from WTS {prev_num}; slot unidentified)"
-    if template:
-        body = "".join(wts_row(i + 1, mt, wt, nt)
-                       for i, (mt, wt, nt) in enumerate(template))
-    else:
-        body = "".join(wts_row(i + 1) for i in range(rows))
-        origin = ""
+    slot = next_slot(soup)
+    template = calendar_setup_rows(slot) + calendar_title_rows(slot)
+    origin = f" (calendar slot {slot})"
+    body = "".join(wts_row(i + 1, mt, wt, nt)
+                   for i, (mt, wt, nt) in enumerate(template))
 
     block = (
         f"\n<!-- WTS {number} -->\n"
@@ -1290,20 +1198,6 @@ def generate_wts(path, date_str=None, rows=8):
     with open(path, "w", encoding="utf-8") as f:
         f.write(raw)
     print(f"Appended blank World Title Series {number}{origin} to {path}.")
-
-
-def maybe_generate_next_wts(path):
-    """Called from update.py: if the newest WTS in the file is fully filled in,
-    append the next blank one (notes taken from the schedule). The fresh card is
-    empty, so this won't fire again until that card is completed too."""
-    with open(path, "r", encoding="utf-8") as f:
-        raw = f.read()
-    nums = [int(n) for n in re.findall(r"World Title Series\s+(\d+)", raw)]
-    if not nums:
-        return
-    soup = BeautifulSoup(raw, "html.parser")
-    if wts_is_complete(soup, max(nums)):
-        generate_wts(path)
 
 
 # ---------------------------------------------------------------------------
